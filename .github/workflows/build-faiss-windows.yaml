@@ -31,6 +31,7 @@ jobs:
         conda install -y cmake mkl mkl-devel
 
     - name: Configure Faiss
+      working-directory: faiss
       shell: pwsh
       run: |
         cmake -B build . `
@@ -47,6 +48,7 @@ jobs:
           -DBLA_VENDOR=Intel10_64_dyn
 
     - name: Build Faiss C API
+      working-directory: faiss
       shell: pwsh
       run: |
         cmake --build build --config Release --target faiss_c
@@ -56,5 +58,5 @@ jobs:
       with:
         name: faiss-windows-x64-binaries.zip
         path: |
-          build/c_api/Release/faiss_c.dll
-          build/c_api/Release/faiss_c.lib
+          faiss/build/c_api/Release/faiss_c.dll
+          faiss/build/c_api/Release/faiss_c.lib
