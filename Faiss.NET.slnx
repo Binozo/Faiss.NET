@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Docs/">
+    <File Path="README.md" />
+    <File Path="LICENSE" />
+  </Folder>
+  
+  <Project Path="src/FaissNET.Core/Faiss.csproj" />
+  <Project Path="src/FaissNET.Interop/Faiss.Interop.csproj" />
+  <Project Path="src/FaissNET.Cpu/Faiss.Cpu.csproj" />
+</Solution>
