@@ -1,0 +1,59 @@
+name: Build and Package Faiss Windows
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "faiss"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2025-vs2026
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup Conda
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        activate-environment: faiss-build
+        python-version: '3.11'
+        channels: conda-forge
+
+    - name: Install Build Dependencies
+      shell: bash
+      run: |
+        conda install -y cmake mkl mkl-devel
+
+    - name: Configure Faiss
+      shell: pwsh
+      run: |
+        cmake -B build . `
+          -DFAISS_ENABLE_C_API=ON `
+          -DBUILD_SHARED_LIBS=ON `
+          -DFAISS_ENABLE_GPU=OFF `
+          -DFAISS_OPT_LEVEL=avx2 `
+          -DFAISS_ENABLE_PYTHON=OFF `
+          -DFAISS_ENABLE_MKL=OFF `
+          -DBUILD_TESTING=OFF `
+          -DFAISS_ENABLE_EXTRAS=OFF `
+          -DCMAKE_BUILD_TYPE=Release `
+          -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
+          -DBLA_VENDOR=Intel10_64_dyn
+
+    - name: Build Faiss C API
+      shell: pwsh
+      run: |
+        cmake --build build --config Release --target faiss_c
+
+    - name: Upload Zip Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: faiss-windows-x64-binaries.zip
+        path: |
+          build/c_api/Release/faiss_c.dll
+          build/c_api/Release/faiss_c.lib

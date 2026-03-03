@@ -9,6 +9,8 @@
   <Project Path="src/FaissNET.Interop/Faiss.Interop.csproj" />
   <Project Path="src/FaissNET.Cpu/Faiss.Cpu.csproj" />
   
+  <Project Path="src/FaissNET.Gpu/Faiss.Gpu.csproj" />
+  
   <Folder Name="/Native/">
     <Project Path="src/FaissNET.Linux/Faiss.Linux.csproj" />
     <Project Path="src/FaissNET.Native/Faiss.Native.csproj" />
@@ -16,5 +18,7 @@
   
   <Folder Name="/CI/">
     <File Path=".github/workflows/build-faiss-linux.yaml"/>
+    <File Path=".github/workflows/build-faiss-windows.yaml"/>
+    <File Path=".github/workflows/build-faiss-macos.yaml"/>
   </Folder>
 </Solution>
