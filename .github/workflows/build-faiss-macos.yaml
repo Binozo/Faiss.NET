@@ -33,13 +33,16 @@ jobs:
     - name: Configure Faiss
       working-directory: faiss
       run: |
+        LIBOMP_PATH=$(brew --prefix libomp)
+
         cmake -B build . \
           -DFAISS_ENABLE_C_API=ON \
           -DBUILD_SHARED_LIBS=ON \
           -DFAISS_ENABLE_GPU=OFF \
           -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
           -DFAISS_ENABLE_MKL=OFF \
-          -DOpenMP_ROOT=$(brew --prefix libomp) \
+          -DCMAKE_CXX_FLAGS="-I$LIBOMP_PATH/include" \
+          -DOpenMP_ROOT=$LIBOMP_PATH \
           -DFAISS_ENABLE_PYTHON=OFF \
           -DBUILD_TESTING=OFF \
           -DFAISS_ENABLE_EXTRAS=OFF \
