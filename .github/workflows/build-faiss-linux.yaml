@@ -1,0 +1,52 @@
+name: Build and Package Faiss Linux
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "faiss"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Install Build Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev
+
+    - name: Configure Faiss
+      working-directory: faiss
+      run: |
+        cmake -B build . \
+          -DFAISS_ENABLE_C_API=ON \
+          -DBUILD_SHARED_LIBS=ON \
+          -DFAISS_ENABLE_GPU=OFF \
+          -DFAISS_OPT_LEVEL=generic \
+          -DFAISS_ENABLE_MKL=OFF \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+          -DCMAKE_INSTALL_RPATH='$ORIGIN'
+
+    - name: Build Faiss C API
+      working-directory: faiss
+      run: |
+        make -C build -j $(nproc) faiss_c
+        
+    - name: Zip compiled faiss shared libraries
+      working-directory: faiss
+      run: |
+        zip -j faiss-libs.zip build/c_api/libfaiss_c.so build/faiss/libfaiss.so
+
+    - name: Upload NuGet Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: faiss-linux-binaries.zip
+        path: faiss-libs.zip

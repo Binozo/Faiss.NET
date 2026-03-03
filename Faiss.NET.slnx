@@ -13,4 +13,8 @@
     <Project Path="src/FaissNET.Linux/Faiss.Linux.csproj" />
     <Project Path="src/FaissNET.Native/Faiss.Native.csproj" />
   </Folder>
+  
+  <Folder Name="/CI/">
+    <File Path=".github/workflows/build-faiss-linux.yaml"/>
+  </Folder>
 </Solution>
