@@ -9,7 +9,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+            opt_level: generic
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            opt_level: generic
+    runs-on: ${{ matrix.runner }}
 
     steps:
     - uses: actions/checkout@v4
@@ -51,5 +60,5 @@ jobs:
     - name: Upload Zip Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: faiss-linux-binaries.zip
+        name: faiss-linux-${{ matrix.arch }}-binaries.zip
         path: faiss/faiss-libs.zip
