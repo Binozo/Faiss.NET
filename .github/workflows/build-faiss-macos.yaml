@@ -28,7 +28,7 @@ jobs:
 
     - name: Install Build Dependencies
       run: |
-        brew install libomp cmake
+        brew install libomp
 
     - name: Configure Faiss
       working-directory: faiss
@@ -50,7 +50,7 @@ jobs:
     - name: Build Faiss C API
       working-directory: faiss
       run: |
-        make -C build -j $(nproc) faiss_c
+        cmake --build build --config Release --target faiss_c
         
     - name: Copy compiled faiss shared libraries
       working-directory: faiss
