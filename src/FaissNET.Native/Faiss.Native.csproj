@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <NoWarn>$(NoWarn);NU5128</NoWarn>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+
+        <PackageId>Faiss.NET.Native</PackageId>
+        <Version>1.0.0-preview.1</Version>
+        <Authors>Binozo</Authors>
+        <Description>Cross-platform native binaries meta-package for Faiss.NET. Includes Linux, Windows, and macOS runtimes.</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <RepositoryUrl>https://github.com/Binozo/Faiss.NET</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageProjectUrl>https://github.com/Binozo/Faiss.NET</PackageProjectUrl>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\FaissNET.Linux\Faiss.Linux.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -8,4 +8,9 @@
   <Project Path="src/FaissNET.Core/Faiss.csproj" />
   <Project Path="src/FaissNET.Interop/Faiss.Interop.csproj" />
   <Project Path="src/FaissNET.Cpu/Faiss.Cpu.csproj" />
+  
+  <Folder Name="/Native/">
+    <Project Path="src/FaissNET.Linux/Faiss.Linux.csproj" />
+    <Project Path="src/FaissNET.Native/Faiss.Native.csproj" />
+  </Folder>
 </Solution>
