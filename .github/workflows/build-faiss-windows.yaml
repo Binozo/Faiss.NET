@@ -20,12 +20,13 @@ jobs:
     - name: Setup Conda
       uses: conda-incubator/setup-miniconda@v3
       with:
+        auto-update-conda: true
         activate-environment: faiss-build
         python-version: '3.11'
         channels: conda-forge
 
     - name: Install Build Dependencies
-      shell: bash
+      shell: pwsh
       run: |
         conda install -y cmake mkl mkl-devel
 
