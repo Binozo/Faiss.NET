@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\FaissNET.Interop\Faiss.Interop.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="runtimes\**\*"
+                 PackagePath="runtimes"
+                 Pack="true"
+                 CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+</Project>
