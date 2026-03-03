@@ -59,4 +59,4 @@ jobs:
         name: faiss-windows-x64-binaries.zip
         path: |
           faiss/build/c_api/Release/faiss_c.dll
-          faiss/build/c_api/Release/faiss_c.lib
+          faiss/build/faiss/Release/faiss.dll
