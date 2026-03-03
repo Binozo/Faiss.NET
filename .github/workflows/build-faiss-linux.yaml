@@ -52,10 +52,15 @@ jobs:
       run: |
         make -C build -j $(nproc) faiss_c
 
+    - name: Prepare artifacts
+      run: |
+        mkdir -p artifacts
+        cp faiss/build/c_api/libfaiss_c.so artifacts/
+        cp faiss/build/faiss/libfaiss.so artifacts/
+
     - name: Upload Zip Artifact
       uses: actions/upload-artifact@v4
       with:
+        compression-level: '9'
         name: faiss-linux-${{ matrix.arch }}-binaries.zip
-        path: |
-          faiss/build/c_api/libfaiss_c.so
-          faiss/build/faiss/libfaiss.so
+        path: artifacts/*

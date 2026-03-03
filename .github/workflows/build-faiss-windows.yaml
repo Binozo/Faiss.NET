@@ -53,10 +53,16 @@ jobs:
       run: |
         cmake --build build --config Release --target faiss_c
 
+    - name: Prepare artifacts
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path artifacts
+        Copy-Item faiss/build/c_api/Release/faiss_c.dll artifacts/
+        Copy-Item faiss/build/faiss/Release/faiss.dll artifacts/
+
     - name: Upload Zip Artifact
       uses: actions/upload-artifact@v4
       with:
+        compression-level: '9'
         name: faiss-windows-x64-binaries.zip
-        path: |
-          faiss/build/c_api/Release/faiss_c.dll
-          faiss/build/faiss/Release/faiss.dll
+        path: artifacts/*
