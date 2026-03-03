@@ -48,8 +48,8 @@ jobs:
       run: |
         zip -j faiss-libs.zip build/c_api/libfaiss_c.so build/faiss/libfaiss.so
 
-    - name: Upload NuGet Artifact
+    - name: Upload Zip Artifact
       uses: actions/upload-artifact@v4
       with:
         name: faiss-linux-binaries.zip
-        path: faiss-libs.zip
+        path: faiss/faiss-libs.zip
