@@ -38,7 +38,7 @@ jobs:
           -DFAISS_ENABLE_C_API=ON \
           -DBUILD_SHARED_LIBS=ON \
           -DFAISS_ENABLE_GPU=OFF \
-          -DFAISS_OPT_LEVEL=generic \
+          -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
           -DFAISS_ENABLE_MKL=OFF \
           -DFAISS_ENABLE_PYTHON=OFF \
           -DBUILD_TESTING=OFF \
@@ -52,13 +52,14 @@ jobs:
       run: |
         make -C build -j $(nproc) faiss_c
         
-    - name: Zip compiled faiss shared libraries
+    - name: Copy compiled faiss shared libraries
       working-directory: faiss
       run: |
-        zip -j faiss-libs.zip build/c_api/libfaiss_c.so build/faiss/libfaiss.so
+        mkdir -p faiss-libs
+        cp build/c_api/libfaiss_c.so build/faiss/libfaiss.so faiss-libs/
 
     - name: Upload Zip Artifact
       uses: actions/upload-artifact@v4
       with:
         name: faiss-linux-${{ matrix.arch }}-binaries.zip
-        path: faiss/faiss-libs.zip
+        path: faiss/faiss-libs/*
