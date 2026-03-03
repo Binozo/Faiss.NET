@@ -5,6 +5,19 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+        <PackageId>Faiss.NET</PackageId>
+        <Version>1.0.0-preview.1</Version>
+        <Authors>Binozo</Authors>
+        <Description>Modern C# bindings for Faiss.</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <RepositoryUrl>https://github.com/Binozo/Faiss.NET</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageProjectUrl>https://github.com/Binozo/Faiss.NET</PackageProjectUrl>
+
+        <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);PackProjectReferences</TargetsForTfmSpecificBuildOutput>
     </PropertyGroup>
 
     <ItemGroup>
@@ -12,9 +25,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="runtimes\**\*"
-                 PackagePath="runtimes"
-                 Pack="true"
-                 CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
+
+    <Target Name="PackProjectReferences" DependsOnTargets="BuildOnlySettings;ResolveReferences">
+        <ItemGroup>
+            <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('PrivateAssets', 'All'))" />
+        </ItemGroup>
+    </Target>
 </Project>
