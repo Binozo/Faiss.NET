@@ -1,0 +1,65 @@
+name: Build and Package Faiss MacOS
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "faiss"
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-26
+            opt_level: generic
+          - arch: x64
+            runner: macos-26-intel
+            opt_level: avx2
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Install Build Dependencies
+      run: |
+        brew install libomp cmake
+
+    - name: Configure Faiss
+      working-directory: faiss
+      run: |
+        cmake -B build . \
+          -DFAISS_ENABLE_C_API=ON \
+          -DBUILD_SHARED_LIBS=ON \
+          -DFAISS_ENABLE_GPU=OFF \
+          -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
+          -DFAISS_ENABLE_MKL=OFF \
+          -DOpenMP_ROOT=$(brew --prefix libomp) \
+          -DFAISS_ENABLE_PYTHON=OFF \
+          -DBUILD_TESTING=OFF \
+          -DFAISS_ENABLE_EXTRAS=OFF \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+          -DCMAKE_INSTALL_RPATH='$ORIGIN'
+
+    - name: Build Faiss C API
+      working-directory: faiss
+      run: |
+        make -C build -j $(nproc) faiss_c
+        
+    - name: Copy compiled faiss shared libraries
+      working-directory: faiss
+      run: |
+        mkdir -p faiss-libs
+        cp build/c_api/libfaiss_c.dylib build/faiss/libfaiss.dylib faiss-libs/
+
+    - name: Upload Zip Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: faiss-macos-${{ matrix.arch }}-binaries.zip
+        path: faiss/faiss-libs/*
