@@ -51,15 +51,11 @@ jobs:
       working-directory: faiss
       run: |
         make -C build -j $(nproc) faiss_c
-        
-    - name: Copy compiled faiss shared libraries
-      working-directory: faiss
-      run: |
-        mkdir -p faiss-libs
-        cp build/c_api/libfaiss_c.so build/faiss/libfaiss.so faiss-libs/
 
     - name: Upload Zip Artifact
       uses: actions/upload-artifact@v4
       with:
         name: faiss-linux-${{ matrix.arch }}-binaries.zip
-        path: faiss/faiss-libs/*
+        path: |
+          faiss/build/c_api/libfaiss_c.so
+          faiss/build/faiss/libfaiss.so
