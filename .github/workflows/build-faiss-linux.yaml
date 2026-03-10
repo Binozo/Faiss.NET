@@ -64,3 +64,72 @@ jobs:
         compression-level: '9'
         name: faiss-linux-${{ matrix.arch }}-binaries.zip
         path: artifacts/*
+
+  build-cuda:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+            cuda_arch: x86_64
+            opt_level: generic
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            cuda_arch: sbsa
+            opt_level: generic
+    runs-on: ${{ matrix.runner }}
+
+    env:
+      CUDA_HOME: /usr/local/cuda-12.6
+      PATH: /usr/local/cuda-12.6/bin:${PATH}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install CUDA Repository
+        run: |
+          wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/${{ matrix.cuda_arch }}/cuda-keyring_1.1-1_all.deb
+          sudo dpkg -i cuda-keyring_1.1-1_all.deb
+          sudo apt-get update
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev \
+            cuda-nvcc-12-6 cuda-cudart-dev-12-6 libcublas-dev-12-6 libcurand-dev-12-6
+
+      - name: Configure Faiss
+        working-directory: faiss
+        run: |
+          cmake -B build . \
+            -DFAISS_ENABLE_C_API=ON \
+            -DBUILD_SHARED_LIBS=ON \
+            -DFAISS_ENABLE_GPU=ON \
+            -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
+            -DFAISS_ENABLE_MKL=OFF \
+            -DFAISS_ENABLE_PYTHON=OFF \
+            -DBUILD_TESTING=OFF \
+            -DFAISS_ENABLE_EXTRAS=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+            -DCMAKE_INSTALL_RPATH='$ORIGIN'
+
+      - name: Build Faiss C API
+        working-directory: faiss
+        run: |
+          make -C build -j $(nproc) faiss_c
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts
+          cp faiss/build/c_api/libfaiss_c.so artifacts/
+          cp faiss/build/faiss/libfaiss.so artifacts/
+
+      - name: Upload Zip Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          compression-level: '9'
+          name: faiss-linux-${{ matrix.arch }}-cuda-binaries.zip
+          path: artifacts/*
