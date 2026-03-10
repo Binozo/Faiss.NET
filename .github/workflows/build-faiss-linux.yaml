@@ -21,15 +21,15 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     steps:
-    - name: Install Build Dependencies
-      run: |
-        apt-get update
-        apt-get install -y git cmake g++ libopenblas-dev liblapack-dev
-
     - uses: actions/checkout@v6
       with:
         submodules: recursive
         fetch-depth: 0
+
+    - name: Install Build Dependencies
+      run: |
+        apt-get update
+        apt-get install -y git cmake g++ libopenblas-dev liblapack-dev
 
     - name: Configure Faiss
       working-directory: faiss
@@ -84,11 +84,6 @@ jobs:
       PATH: /usr/local/cuda-12.6/bin:${PATH}
 
     steps:
-      - name: Install Build Dependencies
-        run: |
-          apt-get update
-          apt-get install -y git cmake g++ libopenblas-dev liblapack-dev
-
       - uses: actions/checkout@v6
         with:
           submodules: recursive
@@ -102,7 +97,8 @@ jobs:
 
       - name: Install Build Dependencies
         run: |
-          sudo apt-get install -y cuda-nvcc-12-6 cuda-cudart-dev-12-6 libcublas-dev-12-6 libcurand-dev-12-6
+          sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev \
+            cuda-nvcc-12-6 cuda-cudart-dev-12-6 libcublas-dev-12-6 libcurand-dev-12-6
 
       - name: Configure Faiss
         working-directory: faiss
