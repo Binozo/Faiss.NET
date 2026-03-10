@@ -23,8 +23,8 @@ jobs:
     steps:
     - name: Install Build Dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y git cmake g++ libopenblas-dev liblapack-dev
+        apt-get update
+        apt-get install -y git cmake g++ libopenblas-dev liblapack-dev
 
     - uses: actions/checkout@v6
       with:
@@ -86,8 +86,8 @@ jobs:
     steps:
       - name: Install Build Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y git cmake g++ libopenblas-dev liblapack-dev
+          apt-get update
+          apt-get install -y git cmake g++ libopenblas-dev liblapack-dev
 
       - uses: actions/checkout@v6
         with:
