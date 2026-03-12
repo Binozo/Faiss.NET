@@ -9,6 +9,7 @@
 
     <ItemGroup>
         <InternalsVisibleTo Include="Faiss.Cpu" />
+        <InternalsVisibleTo Include="Faiss.Gpu" />
     </ItemGroup>
     
     <ItemGroup>
