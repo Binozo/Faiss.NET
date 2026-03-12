@@ -14,7 +14,7 @@ jobs:
         include:
           - arch: arm64
             runner: macos-26
-            opt_level: generic
+            opt_level: sve
           - arch: x64
             runner: macos-26-intel
             opt_level: avx2
