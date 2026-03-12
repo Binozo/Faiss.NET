@@ -8,12 +8,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
-      <PackageReference Include="xunit.v3" Version="3.2.2" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+        <PackageReference Include="xunit.v3" Version="3.2.2" />
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\FaissNET.Core\Faiss.csproj" />
         <ProjectReference Include="..\FaissNET.Cpu\Faiss.Cpu.csproj" />
-        <ProjectReference Include="..\FaissNET.Native\Faiss.Native.csproj" />
+        <ProjectReference Include="..\FaissNET.Gpu\Faiss.Gpu.csproj" />
     </ItemGroup>
 </Project>
