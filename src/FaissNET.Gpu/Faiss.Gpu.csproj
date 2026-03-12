@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+        <PackageId>Faiss.NET.Gpu</PackageId>
+        <Version>1.0.0-preview.1</Version>
+        <Authors>Binozo</Authors>
+        <Description>GPU extension for Faiss.NET.</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <RepositoryUrl>https://github.com/Binozo/Faiss.NET</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageProjectUrl>https://github.com/Binozo/Faiss.NET</PackageProjectUrl>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\FaissNET.Interop\Faiss.Interop.csproj" />
+        <ProjectReference Include="..\FaissNET.Cpu\Faiss.Cpu.csproj" />
+    </ItemGroup>
+
+</Project>

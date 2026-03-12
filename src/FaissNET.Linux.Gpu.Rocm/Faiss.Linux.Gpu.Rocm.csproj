@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        
+        <NoWarn>$(NoWarn);NU5128</NoWarn>
+
+        <PackageId>Faiss.NET.Linux.Gpu.Rocm</PackageId>
+        <Version>1.0.0-preview.1</Version>
+        <Authors>YourNameHere</Authors>
+        <Description>Native Linux (x64) ROCm binaries for the Faiss.NET GPU extension. Requires an AMD GPU.</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="runtimes\linux-x64\native\*.so">
+            <Pack>true</Pack>
+            <PackagePath>runtimes\linux-x64\native\</PackagePath>
+
+            <Link>%(Filename)%(Extension)</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+</Project>

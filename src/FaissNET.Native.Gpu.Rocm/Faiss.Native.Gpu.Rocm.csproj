@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+
+        <NoWarn>$(NoWarn);NU5128</NoWarn>
+
+        <PackageId>Faiss.NET.Native.Gpu.Rocm</PackageId>
+        <Version>1.0.0-preview.1</Version>
+        <Authors>Binozo</Authors>
+        <Description>eta-package for AMD GPUs.</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\FaissNET.Gpu\Faiss.Gpu.csproj" />
+        <ProjectReference Include="..\FaissNET.Linux.Gpu.Rocm\Faiss.Linux.Gpu.Rocm.csproj" />
+    </ItemGroup>
+
+</Project>
