@@ -84,11 +84,11 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     env:
-      CUDA_HOME: /usr/local/cuda-13.2
+      CUDA_HOME: /usr/local/cuda-12.8
 
     steps:
       - name: Add CUDA to PATH
-        run: echo "/usr/local/cuda-13.2/bin" >> $GITHUB_PATH
+        run: echo "/usr/local/cuda-12.8/bin" >> $GITHUB_PATH
 
       - name: Install Git
         run: |
@@ -109,7 +109,7 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev \
-            cuda-nvcc-13-2 cuda-cudart-dev-13-2 cuda-profiler-api-13-2 libcublas-dev-13-2 libcurand-dev-13-2
+            cuda-nvcc-12-8 cuda-cudart-dev-12-8 cuda-profiler-api-12-8 libcublas-dev-12-8 libcurand-dev-12-8
 
       - name: Configure Faiss
         working-directory: faiss
