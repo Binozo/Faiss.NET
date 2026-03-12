@@ -1,32 +1,25 @@
-﻿using Faiss.Interfaces;
-using Faiss.Interop.ErrorHandling;
-using Faiss.Interop.NativeMethods;
-using Faiss.Interop.SafeHandles;
-
 namespace Faiss.Cpu;
 
-/// <summary>
-/// Exact search for L2 (Euclidean) distance.
-/// The most basic and accurate Faiss index.
-/// </summary>
-public sealed class IndexFlatL2 : IFaissIndex, INativeIndex
+using Interfaces;
+using Interop.ErrorHandling;
+using Interop.NativeMethods;
+using Interop.SafeHandles;
+
+public sealed class GenericCpuIndexWrapper : IFaissIndex, INativeIndex
 {
     private readonly FaissIndexHandle _handle;
 
-    /// <param name="dimensions">The number of dimensions for vectors in this index.</param>
-    /// <exception cref="FaissException">Thrown when the index creation fails.</exception>
-    public IndexFlatL2(int dimensions)
-    {
-        FaissErrorHandler.ThrowIfError(Native.faiss_IndexFlatL2_new_with(out _handle, dimensions));
-    }
-    
     public IntPtr Handle => _handle.DangerousGetHandle();
+
+    internal GenericCpuIndexWrapper(IntPtr ptr)
+    {
+        _handle = new FaissIndexHandle(ptr);
+    }
 
     public int Dimensions => Native.faiss_Index_d(_handle);
     
     public long TotalCount => Native.faiss_Index_ntotal(_handle);
     
-    // Flat indexes don't require training, but we map it anyway for the interface
     public bool IsTrained => Native.faiss_Index_is_trained(_handle) != 0;
 
     public unsafe void Add(long count, ReadOnlySpan<float> vectors)

@@ -9,7 +9,7 @@ namespace Faiss.Cpu;
 /// Exact search for Inner Product (useful for Cosine Similarity).
 /// Ideal for NLP and embedding-based search.
 /// </summary>
-public sealed class IndexFlatIP : IFaissIndex
+public sealed class IndexFlatIP : IFaissIndex, INativeIndex
 {
     private readonly FaissIndexHandle _handle;
     
@@ -19,6 +19,8 @@ public sealed class IndexFlatIP : IFaissIndex
     {
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexFlatIP_new_with(out _handle, dimensions));
     }
+    
+    public IntPtr Handle => _handle.DangerousGetHandle();
 
     public int Dimensions => Native.faiss_Index_d(_handle);
     
