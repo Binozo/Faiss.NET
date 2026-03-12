@@ -154,23 +154,25 @@ jobs:
             opt_level: generic
             rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
     runs-on: ${{ matrix.runner }}
-    
+
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
           fetch-depth: 0
-  
+
       - name: Install HIP SDK
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri "https://www.amd.com/en/developer/resources/rocm-hub/eula/licenses.html?filename=AMD-Software-PRO-Edition-26.Q1-Win11-For-HIP.exe" `
-            -OutFile hip-sdk.exe -UseBasicParsing
-  
-          .\hip-sdk.exe -install
-  
-          echo "C:\Program Files\AMD\ROCm\7.1\bin" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
-  
+          Invoke-WebRequest -Uri "https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-26.Q1-Win11-For-HIP.exe" `
+            -OutFile hip-sdk.exe -UseBasicParsing -MaximumRetryCount 3 -TimeoutSec 300
+          
+          Start-Process -FilePath ".\hip-sdk.exe" -ArgumentList "/S" -NoNewWindow -Wait
+          
+          $rocmPath = "C:\Program Files\AMD\ROCm\7.1"
+          echo "$rocmPath\bin" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
+          echo "$rocmPath\hip\bin" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
+
       - name: Setup Conda
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -178,12 +180,12 @@ jobs:
           activate-environment: faiss-build
           python-version: '3.11'
           channels: conda-forge
-  
+
       - name: Install Build Dependencies
         shell: pwsh
         run: |
           conda install -y cmake mkl mkl-devel
-  
+
       - name: Configure Faiss
         working-directory: faiss
         shell: pwsh
@@ -202,20 +204,20 @@ jobs:
             -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
             -DBLA_VENDOR=Intel10_64_dyn `
             -DHIP_ARCHITECTURES="${{ matrix.rocm_arch }}"
-  
+
       - name: Build Faiss C API
         working-directory: faiss
         shell: pwsh
         run: |
           cmake --build build --config Release --target faiss_c
-  
+
       - name: Prepare artifacts
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifacts
           Copy-Item faiss/build/c_api/Release/faiss_c.dll artifacts/
           Copy-Item faiss/build/faiss/Release/faiss.dll artifacts/
-  
+
       - name: Upload Zip Artifact
         uses: actions/upload-artifact@v4
         with:
