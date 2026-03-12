@@ -45,4 +45,7 @@ internal static unsafe partial class Native
 
     [LibraryImport(LibraryName)]
     internal static partial int faiss_Index_reset(FaissIndexHandle index);
+    
+    [LibraryImport(LibraryName)]
+    internal static partial void faiss_Index_free(IntPtr obj);
 }

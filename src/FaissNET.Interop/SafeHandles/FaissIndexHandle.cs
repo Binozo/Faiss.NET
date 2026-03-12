@@ -1,12 +1,17 @@
-using System.Runtime.InteropServices;
-
 namespace Faiss.Interop.SafeHandles;
 
-internal sealed partial class FaissIndexHandle : SafeHandle
+using Microsoft.Win32.SafeHandles;
+using NativeMethods;
+
+internal sealed partial class FaissIndexHandle : SafeHandleZeroOrMinusOneIsInvalid
 {
-    // Tells the base class that an IntPtr.Zero handle means it's invalid
-    public FaissIndexHandle() : base(IntPtr.Zero, ownsHandle: true)
+    public FaissIndexHandle() : base(true)
     {
+    }
+    
+    internal FaissIndexHandle(IntPtr preexistingHandle) : base(true)
+    {
+        SetHandle(preexistingHandle);
     }
 
     public override bool IsInvalid => handle == IntPtr.Zero;
@@ -15,11 +20,9 @@ internal sealed partial class FaissIndexHandle : SafeHandle
     {
         if (handle != IntPtr.Zero)
         {
-            faiss_Index_free(handle);
+            Native.faiss_Index_free(handle);
+            handle = IntPtr.Zero;
         }
         return true;
     }
-
-    [LibraryImport("faiss_c")]
-    private static partial void faiss_Index_free(IntPtr obj);
 }
