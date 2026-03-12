@@ -152,9 +152,11 @@ jobs:
         include:
           - arch: x64
             runner: ubuntu-24.04
+            opt_level: generic
             rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
           - arch: arm64
             runner: ubuntu-24.04-arm
+            opt_level: generic
             rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
     runs-on: ${{ matrix.runner }}
 
@@ -169,20 +171,30 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Install ROCm
+      - name: Install ROCm 7.2
         run: |
-          sudo apt-get install -y wget
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg2
+
+          sudo apt-get install -y \
+            libc6 libstdc++6 libgcc-s1 python3 python3-pip python3-dev \
+            zlib1g libzstd1 libnuma1 libelf-dev pkg-config libdrm-dev \
+            libtinfo-dev libbz2-1.0 libsqlite3-0 libgomp1 build-essential
+
           wget https://repo.radeon.com/amdgpu-install/7.2/ubuntu/noble/amdgpu-install_7.2.70200-1_all.deb
           sudo dpkg -i amdgpu-install_7.2.70200-1_all.deb
-          sudo amdgpu-install --usecase=rocm,hip --no-dkms -y
+
+          sudo apt-get update
+
+          sudo amdgpu-install --usecase=hip,rocm --no-dkms --accept-eula -y
+          sudo apt-get install -f -y
 
       - name: Add ROCm to PATH
         run: echo "/opt/rocm/bin" >> $GITHUB_PATH
 
       - name: Install Build Dependencies
         run: |
-          sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev \
-            rocm-hip-sdk rocm-llvm
+          sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev hip-dev
 
       - name: Configure Faiss
         working-directory: faiss
