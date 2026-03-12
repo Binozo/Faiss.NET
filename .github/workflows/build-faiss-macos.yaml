@@ -67,3 +67,44 @@ jobs:
         compression-level: '9'
         name: faiss-macos-${{ matrix.arch }}-binaries.zip
         path: artifacts/*
+
+  build-pack:
+    needs: [build]
+    runs-on: ubuntu-24.04
+    
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download x64 Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-macos-x64-binaries.zip
+          path: .
+
+      - name: Download ARM64 Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-macos-arm64-binaries.zip
+          path: .
+
+      - name: Prepare Native Runtimes
+        run: |
+          unzip faiss-macos-x64-binaries.zip -d src/FaissNET.MacOS/runtimes/macos-x64/native
+          unzip faiss-macos-arm64-binaries.zip -d src/FaissNET.MacOS/runtimes/macos-arm64/native
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.MacOS/Faiss.MacOS.csproj -c Release -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: faiss-macos-nupkg.zip
+          path: '**/*.nupkg'
