@@ -102,6 +102,9 @@ jobs:
           python-version: '3.11'
           channels: conda-forge
 
+      - name: Setup MSVC Environment
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install Build Dependencies
         shell: pwsh
         run: |
@@ -112,6 +115,8 @@ jobs:
         shell: pwsh
         run: |
           cmake -B build -G Ninja . `
+            -DCMAKE_C_COMPILER=cl `
+            -DCMAKE_CXX_COMPILER=cl `
             -DFAISS_ENABLE_C_API=ON `
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=ON `
