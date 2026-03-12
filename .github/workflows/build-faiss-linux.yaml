@@ -154,10 +154,6 @@ jobs:
             runner: ubuntu-24.04
             opt_level: generic
             rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
-          - arch: arm64
-            runner: ubuntu-24.04-arm
-            opt_level: generic
-            rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
     runs-on: ${{ matrix.runner }}
 
     steps:
