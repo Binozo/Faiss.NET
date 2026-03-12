@@ -9,60 +9,216 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2025-vs2026
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-2025-vs2026
+            opt_level: generic
+    runs-on: ${{ matrix.runner }}
 
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        fetch-depth: 0
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
-    - name: Setup Conda
-      uses: conda-incubator/setup-miniconda@v3
-      with:
-        auto-update-conda: true
-        activate-environment: faiss-build
-        python-version: '3.11'
-        channels: conda-forge
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          activate-environment: faiss-build
+          python-version: '3.11'
+          channels: conda-forge
 
-    - name: Install Build Dependencies
-      shell: pwsh
-      run: |
-        conda install -y cmake mkl mkl-devel
+      - name: Install Build Dependencies
+        shell: pwsh
+        run: |
+          conda install -y cmake mkl mkl-devel
 
-    - name: Configure Faiss
-      working-directory: faiss
-      shell: pwsh
-      run: |
-        cmake -B build . `
-          -DFAISS_ENABLE_C_API=ON `
-          -DBUILD_SHARED_LIBS=ON `
-          -DFAISS_ENABLE_GPU=OFF `
-          -DFAISS_OPT_LEVEL=avx2 `
-          -DFAISS_ENABLE_PYTHON=OFF `
-          -DFAISS_ENABLE_MKL=OFF `
-          -DBUILD_TESTING=OFF `
-          -DFAISS_ENABLE_EXTRAS=OFF `
-          -DCMAKE_BUILD_TYPE=Release `
-          -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
-          -DBLA_VENDOR=Intel10_64_dyn
+      - name: Configure Faiss
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          cmake -B build . `
+            -DFAISS_ENABLE_C_API=ON `
+            -DBUILD_SHARED_LIBS=ON `
+            -DFAISS_ENABLE_GPU=OFF `
+            -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} `
+            -DFAISS_ENABLE_PYTHON=OFF `
+            -DFAISS_ENABLE_MKL=OFF `
+            -DBUILD_TESTING=OFF `
+            -DFAISS_ENABLE_EXTRAS=OFF `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
+            -DBLA_VENDOR=Intel10_64_dyn
 
-    - name: Build Faiss C API
-      working-directory: faiss
-      shell: pwsh
-      run: |
-        cmake --build build --config Release --target faiss_c
+      - name: Build Faiss C API
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --target faiss_c
 
-    - name: Prepare artifacts
-      shell: pwsh
-      run: |
-        New-Item -ItemType Directory -Force -Path artifacts
-        Copy-Item faiss/build/c_api/Release/faiss_c.dll artifacts/
-        Copy-Item faiss/build/faiss/Release/faiss.dll artifacts/
+      - name: Prepare artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts
+          Copy-Item faiss/build/c_api/Release/faiss_c.dll artifacts/
+          Copy-Item faiss/build/faiss/Release/faiss.dll artifacts/
 
-    - name: Upload Zip Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        compression-level: '9'
-        name: faiss-windows-x64-binaries.zip
-        path: artifacts/*
+      - name: Upload Zip Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          compression-level: '9'
+          name: faiss-windows-${{ matrix.arch }}-binaries.zip
+          path: artifacts/*
+
+  build-cuda:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-2025-vs2026
+            opt_level: generic
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install CUDA Toolkit 13.2
+        uses: Jimver/cuda-toolkit@v0.2.30
+        id: cuda-toolkit
+        with:
+          cuda: '13.2.0'
+
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          activate-environment: faiss-build
+          python-version: '3.11'
+          channels: conda-forge
+
+      - name: Install Build Dependencies
+        shell: pwsh
+        run: |
+          conda install -y cmake mkl mkl-devel
+
+      - name: Configure Faiss
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          cmake -B build . `
+            -DFAISS_ENABLE_C_API=ON `
+            -DBUILD_SHARED_LIBS=ON `
+            -DFAISS_ENABLE_GPU=ON `
+            -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} `
+            -DFAISS_ENABLE_PYTHON=OFF `
+            -DFAISS_ENABLE_MKL=OFF `
+            -DBUILD_TESTING=OFF `
+            -DFAISS_ENABLE_EXTRAS=OFF `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
+            -DBLA_VENDOR=Intel10_64_dyn `
+            -DCMAKE_CUDA_ARCHITECTURES="50;52;60;61;75;80;86;89;90;120"
+
+      - name: Build Faiss C API
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --target faiss_c
+
+      - name: Prepare artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts
+          Copy-Item faiss/build/c_api/Release/faiss_c.dll artifacts/
+          Copy-Item faiss/build/faiss/Release/faiss.dll artifacts/
+
+      - name: Upload Zip Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          compression-level: '9'
+          name: faiss-windows-${{ matrix.arch }}-cuda-binaries.zip
+          path: artifacts/*
+
+  build-rocm:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-2025-vs2026
+            opt_level: generic
+            rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
+    runs-on: ${{ matrix.runner }}
+    
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+  
+      - name: Install HIP SDK
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://www.amd.com/en/developer/resources/rocm-hub/eula/licenses.html?filename=AMD-Software-PRO-Edition-26.Q1-Win11-For-HIP.exe" `
+            -OutFile hip-sdk.exe -UseBasicParsing
+  
+          .\hip-sdk.exe -install
+  
+          echo "C:\Program Files\AMD\ROCm\7.1\bin" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
+  
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          activate-environment: faiss-build
+          python-version: '3.11'
+          channels: conda-forge
+  
+      - name: Install Build Dependencies
+        shell: pwsh
+        run: |
+          conda install -y cmake mkl mkl-devel
+  
+      - name: Configure Faiss
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          cmake -B build . `
+            -DFAISS_ENABLE_C_API=ON `
+            -DBUILD_SHARED_LIBS=ON `
+            -DFAISS_ENABLE_GPU=ON `
+            -DFAISS_ENABLE_ROCM=ON `
+            -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} `
+            -DFAISS_ENABLE_PYTHON=OFF `
+            -DFAISS_ENABLE_MKL=OFF `
+            -DBUILD_TESTING=OFF `
+            -DFAISS_ENABLE_EXTRAS=OFF `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
+            -DBLA_VENDOR=Intel10_64_dyn `
+            -DHIP_ARCHITECTURES="${{ matrix.rocm_arch }}"
+  
+      - name: Build Faiss C API
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --target faiss_c
+  
+      - name: Prepare artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts
+          Copy-Item faiss/build/c_api/Release/faiss_c.dll artifacts/
+          Copy-Item faiss/build/faiss/Release/faiss.dll artifacts/
+  
+      - name: Upload Zip Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          compression-level: '9'
+          name: faiss-windows-${{ matrix.arch }}-rocm-binaries.zip
+          path: artifacts/*
