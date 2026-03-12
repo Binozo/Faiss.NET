@@ -184,6 +184,9 @@ jobs:
           wget https://repo.radeon.com/amdgpu-install/7.2/ubuntu/noble/amdgpu-install_7.2.70200-1_all.deb
           sudo dpkg -i amdgpu-install_7.2.70200-1_all.deb
 
+          # Rewrite the dead amdgpu/7.2 repo to the real one (30.30)
+          sudo sed -i 's|amdgpu/7.2|amdgpu/30.30|g' /etc/apt/sources.list.d/amdgpu*.list || true
+
           sudo apt-get update
 
           sudo amdgpu-install --usecase=hip,rocm --no-dkms --accept-eula -y
