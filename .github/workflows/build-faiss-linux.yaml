@@ -152,10 +152,10 @@ jobs:
         include:
           - arch: x64
             runner: ubuntu-24.04
-            rocm_arch: gfx900;gfx906;gfx908;gfx90a;gfx940;gfx941;gfx942;gfx1010;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
+            rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
           - arch: arm64
             runner: ubuntu-24.04-arm
-            rocm_arch: gfx900;gfx906;gfx908;gfx90a;gfx940;gfx941;gfx942;gfx1010;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
+            rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
     runs-on: ${{ matrix.runner }}
 
     steps:
