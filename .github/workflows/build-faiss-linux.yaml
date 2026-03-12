@@ -145,3 +145,77 @@ jobs:
           compression-level: '9'
           name: faiss-linux-${{ matrix.arch }}-cuda-binaries.zip
           path: artifacts/*
+
+  build-rocm:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+            rocm_arch: gfx900;gfx906;gfx908;gfx90a;gfx940;gfx941;gfx942;gfx1010;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            rocm_arch: gfx900;gfx906;gfx908;gfx90a;gfx940;gfx941;gfx942;gfx1010;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Install Git
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git
+
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install ROCm
+        run: |
+          sudo apt-get install -y wget
+          wget https://repo.radeon.com/amdgpu-install/7.2/ubuntu/noble/amdgpu-install_7.2.70200-1_all.deb
+          sudo dpkg -i amdgpu-install_7.2.70200-1_all.deb
+          sudo amdgpu-install --usecase=rocm,hip --no-dkms -y
+
+      - name: Add ROCm to PATH
+        run: echo "/opt/rocm/bin" >> $GITHUB_PATH
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev \
+            rocm-hip-sdk rocm-llvm
+
+      - name: Configure Faiss
+        working-directory: faiss
+        run: |
+          cmake -B build . \
+            -DFAISS_ENABLE_C_API=ON \
+            -DBUILD_SHARED_LIBS=ON \
+            -DFAISS_ENABLE_GPU=ON \
+            -DFAISS_ENABLE_ROCM=ON \
+            -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
+            -DFAISS_ENABLE_MKL=OFF \
+            -DFAISS_ENABLE_PYTHON=OFF \
+            -DBUILD_TESTING=OFF \
+            -DFAISS_ENABLE_EXTRAS=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+            -DCMAKE_INSTALL_RPATH='$ORIGIN' \
+            -DHIP_ARCHITECTURES="${{ matrix.rocm_arch }}"
+
+      - name: Build Faiss C API
+        working-directory: faiss
+        run: |
+          make -C build -j $(nproc) faiss_c
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts
+          cp faiss/build/c_api/libfaiss_c.so artifacts/
+          cp faiss/build/faiss/libfaiss.so artifacts/
+
+      - name: Upload Zip Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          compression-level: '9'
+          name: faiss-linux-${{ matrix.arch }}-rocm-binaries.zip
+          path: artifacts/*
