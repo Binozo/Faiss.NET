@@ -22,7 +22,9 @@ jobs:
 
     steps:
     - name: Install Git
-      run: apt-get update && apt-get install -y git
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git
 
     - uses: actions/checkout@v6
       with:
@@ -32,7 +34,7 @@ jobs:
     - name: Install Build Dependencies
       run: |
         apt-get update
-        apt-get install -y git cmake g++ libopenblas-dev liblapack-dev
+        apt-get install -y cmake g++ libopenblas-dev liblapack-dev
 
     - name: Configure Faiss
       working-directory: faiss
