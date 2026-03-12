@@ -184,13 +184,13 @@ jobs:
       - name: Install Build Dependencies
         shell: pwsh
         run: |
-          conda install -y cmake mkl mkl-devel
+          conda install -y cmake ninja mkl mkl-devel
 
       - name: Configure Faiss
         working-directory: faiss
         shell: pwsh
         run: |
-          cmake -B build . `
+          cmake -B build -G Ninja . `
             -DFAISS_ENABLE_C_API=ON `
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=ON `
