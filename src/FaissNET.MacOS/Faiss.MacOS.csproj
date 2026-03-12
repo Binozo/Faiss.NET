@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <NoWarn>$(NoWarn);NU5128</NoWarn>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+
+        <PackageId>Faiss.NET.Linux</PackageId>
+        <Version>1.0.0-preview.1</Version>
+        <Authors>Binozo</Authors>
+        <Description>Native MacOS (x64 and arm64) binaries for Faiss.NET.</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <RepositoryUrl>https://github.com/Binozo/Faiss.NET</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageProjectUrl>https://github.com/Binozo/Faiss.NET</PackageProjectUrl>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="runtimes\macos-x64\native\*.so">
+            <Pack>true</Pack>
+            <PackagePath>runtimes\macos-x64\native\</PackagePath>
+
+            <Link>%(Filename)%(Extension)</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+
+        <Content Include="runtimes\macos-arm64\native\*.so">
+            <Pack>true</Pack>
+            <PackagePath>runtimes\macos-arm64\native\</PackagePath>
+
+            <Link>%(Filename)%(Extension)</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+</Project>
