@@ -8,7 +8,7 @@
         <PackageId>Faiss.NET.Linux</PackageId>
         <Version>1.0.0-preview.1</Version>
         <Authors>Binozo</Authors>
-        <Description>Native Linux (x64) binaries for Faiss.NET.</Description>
+        <Description>Native Linux (x64 and arm64) binaries for Faiss.NET.</Description>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
         <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -25,6 +25,14 @@
         <Content Include="runtimes\linux-x64\native\*.so">
             <Pack>true</Pack>
             <PackagePath>runtimes\linux-x64\native\</PackagePath>
+
+            <Link>%(Filename)%(Extension)</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+
+        <Content Include="runtimes\linux-arm64\native\*.so">
+            <Pack>true</Pack>
+            <PackagePath>runtimes\linux-arm64\native\</PackagePath>
 
             <Link>%(Filename)%(Extension)</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
