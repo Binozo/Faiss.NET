@@ -85,7 +85,7 @@ jobs:
 
     env:
       CUDA_HOME: /usr/local/cuda-12.6
-      PATH: /usr/local/cuda-12.6/bin:${PATH}
+      #PATH: /usr/local/cuda-12.6/bin:${PATH}
 
     steps:
       - name: Install Git
