@@ -53,7 +53,14 @@ jobs:
         working-directory: faiss
         shell: pwsh
         run: |
-          '{ "name": "faiss-build", "version": "1.0.0", "dependencies": [ "openblas", "blas", "lapack" ] }' | Out-File -Encoding ascii vcpkg.json
+          '{
+            "name": "faiss-build",
+            "version": "1.0.0",
+            "dependencies": [
+              { "name": "blas", "default-features": false, "features": ["openblas"] },
+              { "name": "lapack", "default-features": false, "features": ["openblas"] }
+            ]
+          }' | Out-File -Encoding ascii vcpkg.json
 
       - name: Configure Faiss
         working-directory: faiss
@@ -177,7 +184,14 @@ jobs:
         working-directory: faiss
         shell: pwsh
         run: |
-          '{ "name": "faiss-build", "version": "1.0.0", "dependencies": [ "openblas", "blas", "lapack" ] }' | Out-File -Encoding ascii vcpkg.json
+          '{
+            "name": "faiss-build",
+            "version": "1.0.0",
+            "dependencies": [
+              { "name": "blas", "default-features": false, "features": ["openblas"] },
+              { "name": "lapack", "default-features": false, "features": ["openblas"] }
+            ]
+          }' | Out-File -Encoding ascii vcpkg.json
 
       - name: Configure Faiss
         working-directory: faiss
