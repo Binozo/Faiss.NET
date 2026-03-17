@@ -62,17 +62,19 @@ jobs:
         working-directory: faiss
         shell: pwsh
         run: |
-          $openblas_lib = "${{ github.workspace }}/openblas_install/lib/openblas.lib"
-          $openblas_inc = "${{ github.workspace }}/openblas_install/include"
+          $workspace = "${{ github.workspace }}".Replace('\', '/')
+          $openblas_lib = "$workspace/openblas_install/lib/openblas.lib"
+          $openblas_inc = "$workspace/openblas_install/include"
           
           cmake -B build -G Ninja . `
             -DCMAKE_C_COMPILER=cl `
             -DCMAKE_CXX_COMPILER=cl `
             -DBLA_VENDOR=OpenBLAS `
-            -DBLAS_LIBRARIES=$openblas_lib `
-            -DLAPACK_LIBRARIES=$openblas_lib `
-            -DCMAKE_LIBRARY_PATH="${{ github.workspace }}/openblas_install/lib" `
-            -DCMAKE_INCLUDE_PATH=$openblas_inc `
+            -DBLAS_LIBRARIES="$openblas_lib" `
+            -DLAPACK_LIBRARIES="$openblas_lib" `
+            -DCMAKE_LIBRARY_PATH="$workspace/openblas_install/lib" `
+            -DCMAKE_INCLUDE_PATH="$openblas_inc" `
+            -DCMAKE_SHARED_LINKER_FLAGS="$openblas_lib" `
             -DFAISS_ENABLE_C_API=ON `
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=OFF `
@@ -139,6 +141,7 @@ jobs:
           path: '**/*.nupkg'
 
   build-cuda:
+    if: false
     strategy:
       matrix:
         include:
