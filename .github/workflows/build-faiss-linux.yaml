@@ -69,6 +69,47 @@ jobs:
         name: faiss-linux-${{ matrix.arch }}-binaries.zip
         path: artifacts/*
 
+  build-pack:
+    needs: [build]
+    runs-on: ubuntu-24.04
+    
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+  
+      - name: Download x64 Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-linux-x64-binaries.zip
+          path: .
+  
+      - name: Download ARM64 Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-linux-arm64-binaries.zip
+          path: .
+
+      - name: Prepare Native Runtimes
+        run: |
+          unzip faiss-linux-x64-binaries.zip -d src/FaissNET.Linux/runtimes/linux-x64/native
+          unzip faiss-linux-arm64-binaries.zip -d src/FaissNET.Linux/runtimes/linux-arm64/native
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+  
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Linux/Faiss.Linux.csproj -c Release -o ./nupkg
+  
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: faiss-linux-nupkg.zip
+          path: '**/*.nupkg'
+
   build-cuda:
     strategy:
       matrix:
@@ -146,6 +187,47 @@ jobs:
           compression-level: '9'
           name: faiss-linux-${{ matrix.arch }}-cuda-binaries.zip
           path: artifacts/*
+
+  build-cuda-pack:
+    needs: [build-cuda]
+    runs-on: ubuntu-24.04
+    
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download x64 Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-linux-x64-cuda-binaries.zip
+          path: .
+
+      - name: Download ARM64 Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-linux-arm64-cuda-binaries.zip
+          path: .
+
+      - name: Prepare Native Runtimes
+        run: |
+          unzip faiss-linux-x64-cuda-binaries.zip -d src/FaissNET.Linux.Gpu.Cuda/runtimes/linux-x64/native
+          unzip faiss-linux-arm64-cuda-binaries.zip -d src/FaissNET.Linux.Gpu.Cuda/runtimes/linux-arm64/native
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Linux.Gpu.Cuda/Faiss.Linux.Gpu.Cuda.csproj -c Release -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: faiss-linux-cuda-nupkg.zip
+          path: '**/*.nupkg'
 
   build-rocm:
     strategy:
@@ -240,3 +322,37 @@ jobs:
           compression-level: '9'
           name: faiss-linux-${{ matrix.arch }}-rocm-binaries.zip
           path: artifacts/*
+
+  build-rocm-pack:
+    needs: [build-rocm]
+    runs-on: ubuntu-24.04
+    
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download x64 Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-linux-x64-rocm-binaries.zip
+          path: .
+
+      - name: Prepare Native Runtimes
+        run: |
+          unzip faiss-linux-x64-rocm-binaries.zip -d src/FaissNET.Linux.Gpu.Rocm/runtimes/linux-x64/native
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Linux.Gpu.Rocm/Faiss.Linux.Gpu.Rocm.csproj -c Release -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: faiss-linux-rocm-nupkg.zip
+          path: '**/*.nupkg'
