@@ -15,6 +15,9 @@ jobs:
           - arch: x64
             runner: windows-2025
             opt_level: generic
+          - arch: arm64
+            runner: windows-11-arm
+            opt_level: generic
     runs-on: ${{ matrix.runner }}
 
     steps:
