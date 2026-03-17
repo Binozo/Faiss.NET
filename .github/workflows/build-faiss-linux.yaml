@@ -167,8 +167,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
             -DCMAKE_INSTALL_RPATH='$ORIGIN' \
-            -DCMAKE_CUDA_ARCHITECTURES="50;52;60;61;75;80;86;89;90;120" \
-            -DCMAKE_CUDA_ARCHITECTURES="120"
+            -DCMAKE_CUDA_ARCHITECTURES="50;52;60;61;75;80;86;89;90;120"
 
       - name: Build Faiss C API
         working-directory: faiss
