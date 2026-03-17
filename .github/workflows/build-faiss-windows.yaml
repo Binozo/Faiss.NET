@@ -53,26 +53,30 @@ jobs:
           Invoke-WebRequest -Uri $url -OutFile openblas.zip
           Expand-Archive -Path openblas.zip -DestinationPath openblas_extracted
           
-          # Hunt down the real folders recursively no matter how the zip is structured
+          # Hunt down the real folders recursively
           $lib_dir = (Get-ChildItem -Path openblas_extracted -Recurse -Directory -Filter "lib" | Select-Object -First 1).FullName
           $inc_dir = (Get-ChildItem -Path openblas_extracted -Recurse -Directory -Filter "include" | Select-Object -First 1).FullName
-          $bin_dir = (Get-ChildItem -Path openblas_extracted -Recurse -Directory -Filter "bin" | Select-Object -First 1).FullName
+          $bin_dir = (Get-ChildItem -Path openblas_extracted -Recurse -Directory -Filter "bin" | Select-Object -First 1)
           
-          New-Item -ItemType Directory -Force -Path openblas_install/lib
-          New-Item -ItemType Directory -Force -Path openblas_install/include
+          New-Item -ItemType Directory -Force -Path openblas_install/lib | Out-Null
+          New-Item -ItemType Directory -Force -Path openblas_install/include | Out-Null
           
-          Copy-Item -Path "$lib_dir\*" -Destination "openblas_install/lib" -Recurse
-          Copy-Item -Path "$inc_dir\*" -Destination "openblas_install/include" -Recurse
+          if ($lib_dir) { Copy-Item -Path "$lib_dir\*" -Destination "openblas_install/lib" -Recurse }
+          if ($inc_dir) { Copy-Item -Path "$inc_dir\*" -Destination "openblas_install/include" -Recurse }
           if ($bin_dir) {
-              New-Item -ItemType Directory -Force -Path openblas_install/bin
-              Copy-Item -Path "$bin_dir\*" -Destination "openblas_install/bin" -Recurse
+              New-Item -ItemType Directory -Force -Path openblas_install/bin | Out-Null
+              Copy-Item -Path "$($bin_dir.FullName)\*" -Destination "openblas_install/bin" -Recurse
           }
           
-          # Brute-force find the library file and lock it in as openblas.lib
+          # Smart rename to avoid overwriting itself
           $lib_file = Get-ChildItem -Path "openblas_install/lib" -Include *.lib, *.a, *.dll.a -File -Recurse | Select-Object -First 1
           if ($lib_file) {
-              Copy-Item $lib_file.FullName "openblas_install/lib/openblas.lib"
-              Write-Host "W: Found $($lib_file.Name) and locked it in as openblas.lib!"
+              if ($lib_file.Name -ne "openblas.lib") {
+                  Rename-Item -Path $lib_file.FullName -NewName "openblas.lib"
+                  Write-Host "W: Renamed $($lib_file.Name) to openblas.lib!"
+              } else {
+                  Write-Host "W: File is already named openblas.lib, no cap! Locked in."
+              }
           } else {
               Write-Error "Cooked! Could not find the OpenBLAS library file in the zip."
           }
