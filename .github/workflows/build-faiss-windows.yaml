@@ -125,37 +125,27 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Verify submodule commit
-        working-directory: faiss
-        shell: pwsh
-        run: |
-          $commit = git rev-parse HEAD
-          Write-Host "Faiss submodule commit: $commit"
-          if ($commit -ne "e56d96aa01c14eda55def5d4fea2046ac96dcab8") {
-            Write-Error "Wrong submodule commit! Expected e56d96a..."
-          }
-
       - name: Install CUDA Toolkit 12.8
         uses: Jimver/cuda-toolkit@v0.2.30
         id: cuda-toolkit
         with:
           cuda: '12.8.0'
 
-      - name: Setup Conda
-        uses: conda-incubator/setup-miniconda@v3
+      - name: Setup Python
+        uses: actions/setup-python@v6
         with:
-          auto-update-conda: true
-          activate-environment: faiss-build
           python-version: '3.11'
-          channels: conda-forge
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install Build Dependencies (uv)
+        shell: pwsh
+        run: |
+          uv pip install --system cmake ninja mkl mkl-include
 
       - name: Setup MSVC Environment
         uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Install Build Dependencies
-        shell: pwsh
-        run: |
-          conda install -y cmake ninja mkl mkl-devel
 
       - name: Configure Faiss
         working-directory: faiss
