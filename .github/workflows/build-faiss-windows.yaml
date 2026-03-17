@@ -65,9 +65,7 @@ jobs:
           Start-Process .\llvm.exe -ArgumentList '/S','/D=C:\LLVM' -Wait -NoNewWindow
           'C:\LLVM\bin' | Out-File $env:GITHUB_PATH -Append
 
-          # Sanity check
-          C:\LLVM\bin\clang-cl.exe --version
-          C:\LLVM\bin\flang-new.exe --version
+          clang-cl --version
 
       # Build OpenBLAS from source (MSVC ABI)
       - name: Build OpenBLAS ${{ env.OPENBLAS_VERSION }}
@@ -79,13 +77,14 @@ jobs:
 
           $install = "${{ github.workspace }}\openblas_install"
 
-          # clang-cl for C, flang-new for Fortran → full BLAS + LAPACK
+          # C_LAPACK = use f2c-translated C sources instead of Fortran
+          # NOFORTRAN = skip Fortran compiler entirely
           cmake -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_C_COMPILER=clang-cl `
-            -DCMAKE_Fortran_COMPILER=flang-new `
+            -DC_LAPACK=ON `
+            -DNOFORTRAN=ON `
             -DBUILD_SHARED_LIBS=ON `
-            -DBUILD_WITHOUT_LAPACK=OFF `
             -DBINARY=64 `
             ${{ matrix.openblas_flags }} `
             -DCMAKE_INSTALL_PREFIX="$install"
@@ -95,7 +94,6 @@ jobs:
 
           echo "OPENBLAS_PREFIX=$install" | Out-File $env:GITHUB_ENV -Append
 
-          Write-Host "=== Installed files ==="
           Get-ChildItem $install -Recurse -File | Format-Table FullName, Length
 
       - name: Configure Faiss
@@ -135,20 +133,13 @@ jobs:
         run: |
           New-Item artifacts -ItemType Directory -Force | Out-Null
 
-          # 1) Faiss DLLs
+          # Faiss DLLs
           Get-ChildItem faiss/build -Recurse -Include faiss.dll, faiss_c.dll |
               Copy-Item -Destination artifacts/
 
-          # 2) OpenBLAS DLL
+          # OpenBLAS DLL
           Get-ChildItem "$env:OPENBLAS_PREFIX\bin" -Filter *.dll |
               Copy-Item -Destination artifacts/
-
-          # 3) Fortran runtime DLLs (if flang-new linked them dynamically)
-          $patterns = @('FortranRuntime*.dll','FortranDecimal*.dll','flangrti*.dll')
-          foreach ($p in $patterns) {
-              Get-ChildItem 'C:\LLVM\bin' -Filter $p -EA SilentlyContinue |
-                  Copy-Item -Destination artifacts/
-          }
 
           Write-Host "`n=== Final artifacts ==="
           Get-ChildItem artifacts/ | Format-Table Name, Length
