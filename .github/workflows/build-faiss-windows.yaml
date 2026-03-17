@@ -39,14 +39,16 @@ jobs:
         run: |
           uv pip install --system cmake ninja
 
-      - name: Setup vcpkg and install OpenBLAS
+      - name: Setup vcpkg cache and env
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-          vcpkgJsonGlob: '**/vcpkg.json'
-          runVcpkgInstall: true
-          vcpkgGitCommitId: 'master'
-          runVcpkgFormatString: '[`install`, `openblas:${{ matrix.arch }}-windows`]'
+          vcpkgGitCommitId: '62159a45e18f3a9ac0548628dcaf74fcb60c6ff9'
+
+      - name: Create vcpkg.json Manifest
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          '{ "name": "faiss-build", "version": "1.0.0", "dependencies": [ "openblas" ] }' | Out-File -Encoding ascii vcpkg.json
 
       - name: Configure Faiss
         working-directory: faiss
@@ -157,14 +159,16 @@ jobs:
       - name: Setup MSVC Environment
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Setup vcpkg and install OpenBLAS
+      - name: Setup vcpkg cache and env
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-          vcpkgJsonGlob: '**/vcpkg.json'
-          runVcpkgInstall: true
-          vcpkgGitCommitId: 'master'
-          runVcpkgFormatString: '[`install`, `openblas:${{ matrix.arch }}-windows`]'
+          vcpkgGitCommitId: '62159a45e18f3a9ac0548628dcaf74fcb60c6ff9'
+
+      - name: Create vcpkg.json Manifest
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          '{ "name": "faiss-build", "version": "1.0.0", "dependencies": [ "openblas" ] }' | Out-File -Encoding ascii vcpkg.json
 
       - name: Configure Faiss
         working-directory: faiss
