@@ -32,7 +32,7 @@ jobs:
 
     env:
       LLVM_VERSION: "19.1.7"
-      OPENBLAS_VERSION: "0.3.28"
+      OPENBLAS_VERSION: "0.3.31"
 
     steps:
       - uses: actions/checkout@v6
