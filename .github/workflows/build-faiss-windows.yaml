@@ -42,35 +42,37 @@ jobs:
       - name: Setup MSVC Environment
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Setup vcpkg cache and env
-        uses: lukka/run-vcpkg@v11
-        env:
-          VCPKG_BUILD_TYPE: release
-        with:
-          vcpkgGitCommitId: '62159a45e18f3a9ac0548628dcaf74fcb60c6ff9'
-
-      - name: Create vcpkg.json Manifest
-        working-directory: faiss
+      - name: Download Pre-compiled OpenBLAS
         shell: pwsh
         run: |
-          '{
-            "name": "faiss-build",
-            "version": "1.0.0",
-            "dependencies": [
-              { "name": "blas", "default-features": false, "features": ["openblas"] },
-              { "name": "lapack", "default-features": false, "features": ["openblas"] }
-            ]
-          }' | Out-File -Encoding ascii vcpkg.json
+          if ("${{ matrix.arch }}" -eq "x64") {
+            $url = "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.31/OpenBLAS-0.3.31-x64.zip"
+          } else {
+            $url = "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.31/OpenBLAS-0.3.31-woa64-static.zip"
+          }
+          Invoke-WebRequest -Uri $url -OutFile openblas.zip
+          Expand-Archive -Path openblas.zip -DestinationPath openblas_install
+          
+          # Force a consistent library name so CMake doesn't get confused
+          if (Test-Path "openblas_install/lib/libopenblas.lib") {
+              Copy-Item "openblas_install/lib/libopenblas.lib" "openblas_install/lib/openblas.lib"
+          }
 
       - name: Configure Faiss
         working-directory: faiss
         shell: pwsh
         run: |
+          $openblas_lib = "${{ github.workspace }}/openblas_install/lib/openblas.lib"
+          $openblas_inc = "${{ github.workspace }}/openblas_install/include"
+          
           cmake -B build -G Ninja . `
             -DCMAKE_C_COMPILER=cl `
             -DCMAKE_CXX_COMPILER=cl `
-            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
-            -DVCPKG_TARGET_TRIPLET="${{ matrix.arch }}-windows" `
+            -DBLA_VENDOR=OpenBLAS `
+            -DBLAS_LIBRARIES=$openblas_lib `
+            -DLAPACK_LIBRARIES=$openblas_lib `
+            -DCMAKE_LIBRARY_PATH="${{ github.workspace }}/openblas_install/lib" `
+            -DCMAKE_INCLUDE_PATH=$openblas_inc `
             -DFAISS_ENABLE_C_API=ON `
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=OFF `
@@ -173,35 +175,36 @@ jobs:
       - name: Setup MSVC Environment
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Setup vcpkg cache and env
-        uses: lukka/run-vcpkg@v11
-        env:
-          VCPKG_BUILD_TYPE: release
-        with:
-          vcpkgGitCommitId: '62159a45e18f3a9ac0548628dcaf74fcb60c6ff9'
-
-      - name: Create vcpkg.json Manifest
-        working-directory: faiss
+      - name: Download Pre-compiled OpenBLAS
         shell: pwsh
         run: |
-          '{
-            "name": "faiss-build",
-            "version": "1.0.0",
-            "dependencies": [
-              { "name": "blas", "default-features": false, "features": ["openblas"] },
-              { "name": "lapack", "default-features": false, "features": ["openblas"] }
-            ]
-          }' | Out-File -Encoding ascii vcpkg.json
+          if ("${{ matrix.arch }}" -eq "x64") {
+            $url = "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.31/OpenBLAS-0.3.31-x64.zip"
+          } else {
+            $url = "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.31/OpenBLAS-0.3.31-woa64-static.zip"
+          }
+          Invoke-WebRequest -Uri $url -OutFile openblas.zip
+          Expand-Archive -Path openblas.zip -DestinationPath openblas_install
+          
+          # Force a consistent library name so CMake doesn't get confused
+          if (Test-Path "openblas_install/lib/libopenblas.lib") {
+              Copy-Item "openblas_install/lib/libopenblas.lib" "openblas_install/lib/openblas.lib"
 
       - name: Configure Faiss
         working-directory: faiss
         shell: pwsh
         run: |
+          $openblas_lib = "${{ github.workspace }}/openblas_install/lib/openblas.lib"
+          $openblas_inc = "${{ github.workspace }}/openblas_install/include"
+          
           cmake -B build -G Ninja . `
             -DCMAKE_C_COMPILER=cl `
             -DCMAKE_CXX_COMPILER=cl `
-            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
-            -DVCPKG_TARGET_TRIPLET="${{ matrix.arch }}-windows" `
+            -DBLA_VENDOR=OpenBLAS `
+            -DBLAS_LIBRARIES=$openblas_lib `
+            -DLAPACK_LIBRARIES=$openblas_lib `
+            -DCMAKE_LIBRARY_PATH="${{ github.workspace }}/openblas_install/lib" `
+            -DCMAKE_INCLUDE_PATH=$openblas_inc `
             -DFAISS_ENABLE_C_API=ON `
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=ON `
