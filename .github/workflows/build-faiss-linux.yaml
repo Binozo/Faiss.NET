@@ -201,18 +201,18 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: faiss-linux-x64-cuda-binaries.zip
-          path: .
+          path: x64-cuda
 
       - name: Download ARM64 Artifacts
         uses: actions/download-artifact@v8
         with:
           name: faiss-linux-arm64-cuda-binaries.zip
-          path: .
+          path: arm64-cuda
 
       - name: Prepare Native Runtimes
         run: |
-          unzip faiss-linux-x64-cuda-binaries.zip -d src/FaissNET.Linux.Gpu.Cuda/runtimes/linux-x64/native
-          unzip faiss-linux-arm64-cuda-binaries.zip -d src/FaissNET.Linux.Gpu.Cuda/runtimes/linux-arm64/native
+          cp x64-cuda/* src/FaissNET.Linux.Gpu.Cuda/runtimes/linux-x64/native/
+          cp arm64-cuda/* src/FaissNET.Linux.Gpu.Cuda/runtimes/linux-arm64/native/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -336,11 +336,11 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: faiss-linux-x64-rocm-binaries.zip
-          path: .
+          path: x64-rocm
 
       - name: Prepare Native Runtimes
         run: |
-          unzip faiss-linux-x64-rocm-binaries.zip -d src/FaissNET.Linux.Gpu.Rocm/runtimes/linux-x64/native
+          cp x64-rocm/* src/FaissNET.Linux.Gpu.Rocm/runtimes/linux-x64/native/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5

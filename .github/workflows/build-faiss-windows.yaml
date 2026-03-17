@@ -86,11 +86,11 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: faiss-windows-x64-binaries.zip
-          path: .
+          path: x64
 
       - name: Prepare Native Runtimes
         run: |
-          unzip faiss-windows-x64-binaries.zip -d src/FaissNET.Windows/runtimes/windows-x64/native
+          cp x64/* src/FaissNET.Windows/runtimes/windows-x64/native/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -197,11 +197,11 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: faiss-windows-x64-cuda-binaries.zip
-          path: .
+          path: x64-cuda
 
       - name: Prepare Native Runtimes
         run: |
-          unzip faiss-windows-x64-cuda-binaries.zip -d src/FaissNET.Windows/runtimes/windows-x64/native
+          cp x64-cuda/* src/FaissNET.Windows.Gpu.Cuda/runtimes/windows-x64/native/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5

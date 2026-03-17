@@ -81,18 +81,18 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: faiss-macos-x64-binaries.zip
-          path: .
+          path: x64
 
       - name: Download ARM64 Artifacts
         uses: actions/download-artifact@v8
         with:
           name: faiss-macos-arm64-binaries.zip
-          path: .
+          path: arm64
 
       - name: Prepare Native Runtimes
         run: |
-          unzip faiss-macos-x64-binaries.zip -d src/FaissNET.MacOS/runtimes/macos-x64/native
-          unzip faiss-macos-arm64-binaries.zip -d src/FaissNET.MacOS/runtimes/macos-arm64/native
+          cp x64/* src/FaissNET.MacOS/runtimes/macos-x64/native/
+          cp arm64/* src/FaissNET.MacOS/runtimes/macos-arm64/native/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
