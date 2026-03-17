@@ -22,7 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="runtimes\macos-x64\native\*.so">
+        <Content Include="runtimes\macos-x64\native\*.dylib">
             <Pack>true</Pack>
             <PackagePath>runtimes\macos-x64\native\</PackagePath>
 
@@ -30,7 +30,7 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
 
-        <Content Include="runtimes\macos-arm64\native\*.so">
+        <Content Include="runtimes\macos-arm64\native\*.dylib">
             <Pack>true</Pack>
             <PackagePath>runtimes\macos-arm64\native\</PackagePath>
 
