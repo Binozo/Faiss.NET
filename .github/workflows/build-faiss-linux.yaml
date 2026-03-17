@@ -92,8 +92,7 @@ jobs:
 
       - name: Prepare Native Runtimes
         run: |
-          find . -name "*.zip"
-          unzip faiss-linux-x64-binaries.zip -d src/FaissNET.Linux/runtimes/linux-x64/native
+          find . -name "*.zip" && unzip faiss-linux-x64-binaries.zip -d src/FaissNET.Linux/runtimes/linux-x64/native
           unzip faiss-linux-arm64-binaries.zip -d src/FaissNET.Linux/runtimes/linux-arm64/native
 
       - name: Setup .NET
