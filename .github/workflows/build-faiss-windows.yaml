@@ -37,13 +37,23 @@ jobs:
       - name: Install Build Dependencies (uv)
         shell: pwsh
         run: |
-          uv pip install --system cmake ninja mkl mkl-include
+          uv pip install --system cmake ninja
+
+      - name: Setup vcpkg and install OpenBLAS
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+          vcpkgJsonGlob: '**/vcpkg.json'
+          runVcpkgInstall: true
+          vcpkgGitCommitId: 'master'
+          runVcpkgFormatString: '[`install`, `openblas:${{ matrix.arch }}-windows`]'
 
       - name: Configure Faiss
         working-directory: faiss
         shell: pwsh
         run: |
-          cmake -B build . `
+          cmake -B build -G Ninja . `
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
             -DFAISS_ENABLE_C_API=ON `
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=OFF `
@@ -54,7 +64,7 @@ jobs:
             -DFAISS_ENABLE_EXTRAS=OFF `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
-            -DBLA_VENDOR=Intel10_64_dyn
+            -DBLA_VENDOR=OpenBLAS
 
       - name: Build Faiss C API
         working-directory: faiss
@@ -142,18 +152,26 @@ jobs:
       - name: Install Build Dependencies (uv)
         shell: pwsh
         run: |
-          uv pip install --system cmake ninja mkl mkl-include
+          uv pip install --system cmake ninja
 
       - name: Setup MSVC Environment
         uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup vcpkg and install OpenBLAS
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+          vcpkgJsonGlob: '**/vcpkg.json'
+          runVcpkgInstall: true
+          vcpkgGitCommitId: 'master'
+          runVcpkgFormatString: '[`install`, `openblas:${{ matrix.arch }}-windows`]'
 
       - name: Configure Faiss
         working-directory: faiss
         shell: pwsh
         run: |
           cmake -B build -G Ninja . `
-            -DCMAKE_C_COMPILER=cl `
-            -DCMAKE_CXX_COMPILER=cl `
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
             -DFAISS_ENABLE_C_API=ON `
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=ON `
@@ -164,8 +182,8 @@ jobs:
             -DFAISS_ENABLE_EXTRAS=OFF `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
-            -DBLA_VENDOR=Intel10_64_dyn `
-            -DCMAKE_CUDA_ARCHITECTURES="50;52;60;61;75;80;86;89;90;120"
+            -DBLA_VENDOR=OpenBLAS `
+            -DCMAKE_CUDA_ARCHITECTURES="120"
 
       - name: Build Faiss C API
         working-directory: faiss
@@ -250,24 +268,37 @@ jobs:
           echo "$rocmPath\bin" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
           echo "$rocmPath\hip\bin" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
 
-      - name: Setup Conda
-        uses: conda-incubator/setup-miniconda@v3
+      - name: Setup Python
+        uses: actions/setup-python@v6
         with:
-          auto-update-conda: true
-          activate-environment: faiss-build
           python-version: '3.11'
-          channels: conda-forge
 
-      - name: Install Build Dependencies
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install Build Dependencies (uv)
         shell: pwsh
         run: |
-          conda install -y cmake ninja mkl mkl-devel
+          uv pip install --system cmake ninja
+
+      - name: Setup MSVC Environment
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup vcpkg and install OpenBLAS
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+          vcpkgJsonGlob: '**/vcpkg.json'
+          runVcpkgInstall: true
+          vcpkgGitCommitId: 'master'
+          runVcpkgFormatString: '[`install`, `openblas:${{ matrix.arch }}-windows`]'
 
       - name: Configure Faiss
         working-directory: faiss
         shell: pwsh
         run: |
           cmake -B build -G Ninja . `
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
             -DFAISS_ENABLE_C_API=ON `
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=ON `
@@ -279,7 +310,7 @@ jobs:
             -DFAISS_ENABLE_EXTRAS=OFF `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
-            -DBLA_VENDOR=Intel10_64_dyn `
+            -DBLA_VENDOR=OpenBLAS `
             -DHIP_ARCHITECTURES="${{ matrix.rocm_arch }}"
 
       - name: Build Faiss C API
