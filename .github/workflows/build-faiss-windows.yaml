@@ -122,6 +122,16 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Verify submodule commit
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          $commit = git rev-parse HEAD
+          Write-Host "Faiss submodule commit: $commit"
+          if ($commit -ne "e56d96aa01c14eda55def5d4fea2046ac96dcab8") {
+            Write-Error "Wrong submodule commit! Expected e56d96a..."
+          }
+
       - name: Install CUDA Toolkit 12.8
         uses: Jimver/cuda-toolkit@v0.2.30
         id: cuda-toolkit
@@ -185,7 +195,7 @@ jobs:
           path: artifacts/*
 
   build-cuda-pack:
-    needs: [build]
+    needs: [build-cuda]
     runs-on: ubuntu-24.04
     
     steps:
@@ -210,7 +220,7 @@ jobs:
 
       - name: Pack NuGet Package
         run: |
-          dotnet pack src/FaissNET.Windows/Faiss.Windows.csproj -c Release -o ./nupkg
+          dotnet pack src/FaissNET.Windows.Gpu.Cuda/Faiss.Windows.Gpu.Cuda.csproj -c Release -o ./nupkg
 
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v4
