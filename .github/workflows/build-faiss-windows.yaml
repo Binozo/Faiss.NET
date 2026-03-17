@@ -13,7 +13,7 @@ jobs:
       matrix:
         include:
           - arch: x64
-            runner: windows-2025-vs2026
+            runner: windows-2025
             opt_level: generic
     runs-on: ${{ matrix.runner }}
 
@@ -78,7 +78,7 @@ jobs:
       matrix:
         include:
           - arch: x64
-            runner: windows-2025-vs2026
+            runner: windows-2025
             opt_level: generic
     runs-on: ${{ matrix.runner }}
 
@@ -151,11 +151,12 @@ jobs:
           path: artifacts/*
 
   build-rocm:
+    if: false # ROCm download currently not working
     strategy:
       matrix:
         include:
           - arch: x64
-            runner: windows-2025-vs2026
+            runner: windows-2025
             opt_level: generic
             rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
     runs-on: ${{ matrix.runner }}
