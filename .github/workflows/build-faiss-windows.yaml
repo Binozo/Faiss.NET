@@ -51,11 +51,30 @@ jobs:
             $url = "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.31/OpenBLAS-0.3.31-woa64-static.zip"
           }
           Invoke-WebRequest -Uri $url -OutFile openblas.zip
-          Expand-Archive -Path openblas.zip -DestinationPath openblas_install
+          Expand-Archive -Path openblas.zip -DestinationPath openblas_extracted
           
-          # Force a consistent library name so CMake doesn't get confused
-          if (Test-Path "openblas_install/lib/libopenblas.lib") {
-              Copy-Item "openblas_install/lib/libopenblas.lib" "openblas_install/lib/openblas.lib"
+          # Hunt down the real folders recursively no matter how the zip is structured
+          $lib_dir = (Get-ChildItem -Path openblas_extracted -Recurse -Directory -Filter "lib" | Select-Object -First 1).FullName
+          $inc_dir = (Get-ChildItem -Path openblas_extracted -Recurse -Directory -Filter "include" | Select-Object -First 1).FullName
+          $bin_dir = (Get-ChildItem -Path openblas_extracted -Recurse -Directory -Filter "bin" | Select-Object -First 1).FullName
+          
+          New-Item -ItemType Directory -Force -Path openblas_install/lib
+          New-Item -ItemType Directory -Force -Path openblas_install/include
+          
+          Copy-Item -Path "$lib_dir\*" -Destination "openblas_install/lib" -Recurse
+          Copy-Item -Path "$inc_dir\*" -Destination "openblas_install/include" -Recurse
+          if ($bin_dir) {
+              New-Item -ItemType Directory -Force -Path openblas_install/bin
+              Copy-Item -Path "$bin_dir\*" -Destination "openblas_install/bin" -Recurse
+          }
+          
+          # Brute-force find the library file and lock it in as openblas.lib
+          $lib_file = Get-ChildItem -Path "openblas_install/lib" -Include *.lib, *.a, *.dll.a -File -Recurse | Select-Object -First 1
+          if ($lib_file) {
+              Copy-Item $lib_file.FullName "openblas_install/lib/openblas.lib"
+              Write-Host "W: Found $($lib_file.Name) and locked it in as openblas.lib!"
+          } else {
+              Write-Error "Cooked! Could not find the OpenBLAS library file in the zip."
           }
 
       - name: Configure Faiss
