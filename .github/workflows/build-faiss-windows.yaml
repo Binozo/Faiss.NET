@@ -73,6 +73,40 @@ jobs:
           name: faiss-windows-${{ matrix.arch }}-binaries.zip
           path: artifacts/*
 
+  build-pack:
+    needs: [build]
+    runs-on: ubuntu-24.04
+    
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download x64 Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-windows-x64-binaries.zip
+          path: .
+
+      - name: Prepare Native Runtimes
+        run: |
+          unzip faiss-windows-x64-binaries.zip -d src/FaissNET.Windows/runtimes/windows-x64/native
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Windows/Faiss.Windows.csproj -c Release -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: faiss-windows-nupkg.zip
+          path: '**/*.nupkg'
+
   build-cuda:
     strategy:
       matrix:
@@ -149,6 +183,40 @@ jobs:
           compression-level: '9'
           name: faiss-windows-${{ matrix.arch }}-cuda-binaries.zip
           path: artifacts/*
+
+  build-cuda-pack:
+    needs: [build]
+    runs-on: ubuntu-24.04
+    
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download x64 Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-windows-x64-cuda-binaries.zip
+          path: .
+
+      - name: Prepare Native Runtimes
+        run: |
+          unzip faiss-windows-x64-cuda-binaries.zip -d src/FaissNET.Windows/runtimes/windows-x64/native
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Windows/Faiss.Windows.csproj -c Release -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: faiss-windows-cuda-nupkg.zip
+          path: '**/*.nupkg'
 
   build-rocm:
     if: false # ROCm download currently not working
