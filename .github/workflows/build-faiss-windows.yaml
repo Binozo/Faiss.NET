@@ -15,10 +15,24 @@ jobs:
           - arch: x64
             runner: windows-2025
             opt_level: generic
+            msvc_arch: amd64
+            llvm_asset: LLVM-19.1.7-win64.exe
+            # DYNAMIC_ARCH builds kernels for many x64 CPUs, picks the best at runtime
+            openblas_flags: >-
+              -DDYNAMIC_ARCH=ON
           - arch: arm64
             runner: windows-11-arm
             opt_level: generic
+            msvc_arch: arm64
+            llvm_asset: LLVM-19.1.7-woa64.exe
+            openblas_flags: >-
+              -DTARGET=ARMV8
+              -DARCH=arm64
     runs-on: ${{ matrix.runner }}
+
+    env:
+      LLVM_VERSION: "19.1.7"
+      OPENBLAS_VERSION: "0.3.28"
 
     steps:
       - uses: actions/checkout@v6
@@ -26,78 +40,81 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
-    
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
+          python-version: "3.11"
 
-      - name: Install Build Dependencies (uv)
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Install cmake + ninja
+        run: uv pip install --system cmake ninja
+
+      # MSVC environment — provides headers, libs, link.exe
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.msvc_arch }}
+
+      # Provides clang-cl (C) + flang-new (Fortran)
+      - name: Install LLVM ${{ env.LLVM_VERSION }}
         shell: pwsh
         run: |
-          uv pip install --system cmake ninja
+          $url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/${{ matrix.llvm_asset }}"
+          Write-Host "Downloading $url ..."
+          Invoke-WebRequest $url -OutFile llvm.exe -MaximumRetryCount 3
 
-      - name: Setup MSVC Environment
-        uses: ilammy/msvc-dev-cmd@v1
+          Start-Process .\llvm.exe -ArgumentList '/S','/D=C:\LLVM' -Wait -NoNewWindow
+          'C:\LLVM\bin' | Out-File $env:GITHUB_PATH -Append
 
-      - name: Download Pre-compiled OpenBLAS
+          # Sanity check
+          C:\LLVM\bin\clang-cl.exe --version
+          C:\LLVM\bin\flang-new.exe --version
+
+      # Build OpenBLAS from source (MSVC ABI)
+      - name: Build OpenBLAS ${{ env.OPENBLAS_VERSION }}
         shell: pwsh
         run: |
-          if ("${{ matrix.arch }}" -eq "x64") {
-            $url = "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.31/OpenBLAS-0.3.31-x64.zip"
-          } else {
-            $url = "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.31/OpenBLAS-0.3.31-woa64-static.zip"
-          }
-          Invoke-WebRequest -Uri $url -OutFile openblas.zip
-          Expand-Archive -Path openblas.zip -DestinationPath openblas_extracted
-          
-          # Hunt down the real folders recursively
-          $lib_dir = (Get-ChildItem -Path openblas_extracted -Recurse -Directory -Filter "lib" | Select-Object -First 1).FullName
-          $inc_dir = (Get-ChildItem -Path openblas_extracted -Recurse -Directory -Filter "include" | Select-Object -First 1).FullName
-          $bin_dir = (Get-ChildItem -Path openblas_extracted -Recurse -Directory -Filter "bin" | Select-Object -First 1)
-          
-          New-Item -ItemType Directory -Force -Path openblas_install/lib | Out-Null
-          New-Item -ItemType Directory -Force -Path openblas_install/include | Out-Null
-          
-          if ($lib_dir) { Copy-Item -Path "$lib_dir\*" -Destination "openblas_install/lib" -Recurse }
-          if ($inc_dir) { Copy-Item -Path "$inc_dir\*" -Destination "openblas_install/include" -Recurse }
-          if ($bin_dir) {
-              New-Item -ItemType Directory -Force -Path openblas_install/bin | Out-Null
-              Copy-Item -Path "$($bin_dir.FullName)\*" -Destination "openblas_install/bin" -Recurse
-          }
-          
-          # Smart rename to avoid overwriting itself
-          $lib_file = Get-ChildItem -Path "openblas_install/lib" -Include *.lib, *.a, *.dll.a -File -Recurse | Select-Object -First 1
-          if ($lib_file) {
-              if ($lib_file.Name -ne "openblas.lib") {
-                  Rename-Item -Path $lib_file.FullName -NewName "openblas.lib"
-                  Write-Host "W: Renamed $($lib_file.Name) to openblas.lib!"
-              } else {
-                  Write-Host "W: File is already named openblas.lib, no cap! Locked in."
-              }
-          } else {
-              Write-Error "Cooked! Could not find the OpenBLAS library file in the zip."
-          }
+          git clone --depth 1 -b "v${{ env.OPENBLAS_VERSION }}" `
+              https://github.com/OpenMathLib/OpenBLAS.git openblas_src
+          cd openblas_src
+
+          $install = "${{ github.workspace }}\openblas_install"
+
+          # clang-cl for C, flang-new for Fortran → full BLAS + LAPACK
+          cmake -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_C_COMPILER=clang-cl `
+            -DCMAKE_Fortran_COMPILER=flang-new `
+            -DBUILD_SHARED_LIBS=ON `
+            -DBUILD_WITHOUT_LAPACK=OFF `
+            -DBINARY=64 `
+            ${{ matrix.openblas_flags }} `
+            -DCMAKE_INSTALL_PREFIX="$install"
+
+          cmake --build build --config Release -j
+          cmake --install build
+
+          echo "OPENBLAS_PREFIX=$install" | Out-File $env:GITHUB_ENV -Append
+
+          Write-Host "=== Installed files ==="
+          Get-ChildItem $install -Recurse -File | Format-Table FullName, Length
 
       - name: Configure Faiss
         working-directory: faiss
         shell: pwsh
         run: |
-          $workspace = "${{ github.workspace }}".Replace('\', '/')
-          $openblas_lib = "$workspace/openblas_install/lib/openblas.lib"
-          $openblas_inc = "$workspace/openblas_install/include"
-          
+          $prefix = $env:OPENBLAS_PREFIX.Replace('\', '/')
+          $lib = (Get-ChildItem "$prefix/lib" -Filter "*openblas*.lib" |
+                  Select-Object -First 1).FullName.Replace('\', '/')
+
+          Write-Host "OpenBLAS lib: $lib"
+
           cmake -B build -G Ninja . `
             -DCMAKE_C_COMPILER=cl `
             -DCMAKE_CXX_COMPILER=cl `
             -DBLA_VENDOR=OpenBLAS `
-            -DBLAS_LIBRARIES="$openblas_lib" `
-            -DLAPACK_LIBRARIES="$openblas_lib" `
-            -DCMAKE_LIBRARY_PATH="$workspace/openblas_install/lib" `
-            -DCMAKE_INCLUDE_PATH="$openblas_inc" `
-            -DCMAKE_SHARED_LINKER_FLAGS="$openblas_lib" `
+            -DBLAS_LIBRARIES="$lib" `
+            -DLAPACK_LIBRARIES="$lib" `
+            -DCMAKE_INCLUDE_PATH="$prefix/include" `
             -DFAISS_ENABLE_C_API=ON `
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=OFF `
@@ -111,24 +128,38 @@ jobs:
 
       - name: Build Faiss C API
         working-directory: faiss
+        run: cmake --build build --config Release --target faiss_c
+
+      - name: Collect artifacts
         shell: pwsh
         run: |
-          cmake --build build --config Release --target faiss_c
+          New-Item artifacts -ItemType Directory -Force | Out-Null
 
-      - name: Prepare artifacts
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path artifacts
-          Copy-Item faiss/build/c_api/Release/faiss_c.dll artifacts/
-          Copy-Item faiss/build/faiss/Release/faiss.dll artifacts/
+          # 1) Faiss DLLs
+          Get-ChildItem faiss/build -Recurse -Include faiss.dll, faiss_c.dll |
+              Copy-Item -Destination artifacts/
 
-      - name: Upload Zip Artifact
-        uses: actions/upload-artifact@v4
+          # 2) OpenBLAS DLL
+          Get-ChildItem "$env:OPENBLAS_PREFIX\bin" -Filter *.dll |
+              Copy-Item -Destination artifacts/
+
+          # 3) Fortran runtime DLLs (if flang-new linked them dynamically)
+          $patterns = @('FortranRuntime*.dll','FortranDecimal*.dll','flangrti*.dll')
+          foreach ($p in $patterns) {
+              Get-ChildItem 'C:\LLVM\bin' -Filter $p -EA SilentlyContinue |
+                  Copy-Item -Destination artifacts/
+          }
+
+          Write-Host "`n=== Final artifacts ==="
+          Get-ChildItem artifacts/ | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v4
         with:
-          compression-level: '9'
-          name: faiss-windows-${{ matrix.arch }}-binaries.zip
+          compression-level: 9
+          name: faiss-windows-${{ matrix.arch }}-binaries
           path: artifacts/*
-
+  
+  
   build-pack:
     needs: [build]
     runs-on: ubuntu-24.04
