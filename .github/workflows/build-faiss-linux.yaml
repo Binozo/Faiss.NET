@@ -82,18 +82,16 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: faiss-linux-x64-binaries.zip
-          path: .
+          path: x64
   
       - name: Download ARM64 Artifacts
         uses: actions/download-artifact@v8
         with:
           name: faiss-linux-arm64-binaries.zip
-          path: .
+          path: arm64
 
       - name: Prepare Native Runtimes
         run: |
-          mkdir -p src/FaissNET.Linux/runtimes/linux-x64/native
-          mkdir -p src/FaissNET.Linux/runtimes/linux-arm64/native
           cp x64/* src/FaissNET.Linux/runtimes/linux-x64/native/
           cp arm64/* src/FaissNET.Linux/runtimes/linux-arm64/native/
 
