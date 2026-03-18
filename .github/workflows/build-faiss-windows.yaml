@@ -166,9 +166,16 @@ jobs:
           name: faiss-windows-x64-binaries.zip
           path: x64
 
+      - name: Download arm64 Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-windows-arm64-binaries.zip
+          path: arm64
+
       - name: Prepare Native Runtimes
         run: |
           cp x64/* src/FaissNET.Windows/runtimes/windows-x64/native/
+          cp arm64/* src/FaissNET.Windows/runtimes/windows-arm64/native/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
