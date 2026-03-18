@@ -344,6 +344,23 @@ jobs:
             -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
             -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;120"
 
+      - name: Verify Faiss submodule (debug)
+        shell: pwsh
+        run: |
+          Write-Host "=== Recorded commit in superproject ==="
+          git ls-tree HEAD -- faiss
+
+          Write-Host "`n=== Actual checked-out submodule ==="
+          cd faiss
+          git rev-parse HEAD
+          git log --oneline -1
+          cd ..
+
+          Write-Host "`n=== Full submodule status ==="
+          git submodule status
+          
+          get-content faiss/faiss/gpu/utils/MergeNetworkWarp.cuh
+
       - name: Build Faiss C API
         working-directory: faiss
         shell: pwsh
