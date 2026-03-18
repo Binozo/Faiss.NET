@@ -23,6 +23,8 @@
 
     <ItemGroup>
         <ProjectReference Include="..\FaissNET.Linux\Faiss.Linux.csproj" />
+        <ProjectReference Include="..\FaissNET.Windows\Faiss.Windows.csproj" />
+        <ProjectReference Include="..\FaissNET.MacOS\Faiss.MacOS.csproj" />
     </ItemGroup>
 
 </Project>
