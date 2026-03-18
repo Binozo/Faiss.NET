@@ -9,7 +9,7 @@
         <PackageId>Faiss.NET.Linux.Gpu.Cuda</PackageId>
         <Version>1.0.0-preview.1</Version>
         <Authors>YourNameHere</Authors>
-        <Description>Native Linux (x64) CUDA binaries for the Faiss.NET GPU extension. Requires an NVIDIA GPU.</Description>
+        <Description>Native Linux (x64 and arm64) CUDA binaries for the Faiss.NET GPU extension. Requires an NVIDIA GPU.</Description>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
 
@@ -18,6 +18,14 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Content Include="runtimes\linux-arm64\native\*.so">
+            <Pack>true</Pack>
+            <PackagePath>runtimes\linux-arm64\native\</PackagePath>
+
+            <Link>%(Filename)%(Extension)</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+
         <Content Include="runtimes\linux-x64\native\*.so">
             <Pack>true</Pack>
             <PackagePath>runtimes\linux-x64\native\</PackagePath>
