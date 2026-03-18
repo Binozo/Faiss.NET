@@ -108,7 +108,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: faiss-linux-nupkg.zip
-          path: '**/*.nupkg'
+          path: 'nupkg/*.nupkg'
 
   build-cuda:
     strategy:
@@ -226,7 +226,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: faiss-linux-cuda-nupkg.zip
-          path: '**/*.nupkg'
+          path: 'nupkg/*.nupkg'
 
   build-rocm:
     strategy:
@@ -354,4 +354,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: faiss-linux-rocm-nupkg.zip
-          path: '**/*.nupkg'
+          path: 'nupkg/*.nupkg'

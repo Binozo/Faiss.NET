@@ -183,7 +183,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: faiss-windows-nupkg.zip
-          path: '**/*.nupkg'
+          path: 'nupkg/*.nupkg'
 
   build-cuda:
     strategy:
@@ -365,7 +365,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: faiss-windows-cuda-nupkg.zip
-          path: '**/*.nupkg'
+          path: 'nupkg/*.nupkg'
 
   build-rocm:
     if: false # ROCm download currently not working
