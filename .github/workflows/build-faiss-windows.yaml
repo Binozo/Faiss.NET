@@ -302,7 +302,7 @@ jobs:
             -DFAISS_ENABLE_EXTRAS=OFF `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
-            -DCMAKE_CUDA_ARCHITECTURES="50;52;60;61;75;80;86;89;90;120"
+            -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;120"
 
       - name: Build Faiss C API
         working-directory: faiss
