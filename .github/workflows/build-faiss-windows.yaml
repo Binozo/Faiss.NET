@@ -193,6 +193,7 @@ jobs:
           path: 'nupkg/*.nupkg'
 
   build-cuda:
+    if: false # Windows CUDA build is not officially supported: https://github.com/facebookresearch/faiss/issues/2985#issuecomment-1665674722
     strategy:
       matrix:
         include:
@@ -215,45 +216,6 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-
-      - name: Verify Faiss submodule (debug)
-        shell: pwsh
-        run: |
-          Write-Host "=== Recorded commit in superproject ==="
-          git ls-tree HEAD -- faiss
-
-          Write-Host "`n=== Actual checked-out submodule ==="
-          cd faiss
-          git rev-parse HEAD
-          git log --oneline -1
-          cd ..
-
-          Write-Host "`n=== Full submodule status ==="
-          git submodule status
-
-      - name: Force submodule to exact recorded commit
-        run: git submodule update --init --recursive
-
-      - name: Verify Faiss submodule (debug)
-        shell: pwsh
-        run: |
-          Write-Host "=== Recorded commit in superproject ==="
-          git ls-tree HEAD -- faiss
-
-          Write-Host "`n=== Actual checked-out submodule ==="
-          cd faiss
-          git rev-parse HEAD
-          git log --oneline -1
-          cd ..
-
-          Write-Host "`n=== Full submodule status ==="
-          git submodule status
-
-      - name: Replace faiss with Binozo/faiss fork
-        shell: pwsh
-        run: |
-          Remove-Item -Recurse -Force faiss
-          git clone --depth 1 --branch fix/windows-cuda-build https://github.com/Binozo/faiss.git faiss
 
       - name: Install CUDA Toolkit 12.8
         uses: Jimver/cuda-toolkit@v0.2.30
