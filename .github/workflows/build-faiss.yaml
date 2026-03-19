@@ -31,9 +31,9 @@ jobs:
           echo "Checking workflows for commit: $COMMIT_SHA"
           
           # Get status of all three workflows for this commit
-          LINUX=$(gh run list -l main -w "Build and Package Faiss Linux" --commit "$COMMIT_SHA" --json conclusion,status -q '.[0]')
-          MACOS=$(gh run list -l main -w "Build and Package Faiss MacOS" --commit "$COMMIT_SHA" --json conclusion,status -q '.[0]')
-          WINDOWS=$(gh run list -l main -w "Build and Package Faiss Windows" --commit "$COMMIT_SHA" --json conclusion,status -q '.[0]')
+          LINUX=$(gh run list -b main -w "Build and Package Faiss Linux" --commit "$COMMIT_SHA" --json conclusion,status -q '.[0]')
+          MACOS=$(gh run list -b main -w "Build and Package Faiss MacOS" --commit "$COMMIT_SHA" --json conclusion,status -q '.[0]')
+          WINDOWS=$(gh run list -b main -w "Build and Package Faiss Windows" --commit "$COMMIT_SHA" --json conclusion,status -q '.[0]')
           
           echo "Linux: $LINUX"
           echo "MacOS: $MACOS"
