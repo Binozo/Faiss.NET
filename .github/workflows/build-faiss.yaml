@@ -1,119 +1,954 @@
-name: Package Faiss CPU builds
+name: Build and Package Faiss
 
 on:
-  workflow_run:
-    workflows:
-      - "Build and Package Faiss Linux"
-      - "Build and Package Faiss MacOS"
-      - "Build and Package Faiss Windows"
-    types:
-      - completed
-    branches:
-      - main
+  push:
+    branches: [ main ]
+    paths:
+      - "faiss"
   workflow_dispatch:
 
 jobs:
-  check-all-complete:
-    runs-on: ubuntu-24.04
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
-    outputs:
-      all-complete: ${{ steps.check.outputs.all-complete }}
-      run-id: ${{ steps.check.outputs.run-id }}
-    
-    steps:
-      - name: Check if all CPU workflows completed
-        id: check
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          COMMIT_SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
-          REPO="${{ github.repository }}"
-          
-          echo "Checking workflows for commit: $COMMIT_SHA"
-          
-          # Get status of all three workflows for this commit
-          LINUX=$(gh run list -R "$REPO" -b main -w "Build and Package Faiss Linux" --commit "$COMMIT_SHA" --json conclusion,status -q '.[0]')
-          MACOS=$(gh run list -R "$REPO" -b main -w "Build and Package Faiss MacOS" --commit "$COMMIT_SHA" --json conclusion,status -q '.[0]')
-          WINDOWS=$(gh run list -R "$REPO" -b main -w "Build and Package Faiss Windows" --commit "$COMMIT_SHA" --json conclusion,status -q '.[0]')
-          
-          echo "Linux: $LINUX"
-          echo "MacOS: $MACOS"
-          echo "Windows: $WINDOWS"
-          
-          # Check if all have completed successfully
-          LINUX_DONE=$(echo "$LINUX" | jq -r '.conclusion == "success"')
-          MACOS_DONE=$(echo "$MACOS" | jq -r '.conclusion == "success"')
-          WINDOWS_DONE=$(echo "$WINDOWS" | jq -r '.conclusion == "success"')
-          
-          if [[ "$LINUX_DONE" == "true" && "$MACOS_DONE" == "true" && "$WINDOWS_DONE" == "true" ]]; then
-            echo "all-complete=true" >> $GITHUB_OUTPUT
-            echo "run-id=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
-          else
-            echo "all-complete=false" >> $GITHUB_OUTPUT
-          fi
+  # ============================================================================
+  # Linux CPU Builds
+  # ============================================================================
+  build-linux:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+            opt_level: generic
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            opt_level: generic
+    runs-on: ${{ matrix.runner }}
 
-  merge-artifacts:
-    needs: check-all-complete
-    if: needs.check-all-complete.outputs.all-complete == 'true'
-    runs-on: ubuntu-24.04
-    
     steps:
-      - name: Download Linux x64 Artifacts
+    - name: Install Git
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git
+
+    - uses: actions/checkout@v6
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Install Build Dependencies
+      run: |
+        sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev
+
+    - name: Configure Faiss
+      working-directory: faiss
+      run: |
+        cmake -B build . \
+          -DFAISS_ENABLE_C_API=ON \
+          -DBUILD_SHARED_LIBS=ON \
+          -DFAISS_ENABLE_GPU=OFF \
+          -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
+          -DFAISS_ENABLE_MKL=OFF \
+          -DFAISS_ENABLE_PYTHON=OFF \
+          -DBUILD_TESTING=OFF \
+          -DFAISS_ENABLE_EXTRAS=OFF \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+          -DCMAKE_INSTALL_RPATH='$ORIGIN'
+
+    - name: Build Faiss C API
+      working-directory: faiss
+      run: |
+        make -C build -j $(nproc) faiss_c
+
+    - name: Prepare artifacts
+      run: |
+        mkdir -p artifacts
+        cp faiss/build/c_api/libfaiss_c.so artifacts/
+        cp faiss/build/faiss/libfaiss.so artifacts/
+
+    - name: Upload Zip Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        compression-level: '9'
+        name: faiss-linux-${{ matrix.arch }}-binaries.zip
+        path: artifacts/*
+
+  build-linux-pack:
+    needs: [build-linux]
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download x64 Artifacts
         uses: actions/download-artifact@v4
         with:
           name: faiss-linux-x64-binaries.zip
-          path: merged/linux-x64
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ needs.check-all-complete.outputs.run-id }}
+          path: x64
 
-      - name: Download Linux ARM64 Artifacts
+      - name: Download ARM64 Artifacts
         uses: actions/download-artifact@v4
         with:
           name: faiss-linux-arm64-binaries.zip
-          path: merged/linux-arm64
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ needs.check-all-complete.outputs.run-id }}
+          path: arm64
 
-      - name: Download MacOS x64 Artifacts
+      - name: Prepare Native Runtimes
+        run: |
+          cp x64/* src/FaissNET.Linux/runtimes/linux-x64/native/
+          cp arm64/* src/FaissNET.Linux/runtimes/linux-arm64/native/
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Linux/Faiss.Linux.csproj -c Release -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v7
+        with:
+          name: faiss-linux-nupkg.zip
+          path: 'nupkg/*.nupkg'
+
+  # ============================================================================
+  # Linux CUDA Builds
+  # ============================================================================
+  build-linux-cuda:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+            cuda_arch: x86_64
+            opt_level: generic
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            cuda_arch: sbsa
+            opt_level: generic
+    runs-on: ${{ matrix.runner }}
+
+    env:
+      CUDA_HOME: /usr/local/cuda-12.8
+
+    steps:
+      - name: Add CUDA to PATH
+        run: echo "/usr/local/cuda-12.8/bin" >> $GITHUB_PATH
+
+      - name: Install Git
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git
+
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install CUDA Repository
+        run: |
+          wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/${{ matrix.cuda_arch }}/cuda-keyring_1.1-1_all.deb
+          sudo dpkg -i cuda-keyring_1.1-1_all.deb
+          sudo apt-get update
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev \
+            cuda-nvcc-12-8 cuda-cudart-dev-12-8 cuda-profiler-api-12-8 libcublas-dev-12-8 libcurand-dev-12-8
+
+      - name: Configure Faiss
+        working-directory: faiss
+        run: |
+          cmake -B build . \
+            -DFAISS_ENABLE_C_API=ON \
+            -DBUILD_SHARED_LIBS=ON \
+            -DFAISS_ENABLE_GPU=ON \
+            -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
+            -DFAISS_ENABLE_MKL=OFF \
+            -DFAISS_ENABLE_PYTHON=OFF \
+            -DBUILD_TESTING=OFF \
+            -DFAISS_ENABLE_EXTRAS=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+            -DCMAKE_INSTALL_RPATH='$ORIGIN' \
+            -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;120"
+
+      - name: Build Faiss C API
+        working-directory: faiss
+        run: |
+          make -C build -j $(nproc) faiss_c
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts
+          cp faiss/build/c_api/libfaiss_c.so artifacts/
+          cp faiss/build/faiss/libfaiss.so artifacts/
+
+      - name: Upload Zip Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          compression-level: '9'
+          name: faiss-linux-${{ matrix.arch }}-cuda-binaries.zip
+          path: artifacts/*
+
+  build-linux-cuda-pack:
+    needs: [build-linux-cuda]
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download x64 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faiss-linux-x64-cuda-binaries.zip
+          path: x64-cuda
+
+      - name: Download ARM64 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faiss-linux-arm64-cuda-binaries.zip
+          path: arm64-cuda
+
+      - name: Prepare Native Runtimes
+        run: |
+          cp x64-cuda/* src/FaissNET.Linux.Gpu.Cuda/runtimes/linux-x64/native/
+          cp arm64-cuda/* src/FaissNET.Linux.Gpu.Cuda/runtimes/linux-arm64/native/
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Linux.Gpu.Cuda/Faiss.Linux.Gpu.Cuda.csproj -c Release -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v7
+        with:
+          name: faiss-linux-cuda-nupkg.zip
+          path: 'nupkg/*.nupkg'
+
+  # ============================================================================
+  # Linux ROCm Builds
+  # ============================================================================
+  build-linux-rocm:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+            opt_level: generic
+            rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Install Git
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git
+
+      - uses: endersonmenezes/free-disk-space@v3
+        with:
+          remove_android: true
+          remove_dotnet: true
+          remove_haskell: true
+          remove_tool_cache: true
+          remove_swap: true
+          remove_packages_one_command: true
+
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install ROCm 7.2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg2
+
+          sudo apt-get install -y \
+            libc6 libstdc++6 libgcc-s1 python3 python3-pip python3-dev \
+            zlib1g libzstd1 libnuma1 libelf-dev pkg-config libdrm-dev \
+            libtinfo-dev libbz2-1.0 libsqlite3-0 libgomp1 build-essential
+
+          wget https://repo.radeon.com/amdgpu-install/7.2/ubuntu/noble/amdgpu-install_7.2.70200-1_all.deb
+          sudo dpkg -i amdgpu-install_7.2.70200-1_all.deb
+
+          # Rewrite the dead amdgpu/7.2 repo to the real one (30.30)
+          sudo sed -i 's|amdgpu/7.2|amdgpu/30.30|g' /etc/apt/sources.list.d/amdgpu*.list || true
+
+          sudo apt-get update
+
+          sudo amdgpu-install --usecase=hip,rocm --no-dkms --accept-eula -y
+          sudo apt-get install -f -y
+
+      - name: Add ROCm to PATH
+        run: echo "/opt/rocm/bin" >> $GITHUB_PATH
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev hip-dev
+
+      - name: Configure Faiss
+        working-directory: faiss
+        run: |
+          cmake -B build . \
+            -DFAISS_ENABLE_C_API=ON \
+            -DBUILD_SHARED_LIBS=ON \
+            -DFAISS_ENABLE_GPU=ON \
+            -DFAISS_ENABLE_ROCM=ON \
+            -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
+            -DFAISS_ENABLE_MKL=OFF \
+            -DFAISS_ENABLE_PYTHON=OFF \
+            -DBUILD_TESTING=OFF \
+            -DFAISS_ENABLE_EXTRAS=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+            -DCMAKE_INSTALL_RPATH='$ORIGIN' \
+            -DHIP_ARCHITECTURES="${{ matrix.rocm_arch }}"
+
+      - name: Build Faiss C API
+        working-directory: faiss
+        run: |
+          make -C build -j $(nproc) faiss_c
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts
+          cp faiss/build/c_api/libfaiss_c.so artifacts/
+          cp faiss/build/faiss/libfaiss.so artifacts/
+
+      - name: Upload Zip Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          compression-level: '9'
+          name: faiss-linux-${{ matrix.arch }}-rocm-binaries.zip
+          path: artifacts/*
+
+  build-linux-rocm-pack:
+    needs: [build-linux-rocm]
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download x64 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faiss-linux-x64-rocm-binaries.zip
+          path: x64-rocm
+
+      - name: Prepare Native Runtimes
+        run: |
+          cp x64-rocm/* src/FaissNET.Linux.Gpu.Rocm/runtimes/linux-x64/native/
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Linux.Gpu.Rocm/Faiss.Linux.Gpu.Rocm.csproj -c Release -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v7
+        with:
+          name: faiss-linux-rocm-nupkg.zip
+          path: 'nupkg/*.nupkg'
+
+  # ============================================================================
+  # MacOS CPU Builds
+  # ============================================================================
+  build-macos:
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-26
+            opt_level: sve
+          - arch: x64
+            runner: macos-26-intel
+            opt_level: avx2
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Install Build Dependencies
+      run: |
+        brew install libomp
+
+    - name: Configure Faiss
+      working-directory: faiss
+      run: |
+        LIBOMP_PATH=$(brew --prefix libomp)
+
+        cmake -B build . \
+          -DFAISS_ENABLE_C_API=ON \
+          -DBUILD_SHARED_LIBS=ON \
+          -DFAISS_ENABLE_GPU=OFF \
+          -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
+          -DFAISS_ENABLE_MKL=OFF \
+          -DCMAKE_CXX_FLAGS="-I$LIBOMP_PATH/include" \
+          -DOpenMP_ROOT=$LIBOMP_PATH \
+          -DFAISS_ENABLE_PYTHON=OFF \
+          -DBUILD_TESTING=OFF \
+          -DFAISS_ENABLE_EXTRAS=OFF \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+          -DCMAKE_INSTALL_RPATH='$ORIGIN'
+
+    - name: Build Faiss C API
+      working-directory: faiss
+      run: |
+        cmake --build build --config Release --target faiss_c
+
+    - name: Prepare artifacts
+      run: |
+        mkdir -p artifacts
+        cp faiss/build/c_api/libfaiss_c.dylib artifacts/
+        cp faiss/build/faiss/libfaiss.dylib artifacts/
+
+    - name: Upload Zip Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        compression-level: '9'
+        name: faiss-macos-${{ matrix.arch }}-binaries.zip
+        path: artifacts/*
+
+  build-macos-pack:
+    needs: [build-macos]
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download x64 Artifacts
         uses: actions/download-artifact@v4
         with:
           name: faiss-macos-x64-binaries.zip
-          path: merged/macos-x64
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ needs.check-all-complete.outputs.run-id }}
+          path: x64
 
-      - name: Download MacOS ARM64 Artifacts
+      - name: Download ARM64 Artifacts
         uses: actions/download-artifact@v4
         with:
           name: faiss-macos-arm64-binaries.zip
-          path: merged/macos-arm64
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ needs.check-all-complete.outputs.run-id }}
+          path: arm64
 
-      - name: Download Windows x64 Artifacts
+      - name: Prepare Native Runtimes
+        run: |
+          cp x64/* src/FaissNET.MacOS/runtimes/macos-x64/native/
+          cp arm64/* src/FaissNET.MacOS/runtimes/macos-arm64/native/
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.MacOS/Faiss.MacOS.csproj -c Release -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v7
+        with:
+          name: faiss-macos-nupkg.zip
+          path: 'nupkg/*.nupkg'
+
+  # ============================================================================
+  # Windows CPU Builds
+  # ============================================================================
+  build-windows:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-2025
+            opt_level: generic
+            msvc_arch: amd64
+            llvm_asset: LLVM-19.1.7-win64.exe
+            # DYNAMIC_ARCH builds kernels for many x64 CPUs, picks the best at runtime
+            openblas_flags: >-
+              -DDYNAMIC_ARCH=ON
+          - arch: arm64
+            runner: windows-11-arm
+            opt_level: generic
+            msvc_arch: arm64
+            llvm_asset: LLVM-19.1.7-woa64.exe
+            openblas_flags: >-
+              -DTARGET=ARMV8
+              -DARCH=arm64
+    runs-on: ${{ matrix.runner }}
+
+    env:
+      LLVM_VERSION: "19.1.7"
+      OPENBLAS_VERSION: "0.3.31"
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Install cmake + ninja
+        run: uv pip install --system cmake ninja
+
+      # MSVC environment — provides headers, libs, link.exe
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.msvc_arch }}
+
+      # Provides clang-cl (C) + flang-new (Fortran)
+      - name: Install LLVM ${{ env.LLVM_VERSION }}
+        shell: pwsh
+        run: |
+          $url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/${{ matrix.llvm_asset }}"
+          Write-Host "Downloading $url ..."
+          Invoke-WebRequest $url -OutFile llvm.exe -MaximumRetryCount 3
+
+          Start-Process .\llvm.exe -ArgumentList '/S','/D=C:\LLVM' -Wait -NoNewWindow
+          'C:\LLVM\bin' | Out-File $env:GITHUB_PATH -Append
+
+          clang-cl --version
+
+      # Build OpenBLAS from source (MSVC ABI)
+      - name: Build OpenBLAS ${{ env.OPENBLAS_VERSION }}
+        shell: pwsh
+        run: |
+          git clone --depth 1 -b "v${{ env.OPENBLAS_VERSION }}" `
+              https://github.com/OpenMathLib/OpenBLAS.git openblas_src
+          cd openblas_src
+
+          $install = "${{ github.workspace }}\openblas_install"
+
+          # C_LAPACK = use f2c-translated C sources instead of Fortran
+          # NOFORTRAN = skip Fortran compiler entirely
+          cmake -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_C_COMPILER=clang-cl `
+            -DC_LAPACK=ON `
+            -DNOFORTRAN=ON `
+            -DBUILD_SHARED_LIBS=ON `
+            -DBINARY=64 `
+            ${{ matrix.openblas_flags }} `
+            -DCMAKE_INSTALL_PREFIX="$install"
+
+          cmake --build build --config Release -j
+          cmake --install build
+
+          echo "OPENBLAS_PREFIX=$install" | Out-File $env:GITHUB_ENV -Append
+
+          Get-ChildItem $install -Recurse -File | Format-Table FullName, Length
+
+      - name: Configure Faiss
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          $prefix = $env:OPENBLAS_PREFIX.Replace('\', '/')
+          $lib = (Get-ChildItem "$prefix/lib" -Filter "*openblas*.lib" |
+                  Select-Object -First 1).FullName.Replace('\', '/')
+
+          Write-Host "OpenBLAS lib: $lib"
+
+          cmake -B build -G Ninja . `
+            -DCMAKE_C_COMPILER=cl `
+            -DCMAKE_CXX_COMPILER=cl `
+            -DBLA_VENDOR=OpenBLAS `
+            -DBLAS_LIBRARIES="$lib" `
+            -DLAPACK_LIBRARIES="$lib" `
+            -DCMAKE_INCLUDE_PATH="$prefix/include" `
+            -DFAISS_ENABLE_C_API=ON `
+            -DBUILD_SHARED_LIBS=ON `
+            -DFAISS_ENABLE_GPU=OFF `
+            -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} `
+            -DFAISS_ENABLE_PYTHON=OFF `
+            -DFAISS_ENABLE_MKL=OFF `
+            -DBUILD_TESTING=OFF `
+            -DFAISS_ENABLE_EXTRAS=OFF `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
+
+      - name: Build Faiss C API
+        working-directory: faiss
+        run: cmake --build build --config Release --target faiss_c
+
+      - name: Collect artifacts
+        shell: pwsh
+        run: |
+          New-Item artifacts -ItemType Directory -Force | Out-Null
+
+          # Faiss DLLs
+          Get-ChildItem faiss/build -Recurse -Include faiss.dll, faiss_c.dll |
+              Copy-Item -Destination artifacts/
+
+          # OpenBLAS DLL
+          Get-ChildItem "$env:OPENBLAS_PREFIX\bin" -Filter *.dll |
+              Copy-Item -Destination artifacts/
+
+          Write-Host "`n=== Final artifacts ==="
+          Get-ChildItem artifacts/ | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v7
+        with:
+          compression-level: 9
+          name: faiss-windows-${{ matrix.arch }}-binaries.zip
+          path: artifacts/*
+
+  build-windows-pack:
+    needs: [build-windows]
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download x64 Artifacts
         uses: actions/download-artifact@v4
         with:
           name: faiss-windows-x64-binaries.zip
-          path: merged/windows-x64
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ needs.check-all-complete.outputs.run-id }}
+          path: x64
 
-      - name: Download Windows ARM64 Artifacts
+      - name: Download ARM64 Artifacts
         uses: actions/download-artifact@v4
         with:
           name: faiss-windows-arm64-binaries.zip
-          path: merged/windows-arm64
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ needs.check-all-complete.outputs.run-id }}
+          path: arm64
 
-      - name: Create Merged Archive
+      - name: Prepare Native Runtimes
         run: |
-          cd merged
-          zip -r ../faiss-cpu-all-platforms.zip .
+          cp x64/* src/FaissNET.Windows/runtimes/windows-x64/native/
+          cp arm64/* src/FaissNET.Windows/runtimes/windows-arm64/native/
 
-      - name: Upload Merged Artifact
-        uses: actions/upload-artifact@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
         with:
-          name: faiss-cpu-all-platforms.zip
-          path: faiss-cpu-all-platforms.zip
-          retention-days: 30
+          dotnet-version: '9.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Windows/Faiss.Windows.csproj -c Release -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v7
+        with:
+          name: faiss-windows-nupkg.zip
+          path: 'nupkg/*.nupkg'
+
+  # ============================================================================
+  # Windows CUDA Builds
+  # ============================================================================
+  build-windows-cuda:
+    if: false # Windows CUDA build is not officially supported: https://github.com/facebookresearch/faiss/issues/2985#issuecomment-1665674722
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-2025
+            opt_level: generic
+            msvc_arch: amd64
+            llvm_asset: LLVM-19.1.7-win64.exe
+            # DYNAMIC_ARCH builds kernels for many x64 CPUs, picks the best at runtime
+            openblas_flags: >-
+              -DDYNAMIC_ARCH=ON
+    runs-on: ${{ matrix.runner }}
+
+    env:
+      LLVM_VERSION: "19.1.7"
+      OPENBLAS_VERSION: "0.3.31"
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install CUDA Toolkit 12.8
+        uses: Jimver/cuda-toolkit@v0.2.30
+        id: cuda-toolkit
+        with:
+          cuda: '12.8.0'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install Build Dependencies (uv)
+        shell: pwsh
+        run: |
+          uv pip install --system cmake ninja
+
+      # MSVC environment — provides headers, libs, link.exe
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.msvc_arch }}
+
+      # Provides clang-cl (C) + flang-new (Fortran)
+      - name: Install LLVM ${{ env.LLVM_VERSION }}
+        shell: pwsh
+        run: |
+          $url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/${{ matrix.llvm_asset }}"
+          Write-Host "Downloading $url ..."
+          Invoke-WebRequest $url -OutFile llvm.exe -MaximumRetryCount 3
+
+          Start-Process .\llvm.exe -ArgumentList '/S','/D=C:\LLVM' -Wait -NoNewWindow
+          'C:\LLVM\bin' | Out-File $env:GITHUB_PATH -Append
+
+          clang-cl --version
+
+      # Build OpenBLAS from source (MSVC ABI)
+      - name: Build OpenBLAS ${{ env.OPENBLAS_VERSION }}
+        shell: pwsh
+        run: |
+          git clone --depth 1 -b "v${{ env.OPENBLAS_VERSION }}" `
+              https://github.com/OpenMathLib/OpenBLAS.git openblas_src
+          cd openblas_src
+
+          $install = "${{ github.workspace }}\openblas_install"
+
+          # C_LAPACK = use f2c-translated C sources instead of Fortran
+          # NOFORTRAN = skip Fortran compiler entirely
+          cmake -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_C_COMPILER=clang-cl `
+            -DC_LAPACK=ON `
+            -DNOFORTRAN=ON `
+            -DBUILD_SHARED_LIBS=ON `
+            -DBINARY=64 `
+            ${{ matrix.openblas_flags }} `
+            -DCMAKE_INSTALL_PREFIX="$install"
+
+          cmake --build build --config Release -j
+          cmake --install build
+
+          echo "OPENBLAS_PREFIX=$install" | Out-File $env:GITHUB_ENV -Append
+
+          Get-ChildItem $install -Recurse -File | Format-Table FullName, Length
+
+      - name: Configure Faiss
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          $prefix = $env:OPENBLAS_PREFIX.Replace('\', '/')
+          $lib = (Get-ChildItem "$prefix/lib" -Filter "*openblas*.lib" |
+                  Select-Object -First 1).FullName.Replace('\', '/')
+
+          Write-Host "OpenBLAS lib: $lib"
+
+          cmake -B build -G Ninja . `
+            -DCMAKE_C_COMPILER=cl `
+            -DCMAKE_CXX_COMPILER=cl `
+            -DBLA_VENDOR=OpenBLAS `
+            -DBLAS_LIBRARIES="$lib" `
+            -DLAPACK_LIBRARIES="$lib" `
+            -DCMAKE_INCLUDE_PATH="$prefix/include" `
+            -DFAISS_ENABLE_C_API=ON `
+            -DBUILD_SHARED_LIBS=ON `
+            -DFAISS_ENABLE_GPU=ON `
+            -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} `
+            -DFAISS_ENABLE_PYTHON=OFF `
+            -DFAISS_ENABLE_MKL=OFF `
+            -DBUILD_TESTING=OFF `
+            -DFAISS_ENABLE_EXTRAS=OFF `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
+            -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;120"
+
+      - name: Verify Faiss submodule (debug)
+        shell: pwsh
+        run: |
+          Write-Host "=== Recorded commit in superproject ==="
+          git ls-tree HEAD -- faiss
+
+          Write-Host "`n=== Actual checked-out submodule ==="
+          cd faiss
+          git rev-parse HEAD
+          git log --oneline -1
+          cd ..
+
+          Write-Host "`n=== Full submodule status ==="
+          git submodule status
+
+      - name: Build Faiss C API
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --target faiss_c
+
+      - name: Collect artifacts
+        shell: pwsh
+        run: |
+          New-Item artifacts -ItemType Directory -Force | Out-Null
+
+          # Faiss DLLs
+          Get-ChildItem faiss/build -Recurse -Include faiss.dll, faiss_c.dll |
+              Copy-Item -Destination artifacts/
+
+          # OpenBLAS DLL
+          Get-ChildItem "$env:OPENBLAS_PREFIX\bin" -Filter *.dll |
+              Copy-Item -Destination artifacts/
+
+          Write-Host "`n=== Final artifacts ==="
+          Get-ChildItem artifacts/ | Format-Table Name, Length
+
+      - name: Upload Zip Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          compression-level: '9'
+          name: faiss-windows-${{ matrix.arch }}-cuda-binaries.zip
+          path: artifacts/*
+
+  build-windows-cuda-pack:
+    needs: [build-windows-cuda]
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download x64 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faiss-windows-x64-cuda-binaries.zip
+          path: x64-cuda
+
+      - name: Prepare Native Runtimes
+        run: |
+          cp x64-cuda/* src/FaissNET.Windows.Gpu.Cuda/runtimes/windows-x64/native/
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Windows.Gpu.Cuda/Faiss.Windows.Gpu.Cuda.csproj -c Release -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v7
+        with:
+          name: faiss-windows-cuda-nupkg.zip
+          path: 'nupkg/*.nupkg'
+
+  # ============================================================================
+  # Windows ROCm Builds
+  # ============================================================================
+  build-windows-rocm:
+    if: false # ROCm download currently not working
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-2025
+            opt_level: generic
+            rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install HIP SDK
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-26.Q1-Win11-For-HIP.exe" `
+            -OutFile hip-sdk.exe -UseBasicParsing -MaximumRetryCount 3 -TimeoutSec 300
+
+          Start-Process -FilePath ".\hip-sdk.exe" -ArgumentList "/S" -NoNewWindow -Wait
+
+          $rocmPath = "C:\Program Files\AMD\ROCm\7.1"
+          echo "$rocmPath\bin" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
+          echo "$rocmPath\hip\bin" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install Build Dependencies (uv)
+        shell: pwsh
+        run: |
+          uv pip install --system cmake ninja
+
+      - name: Setup MSVC Environment
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup vcpkg and install OpenBLAS
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+          vcpkgJsonGlob: '**/vcpkg.json'
+          runVcpkgInstall: true
+          vcpkgGitCommitId: 'master'
+          runVcpkgFormatString: '[`install`, `openblas:${{ matrix.arch }}-windows`]'
+
+      - name: Configure Faiss
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          cmake -B build -G Ninja . `
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
+            -DFAISS_ENABLE_C_API=ON `
+            -DBUILD_SHARED_LIBS=ON `
+            -DFAISS_ENABLE_GPU=ON `
+            -DFAISS_ENABLE_ROCM=ON `
+            -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} `
+            -DFAISS_ENABLE_PYTHON=OFF `
+            -DFAISS_ENABLE_MKL=OFF `
+            -DBUILD_TESTING=OFF `
+            -DFAISS_ENABLE_EXTRAS=OFF `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
+            -DBLA_VENDOR=OpenBLAS `
+            -DHIP_ARCHITECTURES="${{ matrix.rocm_arch }}"
+
+      - name: Build Faiss C API
+        working-directory: faiss
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --target faiss_c
+
+      - name: Prepare artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts
+          Copy-Item faiss/build/c_api/Release/faiss_c.dll artifacts/
+          Copy-Item faiss/build/faiss/Release/faiss.dll artifacts/
+
+      - name: Upload Zip Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          compression-level: '9'
+          name: faiss-windows-${{ matrix.arch }}-rocm-binaries.zip
+          path: artifacts/*
