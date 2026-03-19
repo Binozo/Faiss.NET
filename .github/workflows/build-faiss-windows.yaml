@@ -249,6 +249,12 @@ jobs:
           Write-Host "`n=== Full submodule status ==="
           git submodule status
 
+      - name: Replace faiss with Binozo/faiss fork
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force faiss
+          git clone --depth 1 --branch fix/windows-cuda-build https://github.com/Binozo/faiss.git faiss
+
       - name: Install CUDA Toolkit 12.8
         uses: Jimver/cuda-toolkit@v0.2.30
         id: cuda-toolkit
