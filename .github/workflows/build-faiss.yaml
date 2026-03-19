@@ -1,0 +1,118 @@
+name: Package Faiss CPU builds
+
+on:
+  workflow_run:
+    workflows:
+      - "Build and Package Faiss Linux"
+      - "Build and Package Faiss MacOS"
+      - "Build and Package Faiss Windows"
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  check-all-complete:
+    runs-on: ubuntu-24.04
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    outputs:
+      all-complete: ${{ steps.check.outputs.all-complete }}
+      run-id: ${{ steps.check.outputs.run-id }}
+    
+    steps:
+      - name: Check if all CPU workflows completed
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMIT_SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+          
+          echo "Checking workflows for commit: $COMMIT_SHA"
+          
+          # Get status of all three workflows for this commit
+          LINUX=$(gh run list -l main -w "Build and Package Faiss Linux" --commit "$COMMIT_SHA" --json conclusion,status -q '.[0]')
+          MACOS=$(gh run list -l main -w "Build and Package Faiss MacOS" --commit "$COMMIT_SHA" --json conclusion,status -q '.[0]')
+          WINDOWS=$(gh run list -l main -w "Build and Package Faiss Windows" --commit "$COMMIT_SHA" --json conclusion,status -q '.[0]')
+          
+          echo "Linux: $LINUX"
+          echo "MacOS: $MACOS"
+          echo "Windows: $WINDOWS"
+          
+          # Check if all have completed successfully
+          LINUX_DONE=$(echo "$LINUX" | jq -r '.conclusion == "success"')
+          MACOS_DONE=$(echo "$MACOS" | jq -r '.conclusion == "success"')
+          WINDOWS_DONE=$(echo "$WINDOWS" | jq -r '.conclusion == "success"')
+          
+          if [[ "$LINUX_DONE" == "true" && "$MACOS_DONE" == "true" && "$WINDOWS_DONE" == "true" ]]; then
+            echo "all-complete=true" >> $GITHUB_OUTPUT
+            echo "run-id=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
+          else
+            echo "all-complete=false" >> $GITHUB_OUTPUT
+          fi
+
+  merge-artifacts:
+    needs: check-all-complete
+    if: needs.check-all-complete.outputs.all-complete == 'true'
+    runs-on: ubuntu-24.04
+    
+    steps:
+      - name: Download Linux x64 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faiss-linux-x64-binaries.zip
+          path: merged/linux-x64
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ needs.check-all-complete.outputs.run-id }}
+
+      - name: Download Linux ARM64 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faiss-linux-arm64-binaries.zip
+          path: merged/linux-arm64
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ needs.check-all-complete.outputs.run-id }}
+
+      - name: Download MacOS x64 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faiss-macos-x64-binaries.zip
+          path: merged/macos-x64
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ needs.check-all-complete.outputs.run-id }}
+
+      - name: Download MacOS ARM64 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faiss-macos-arm64-binaries.zip
+          path: merged/macos-arm64
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ needs.check-all-complete.outputs.run-id }}
+
+      - name: Download Windows x64 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faiss-windows-x64-binaries.zip
+          path: merged/windows-x64
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ needs.check-all-complete.outputs.run-id }}
+
+      - name: Download Windows ARM64 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: faiss-windows-arm64-binaries.zip
+          path: merged/windows-arm64
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ needs.check-all-complete.outputs.run-id }}
+
+      - name: Create Merged Archive
+        run: |
+          cd merged
+          zip -r ../faiss-cpu-all-platforms.zip .
+
+      - name: Upload Merged Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: faiss-cpu-all-platforms.zip
+          path: faiss-cpu-all-platforms.zip
+          retention-days: 30
