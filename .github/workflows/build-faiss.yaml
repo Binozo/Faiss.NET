@@ -686,6 +686,15 @@ jobs:
           Write-Host "`n=== Final artifacts ==="
           Get-ChildItem artifacts/ | Format-Table Name, Length
 
+      - name: Verify DLL architecture
+        shell: pwsh
+        run: |
+          # dumpbin is available because msvc-dev-cmd ran earlier
+          Get-ChildItem artifacts -Filter *.dll | ForEach-Object {
+            $info = & dumpbin.exe /headers $_.FullName | Select-String "machine \(.*\)" -First 1
+            Write-Host "$($_.Name) → $($info.Line)"
+          }
+
       - uses: actions/upload-artifact@v7
         with:
           compression-level: 9
