@@ -686,13 +686,29 @@ jobs:
           Write-Host "`n=== Final artifacts ==="
           Get-ChildItem artifacts/ | Format-Table Name, Length
 
-      - name: Verify DLL architecture
+      - name: Verify DLL architecture (PE header)
         shell: pwsh
         run: |
-          # dumpbin is available because msvc-dev-cmd ran earlier
+          function Get-DllMachineType {
+              param([string]$Path)
+              try {
+                  $data = [System.IO.File]::ReadAllBytes($Path)
+                  if ($data[0] -ne 0x4D -or $data[1] -ne 0x5A) { return "Not a PE file" }
+                  $peOffset = [BitConverter]::ToInt32($data, 0x3C)
+                  $machine = [BitConverter]::ToUInt16($data, $peOffset + 4)
+                  switch ($machine) {
+                      0x014C { "x86 (32-bit)" }
+                      0x8664 { "x64 (AMD64)" }
+                      0xAA64 { "ARM64" }
+                      default { "Unknown (0x{0:X4})" -f $machine }
+                  }
+              } catch { "Error reading file: $_" }
+          }
+
+          Write-Host "=== DLL Architecture Check ==="
           Get-ChildItem artifacts -Filter *.dll | ForEach-Object {
-            $info = & dumpbin.exe /headers $_.FullName | Select-String "machine \(.*\)" -First 1
-            Write-Host "$($_.Name) → $($info.Line)"
+              $type = Get-DllMachineType $_.FullName
+              Write-Host "$($_.Name) → $type"
           }
 
       - uses: actions/upload-artifact@v7
