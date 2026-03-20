@@ -686,31 +686,6 @@ jobs:
           Write-Host "`n=== Final artifacts ==="
           Get-ChildItem artifacts/ | Format-Table Name, Length
 
-      - name: Verify DLL architecture (PE header)
-        shell: pwsh
-        run: |
-          function Get-DllMachineType {
-              param([string]$Path)
-              try {
-                  $data = [System.IO.File]::ReadAllBytes($Path)
-                  if ($data[0] -ne 0x4D -or $data[1] -ne 0x5A) { return "Not a PE file" }
-                  $peOffset = [BitConverter]::ToInt32($data, 0x3C)
-                  $machine = [BitConverter]::ToUInt16($data, $peOffset + 4)
-                  switch ($machine) {
-                      0x014C { "x86 (32-bit)" }
-                      0x8664 { "x64 (AMD64)" }
-                      0xAA64 { "ARM64" }
-                      default { "Unknown (0x{0:X4})" -f $machine }
-                  }
-              } catch { "Error reading file: $_" }
-          }
-
-          Write-Host "=== DLL Architecture Check ==="
-          Get-ChildItem artifacts -Filter *.dll | ForEach-Object {
-              $type = Get-DllMachineType $_.FullName
-              Write-Host "$($_.Name) → $type"
-          }
-
       - uses: actions/upload-artifact@v7
         with:
           compression-level: 9
@@ -744,6 +719,18 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path src/FaissNET.Windows/runtimes/windows-${{ matrix.arch }}/native/
           Copy-Item artifacts/* src/FaissNET.Windows/runtimes/windows-${{ matrix.arch }}/native/
+          
+      - name: Copy native DLLs next to test executable (critical for P/Invoke)
+        shell: pwsh
+        run: |
+          $testOutput = "src/FaissNET.Tests/bin/Release/net8.0"
+          $nativePath  = "src/FaissNET.Windows/runtimes/windows-${{ matrix.arch }}/native"
+
+          Write-Host "Copying natives → $testOutput"
+          Copy-Item "$nativePath/*.dll" $testOutput -Force -Verbose
+
+          Write-Host "`n=== Files now in test output ==="
+          Get-ChildItem $testOutput -Filter "*faiss*.dll","*openblas*.dll" | Format-Table Name, Length
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
