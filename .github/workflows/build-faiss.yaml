@@ -72,8 +72,43 @@ jobs:
         name: faiss-linux-${{ matrix.arch }}-binaries.zip
         path: artifacts/*
 
-  build-linux-pack:
+  test-linux:
     needs: [build-linux]
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-linux-${{ matrix.arch }}-binaries.zip
+          path: artifacts
+
+      - name: Prepare Native Libraries
+        run: |
+          mkdir -p src/FaissNET.Linux/runtimes/linux-${{ matrix.arch }}/native/
+          cp artifacts/* src/FaissNET.Linux/runtimes/linux-${{ matrix.arch }}/native/
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Run Tests
+        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release
+
+  build-linux-pack:
+    needs: [test-linux]
     runs-on: ubuntu-24.04
 
     steps:
@@ -82,13 +117,13 @@ jobs:
           fetch-depth: 0
 
       - name: Download x64 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: faiss-linux-x64-binaries.zip
           path: x64
 
       - name: Download ARM64 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: faiss-linux-arm64-binaries.zip
           path: arm64
@@ -203,13 +238,13 @@ jobs:
           fetch-depth: 0
 
       - name: Download x64 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: faiss-linux-x64-cuda-binaries.zip
           path: x64-cuda
 
       - name: Download ARM64 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: faiss-linux-arm64-cuda-binaries.zip
           path: arm64-cuda
@@ -341,7 +376,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download x64 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: faiss-linux-x64-rocm-binaries.zip
           path: x64-rocm
@@ -428,8 +463,43 @@ jobs:
         name: faiss-macos-${{ matrix.arch }}-binaries.zip
         path: artifacts/*
 
-  build-macos-pack:
+  test-macos:
     needs: [build-macos]
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-26
+          - arch: x64
+            runner: macos-26-intel
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-macos-${{ matrix.arch }}-binaries.zip
+          path: artifacts
+
+      - name: Prepare Native Libraries
+        run: |
+          mkdir -p src/FaissNET.MacOS/runtimes/macos-${{ matrix.arch }}/native/
+          cp artifacts/* src/FaissNET.MacOS/runtimes/macos-${{ matrix.arch }}/native/
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Run Tests
+        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release
+
+  build-macos-pack:
+    needs: [test-macos]
     runs-on: ubuntu-24.04
 
     steps:
@@ -438,13 +508,13 @@ jobs:
           fetch-depth: 0
 
       - name: Download x64 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: faiss-macos-x64-binaries.zip
           path: x64
 
       - name: Download ARM64 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: faiss-macos-arm64-binaries.zip
           path: arm64
@@ -614,8 +684,44 @@ jobs:
           name: faiss-windows-${{ matrix.arch }}-binaries.zip
           path: artifacts/*
 
-  build-windows-pack:
+  test-windows:
     needs: [build-windows]
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-2025
+          - arch: arm64
+            runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-windows-${{ matrix.arch }}-binaries.zip
+          path: artifacts
+
+      - name: Prepare Native Libraries
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path src/FaissNET.Windows/runtimes/windows-${{ matrix.arch }}/native/
+          Copy-Item artifacts/* src/FaissNET.Windows/runtimes/windows-${{ matrix.arch }}/native/
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Run Tests
+        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release
+
+  build-windows-pack:
+    needs: [test-windows]
     runs-on: ubuntu-24.04
 
     steps:
@@ -624,13 +730,13 @@ jobs:
           fetch-depth: 0
 
       - name: Download x64 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: faiss-windows-x64-binaries.zip
           path: x64
 
       - name: Download ARM64 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: faiss-windows-arm64-binaries.zip
           path: arm64
@@ -832,7 +938,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download x64 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: faiss-windows-x64-cuda-binaries.zip
           path: x64-cuda
