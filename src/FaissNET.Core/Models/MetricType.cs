@@ -5,7 +5,7 @@ namespace Faiss.Models;
 /// </summary>
 public enum MetricType
 {
-    /// <summary>Maximum inner product search.</summary>
+    /// <summary>Maximum inner product search. The higher, the better</summary>
     InnerProduct = 0,
     
     /// <summary>Squared L2 search.</summary>
@@ -27,5 +27,14 @@ public enum MetricType
     BrayCurtis = 21,
 
     /// <summary>Jensen-Shannon divergence.</summary>
-    JensenShannon = 22
+    JensenShannon = 22,
+    
+    /// <summary>sum_i(min(a_i, b_i)) / sum_i(max(a_i, b_i)) where a_i, b_i > 0. The higher, the better.</summary>
+    Jaccard = 23,
+    
+    /// <summary>Squared Euclidean distance, ignoring NaNs</summary>
+    NaNEuclidean = 24,
+    
+    /// <summary>Gower's distance</summary>
+    Gower = 25
 }
