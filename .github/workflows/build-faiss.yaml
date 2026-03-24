@@ -596,8 +596,16 @@ jobs:
         with:
           arch: ${{ matrix.msvc_arch }}
 
+      - name: Cache OpenBLAS
+        id: cache-openblas
+        uses: actions/cache@v5
+        with:
+          path: ${{ github.workspace }}\openblas_install
+          key: openblas-${{ runner.os }}-${{ matrix.arch }}-${{ env.OPENBLAS_VERSION }}-${{ hashFiles('.github/workflows/build-faiss.yaml') }}
+
       # Provides clang-cl (C) + flang-new (Fortran)
       - name: Install LLVM ${{ env.LLVM_VERSION }}
+        if: steps.cache-openblas.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           $url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/${{ matrix.llvm_asset }}"
@@ -611,6 +619,7 @@ jobs:
 
       # Build OpenBLAS from source (MSVC ABI)
       - name: Build OpenBLAS ${{ env.OPENBLAS_VERSION }}
+        if: steps.cache-openblas.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           git clone --depth 1 -b "v${{ env.OPENBLAS_VERSION }}" `
@@ -619,8 +628,6 @@ jobs:
 
           $install = "${{ github.workspace }}\openblas_install"
 
-          # C_LAPACK = use f2c-translated C sources instead of Fortran
-          # NOFORTRAN = skip Fortran compiler entirely
           cmake -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_C_COMPILER=clang-cl `
@@ -630,12 +637,15 @@ jobs:
             -DBINARY=64 `
             ${{ matrix.openblas_flags }} `
             -DCMAKE_INSTALL_PREFIX="$install"
-
+          
           cmake --build build --config Release -j
           cmake --install build
 
+      - name: Set OpenBLAS Environment
+        shell: pwsh
+        run: |
+          $install = "${{ github.workspace }}\openblas_install"
           echo "OPENBLAS_PREFIX=$install" | Out-File $env:GITHUB_ENV -Append
-
           Get-ChildItem $install -Recurse -File | Format-Table FullName, Length
 
       - name: Configure Faiss
@@ -821,8 +831,16 @@ jobs:
         with:
           arch: ${{ matrix.msvc_arch }}
 
+      - name: Cache OpenBLAS
+        id: cache-openblas
+        uses: actions/cache@v5
+        with:
+          path: ${{ github.workspace }}\openblas_install
+          key: openblas-${{ runner.os }}-${{ matrix.arch }}-${{ env.OPENBLAS_VERSION }}-${{ hashFiles('.github/workflows/build-faiss.yaml') }}
+
       # Provides clang-cl (C) + flang-new (Fortran)
       - name: Install LLVM ${{ env.LLVM_VERSION }}
+        if: steps.cache-openblas.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           $url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/${{ matrix.llvm_asset }}"
@@ -836,6 +854,7 @@ jobs:
 
       # Build OpenBLAS from source (MSVC ABI)
       - name: Build OpenBLAS ${{ env.OPENBLAS_VERSION }}
+        if: steps.cache-openblas.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           git clone --depth 1 -b "v${{ env.OPENBLAS_VERSION }}" `
@@ -844,8 +863,6 @@ jobs:
 
           $install = "${{ github.workspace }}\openblas_install"
 
-          # C_LAPACK = use f2c-translated C sources instead of Fortran
-          # NOFORTRAN = skip Fortran compiler entirely
           cmake -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_C_COMPILER=clang-cl `
@@ -855,12 +872,15 @@ jobs:
             -DBINARY=64 `
             ${{ matrix.openblas_flags }} `
             -DCMAKE_INSTALL_PREFIX="$install"
-
+          
           cmake --build build --config Release -j
           cmake --install build
 
+      - name: Set OpenBLAS Environment
+        shell: pwsh
+        run: |
+          $install = "${{ github.workspace }}\openblas_install"
           echo "OPENBLAS_PREFIX=$install" | Out-File $env:GITHUB_ENV -Append
-
           Get-ChildItem $install -Recurse -File | Format-Table FullName, Length
 
       - name: Configure Faiss
