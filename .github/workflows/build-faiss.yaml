@@ -197,10 +197,19 @@ jobs:
           sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev \
             cuda-nvcc-12-8 cuda-cudart-dev-12-8 cuda-profiler-api-12-8 libcublas-dev-12-8 libcurand-dev-12-8
 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ github.job }}-${{ matrix.runner }}-${{ matrix.cuda_arch }}
+          max-size: "10G"
+
       - name: Configure Faiss
         working-directory: faiss
         run: |
           cmake -B build . \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache \
             -DFAISS_ENABLE_C_API=ON \
             -DBUILD_SHARED_LIBS=ON \
             -DFAISS_ENABLE_GPU=ON \
@@ -334,10 +343,19 @@ jobs:
         run: |
           sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev hip-dev
 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ github.job }}-${{ matrix.runner }}-${{ matrix.cuda_arch }}
+          max-size: "10G"
+
       - name: Configure Faiss
         working-directory: faiss
         run: |
           cmake -B build . \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_HIP_COMPILER_LAUNCHER=ccache \
             -DFAISS_ENABLE_C_API=ON \
             -DBUILD_SHARED_LIBS=ON \
             -DFAISS_ENABLE_GPU=ON \
@@ -648,6 +666,13 @@ jobs:
           echo "OPENBLAS_PREFIX=$install" | Out-File $env:GITHUB_ENV -Append
           Get-ChildItem $install -Recurse -File | Format-Table FullName, Length
 
+      - name: Setup sccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.runner }}-${{ matrix.arch }}
+          max-size: "10G"
+
       - name: Configure Faiss
         working-directory: faiss
         shell: pwsh
@@ -659,6 +684,8 @@ jobs:
           Write-Host "OpenBLAS lib: $lib"
 
           cmake -B build -G Ninja . `
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache `
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `
             -DCMAKE_C_COMPILER=cl `
             -DCMAKE_CXX_COMPILER=cl `
             -DBLA_VENDOR=OpenBLAS `
@@ -883,6 +910,13 @@ jobs:
           echo "OPENBLAS_PREFIX=$install" | Out-File $env:GITHUB_ENV -Append
           Get-ChildItem $install -Recurse -File | Format-Table FullName, Length
 
+      - name: Setup sccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.runner }}-${{ matrix.arch }}
+          max-size: "10G"
+
       - name: Configure Faiss
         working-directory: faiss
         shell: pwsh
@@ -894,6 +928,9 @@ jobs:
           Write-Host "OpenBLAS lib: $lib"
 
           cmake -B build -G Ninja . `
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache `
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `
+            -DCMAKE_CUDA_COMPILER_LAUNCHER=sccache `
             -DCMAKE_C_COMPILER=cl `
             -DCMAKE_CXX_COMPILER=cl `
             -DBLA_VENDOR=OpenBLAS `
