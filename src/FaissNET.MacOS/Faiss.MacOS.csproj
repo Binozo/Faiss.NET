@@ -17,6 +17,10 @@
         <PackageProjectUrl>https://github.com/Binozo/Faiss.NET</PackageProjectUrl>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <ContentTargetFolders>runtimes</ContentTargetFolders>
+    </PropertyGroup>
+
     <ItemGroup>
         <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
