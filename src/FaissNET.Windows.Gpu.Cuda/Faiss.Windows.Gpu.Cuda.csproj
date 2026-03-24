@@ -11,6 +11,11 @@
         <Authors>Binozo</Authors>
         <Description>Native Windows (x64) CUDA binaries for the Faiss.NET GPU extension. Requires an NVIDIA GPU.</Description>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <RepositoryUrl>https://github.com/Binozo/Faiss.NET</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageProjectUrl>https://github.com/Binozo/Faiss.NET</PackageProjectUrl>
     </PropertyGroup>
 
     <ItemGroup>

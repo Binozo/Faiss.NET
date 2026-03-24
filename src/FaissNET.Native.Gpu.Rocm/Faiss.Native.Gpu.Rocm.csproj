@@ -9,13 +9,19 @@
         <PackageId>Faiss.NET.Native.Gpu.Rocm</PackageId>
         <Version>1.0.0-preview.1</Version>
         <Authors>Binozo</Authors>
-        <Description>eta-package for AMD GPUs.</Description>
+        <Description>Meta-package for AMD GPUs. Includes Linux and Windows ROCm runtimes.</Description>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <RepositoryUrl>https://github.com/Binozo/Faiss.NET</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageProjectUrl>https://github.com/Binozo/Faiss.NET</PackageProjectUrl>
     </PropertyGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\FaissNET.Gpu\Faiss.Gpu.csproj" />
         <ProjectReference Include="..\FaissNET.Linux.Gpu.Rocm\Faiss.Linux.Gpu.Rocm.csproj" />
+<!--        <ProjectReference Include="..\FaissNET.Windows.Gpu.Rocm\Faiss.Windows.Gpu.Rocm.csproj" />-->
     </ItemGroup>
 
 </Project>

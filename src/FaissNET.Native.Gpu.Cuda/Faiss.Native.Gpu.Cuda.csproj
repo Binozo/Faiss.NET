@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <IncludeBuildOutput>false</IncludeBuildOutput>
 
         <NoWarn>$(NoWarn);NU5128</NoWarn>
@@ -9,13 +9,19 @@
         <PackageId>Faiss.NET.Gpu.Cuda</PackageId>
         <Version>1.0.0-preview.1</Version>
         <Authors>Binozo</Authors>
-        <Description>Meta-package for NVIDIA GPUs.</Description>
+        <Description>Meta-package for NVIDIA GPUs. Includes Linux and Windows CUDA runtimes.</Description>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <RepositoryUrl>https://github.com/Binozo/Faiss.NET</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageProjectUrl>https://github.com/Binozo/Faiss.NET</PackageProjectUrl>
     </PropertyGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\FaissNET.Gpu\Faiss.Gpu.csproj" />
         <ProjectReference Include="..\FaissNET.Linux.Gpu.Cuda\Faiss.Linux.Gpu.Cuda.csproj" />
+        <ProjectReference Include="..\FaissNET.Windows.Gpu.Cuda\Faiss.Windows.Gpu.Cuda.csproj" />
     </ItemGroup>
 
 </Project>
