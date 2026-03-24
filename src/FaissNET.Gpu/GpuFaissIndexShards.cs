@@ -20,7 +20,7 @@ public sealed class GpuFaissIndexShards<T> : FaissCpuIndex where T : INativeFais
     private readonly FaissIndexHandle _handle;
     private protected override FaissIndexHandle NativeHandle => _handle;
     
-    // Keep reference to prevent GC fuckup
+    // Keep reference to prevent GC premature garbage collection
     private readonly List<IFaissIndex> _shards = new();
 
     public GpuFaissIndexShards(int dimensions, bool threaded = true)

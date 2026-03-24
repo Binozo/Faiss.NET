@@ -16,7 +16,7 @@ public sealed class FaissIndexIDMap : FaissCpuIndex, IFaissIndexWithIds, INative
     
     private protected override FaissIndexHandle NativeHandle => _handle;
     
-    // Keep reference to prevent GC fuckup
+    // Keep reference to prevent premature garbage collection
     private readonly IFaissIndex _nativeIndex;
 
     public FaissIndexIDMap(INativeFaissIndex nativeIndex)
