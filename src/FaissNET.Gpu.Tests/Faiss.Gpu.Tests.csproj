@@ -16,5 +16,6 @@
         <ProjectReference Include="..\FaissNET.Core\Faiss.csproj" />
         <ProjectReference Include="..\FaissNET.Cpu\Faiss.Cpu.csproj" />
         <ProjectReference Include="..\FaissNET.Gpu\Faiss.Gpu.csproj" />
+        <ProjectReference Include="..\FaissNET.Native.Gpu.Cuda\Faiss.Native.Gpu.Cuda.csproj" />
     </ItemGroup>
 </Project>
