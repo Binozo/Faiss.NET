@@ -34,7 +34,6 @@ Additionally, Index serialization/deserialization and GPU Indexes + sharding is 
 
 | Platform       | x64 | arm64 |
 |----------------|-----|-------|
-| CUDA (Windows) | ✅   | ❌     |
 | CUDA (Linux)   | ✅   | ✅     |
 | ROCm (Linux)   | ✅   | ❌     |
 
