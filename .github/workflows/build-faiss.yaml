@@ -719,18 +719,6 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path src/FaissNET.Windows/runtimes/windows-${{ matrix.arch }}/native/
           Copy-Item artifacts/* src/FaissNET.Windows/runtimes/windows-${{ matrix.arch }}/native/
-          
-      - name: Copy native DLLs next to test executable (critical for P/Invoke)
-        shell: pwsh
-        run: |
-          $testOutput = "src/FaissNET.Tests/bin/Release/net8.0"
-          $nativePath  = "src/FaissNET.Windows/runtimes/windows-${{ matrix.arch }}/native"
-
-          Write-Host "Copying natives → $testOutput"
-          Copy-Item "$nativePath/*.dll" $testOutput -Force -Verbose
-
-          Write-Host "`n=== Files now in test output ==="
-          Get-ChildItem $testOutput -Filter "*faiss*.dll","*openblas*.dll" | Format-Table Name, Length
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
