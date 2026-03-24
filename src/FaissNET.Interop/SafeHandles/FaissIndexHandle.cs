@@ -1,9 +1,10 @@
 namespace Faiss.Interop.SafeHandles;
 
 using Microsoft.Win32.SafeHandles;
+
 using NativeMethods;
 
-internal sealed partial class FaissIndexHandle : SafeHandleZeroOrMinusOneIsInvalid
+internal sealed class FaissIndexHandle : SafeHandleZeroOrMinusOneIsInvalid
 {
     public FaissIndexHandle() : base(true)
     {

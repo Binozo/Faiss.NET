@@ -1,7 +1,9 @@
-using System.Runtime.InteropServices;
-using Faiss.Interop.SafeHandles;
-
 namespace Faiss.Interop.NativeMethods;
+
+using System.Runtime.InteropServices;
+
+using Models;
+using SafeHandles;
 
 internal static unsafe partial class Native
 {
@@ -27,6 +29,9 @@ internal static unsafe partial class Native
 
     [LibraryImport(LibraryName)]
     internal static partial int faiss_Index_is_trained(FaissIndexHandle index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial MetricType faiss_Index_metric_type(FaissIndexHandle index);
 
     [LibraryImport(LibraryName)]
     internal static partial long faiss_Index_ntotal(FaissIndexHandle index);

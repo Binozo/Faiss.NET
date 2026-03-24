@@ -1,8 +1,9 @@
-using System.Runtime.InteropServices;
-using Faiss.Exceptions;
-using Faiss.Interop.NativeMethods;
-
 namespace Faiss.Interop.ErrorHandling;
+
+using System.Runtime.InteropServices;
+
+using Exceptions;
+using NativeMethods;
 
 internal static class FaissErrorHandler
 {
