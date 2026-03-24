@@ -1086,3 +1086,30 @@ jobs:
           compression-level: '9'
           name: faiss-windows-${{ matrix.arch }}-rocm-binaries.zip
           path: artifacts/*
+
+  publish-github-packages:
+    needs: [build-linux-pack, build-linux-cuda-pack, build-macos-pack, build-windows-pack]
+    runs-on: ubuntu-24.04
+    
+    permissions:
+      packages: write
+      contents: read
+    
+    steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Download all NuGet Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+      
+      - name: Publish to GitHub Packages
+        run: |
+          dotnet nuget push "artifacts/**/*.nupkg" \
+            --api-key ${{ secrets.GITHUB_TOKEN }} \
+            --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
+            --skip-duplicate
