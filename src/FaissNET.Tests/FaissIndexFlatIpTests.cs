@@ -1,18 +1,19 @@
 namespace Faiss.Tests;
 
-using Cpu;
 using Xunit;
+
+using Cpu.Indexes;
 
 /// <summary>
 /// Tests the core Add and Search functionality for dot product calculations.
 /// </summary>
-public class IndexFlatIPTests
+public class FaissIndexFlatIpTests
 {
     [Fact]
     public void AddAndSearch_CalculatesCorrectInnerProduct()
     {
         int dimensions = 2;
-        using var index = new IndexFlatIP(dimensions);
+        using var index = new FaissIndexFlatIP(dimensions);
 
         Assert.Equal(dimensions, index.Dimensions);
         Assert.Equal(0, index.TotalCount);
