@@ -14,6 +14,7 @@
     <Project Path="src/FaissNET.Linux/Faiss.Linux.csproj" />
     <Project Path="src/FaissNET.MacOS/Faiss.MacOS.csproj" />
     <Project Path="src/FaissNET.Windows/Faiss.Windows.csproj" />
+
     <Project Path="src/FaissNET.Native/Faiss.Native.csproj" />
   </Folder>
   
@@ -22,6 +23,8 @@
     <Project Path="src/FaissNET.Linux.Gpu.Cuda/Faiss.Linux.Gpu.Cuda.csproj" />
     <Project Path="src/FaissNET.Linux.Gpu.Rocm/Faiss.Linux.Gpu.Rocm.csproj" />
 
+    <Project Path="src/FaissNET.Windows.Gpu.Cuda/Faiss.Windows.Gpu.Cuda.csproj" />
+
     <Project Path="src/FaissNET.Native.Gpu.Cuda/Faiss.Native.Gpu.Cuda.csproj" />
     <Project Path="src/FaissNET.Native.Gpu.Rocm/Faiss.Native.Gpu.Rocm.csproj" />
     
@@ -29,8 +32,12 @@
   </Folder>
   
   <Folder Name="/CI/">
+    <File Path=".github/workflows/build-faiss.yaml" />
+
     <File Path=".github/workflows/build-faiss-linux.yaml" />
     <File Path=".github/workflows/build-faiss-windows.yaml" />
     <File Path=".github/workflows/build-faiss-macos.yaml" />
+
+    <File Path="scripts/download-binaries.py" />
   </Folder>
 </Solution>
