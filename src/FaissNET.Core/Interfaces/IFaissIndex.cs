@@ -1,3 +1,6 @@
+using Faiss.Exceptions;
+using Faiss.Models;
+
 namespace Faiss.Interfaces;
 
 public interface IFaissIndex : IDisposable
@@ -16,6 +19,11 @@ public interface IFaissIndex : IDisposable
     /// Value indicating whether the index requires training or is already trained.
     /// </summary>
     bool IsTrained { get; }
+
+    /// <summary>
+    /// Metric type of this index.
+    /// </summary>
+    MetricType Metric { get; }
 
     /// <summary>
     /// Adds vectors to the index.
