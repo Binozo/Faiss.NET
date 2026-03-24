@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Cpu;
 using Interop;
 using Exceptions;
+using Interfaces;
 using Faiss.Interfaces;
 using Faiss.Cpu.Interfaces;
 using Faiss.Interop.ErrorHandling;
@@ -14,7 +15,7 @@ using Faiss.Interop.SafeHandles;
 /// <summary>
 /// Virtual index that wraps across multiple GPUs.
 /// </summary>
-public sealed class GpuFaissIndexShards : FaissCpuIndex
+public sealed class GpuFaissIndexShards<T> : FaissCpuIndex where T : INativeFaissCpuIndex
 {
     private readonly FaissIndexHandle _handle;
     private protected override FaissIndexHandle NativeHandle => _handle;
@@ -38,9 +39,13 @@ public sealed class GpuFaissIndexShards : FaissCpuIndex
     /// <summary>
     /// Locks a GPU index into the multi-GPU pool.
     /// </summary>
-    public void AddShard(INativeFaissIndex gpuIndex) // TODO: Check if constrain on IGPUIndex or so
+    public void AddShard(INativeFaissGpuIndex<T> gpuIndex)
     {
-        // Wire the shard into the C++ engine
+        if (gpuIndex.Dimensions != Dimensions)
+        {
+            throw new ArgumentException("Dimensions mismatch. Expected: " + Dimensions + ", Actual: " + gpuIndex.Dimensions);
+        }
+        
         FaissErrorHandler.ThrowIfError(GpuShardsNativeMethods.faiss_IndexShards_add_shard(
             _handle.DangerousGetHandle(), 
             gpuIndex.Handle));

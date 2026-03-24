@@ -26,7 +26,7 @@ public class GpuFaissIndexShardsTests
         using var shard2 = GpuIndexProvider.TransferToGpu(gpuContext, cpuIndex2, 1);
 
         // Create the massive virtual index (threaded = true for parallel searches!)
-        using var shardedIndex = new GpuFaissIndexShards(dimensions, threaded: false);
+        using var shardedIndex = new GpuFaissIndexShards<FaissIndexFlatL2>(dimensions, threaded: false);
         
         // Wire them up
         shardedIndex.AddShard(shard1);
