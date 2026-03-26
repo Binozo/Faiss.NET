@@ -21,8 +21,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\FaissNET.Interop\Faiss.Interop.csproj" PrivateAssets="All" />
-        <ProjectReference Include="..\FaissNET.Core\Faiss.csproj" PrivateAssets="All" />
+        <Compile Include="..\FaissNET.Core\**\*.cs"
+                 Exclude="..\FaissNET.Core\bin\**;..\FaissNET.Core\obj\**"
+                 LinkBase="Core\%(RecursiveDir)" />
+
+        <Compile Include="..\FaissNET.Interop\**\*.cs"
+                 Exclude="..\FaissNET.Interop\bin\**;..\FaissNET.Interop\obj\**"
+                 LinkBase="Interop\%(RecursiveDir)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -32,10 +37,4 @@
     <ItemGroup>
         <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
-
-    <Target Name="PackProjectReferences" DependsOnTargets="BuildOnlySettings;ResolveReferences">
-        <ItemGroup>
-            <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('PrivateAssets', 'All'))" />
-        </ItemGroup>
-    </Target>
 </Project>

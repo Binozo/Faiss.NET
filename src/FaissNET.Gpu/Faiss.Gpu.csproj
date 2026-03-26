@@ -23,7 +23,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\FaissNET.Interop\Faiss.Interop.csproj" PrivateAssets="All" ExcludeAssets="runtime" />
         <ProjectReference Include="..\FaissNET.Cpu\Faiss.Cpu.csproj" />
     </ItemGroup>
 
