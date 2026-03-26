@@ -370,7 +370,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
             -DCMAKE_INSTALL_RPATH='$ORIGIN' \
-            -DHIP_ARCHITECTURES="${{ matrix.rocm_arch }}"
+            -DCMAKE_HIP_ARCHITECTURES="${{ matrix.rocm_arch }}"
 
       - name: Build Faiss C API
         working-directory: faiss
@@ -1104,7 +1104,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
             -DBLA_VENDOR=OpenBLAS `
-            -DHIP_ARCHITECTURES="${{ matrix.rocm_arch }}"
+            -DCMAKE_HIP_ARCHITECTURES="${{ matrix.rocm_arch }}"
 
       - name: Build Faiss C API
         working-directory: faiss
