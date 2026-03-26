@@ -1149,8 +1149,100 @@ jobs:
           name: faiss-nupkg.zip
           path: 'nupkg/*.nupkg'
 
+  pack-gpu:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Gpu/Faiss.Gpu.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v7
+        with:
+          name: faiss-nupkg.zip
+          path: 'nupkg/*.nupkg'
+
+  pack-native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Native/Faiss.Native.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v7
+        with:
+          name: faiss-nupkg.zip
+          path: 'nupkg/*.nupkg'
+
+  pack-native-gpu-cuda:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Native.Gpu.Cuda/Faiss.Native.Gpu.Cuda.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v7
+        with:
+          name: faiss-nupkg.zip
+          path: 'nupkg/*.nupkg'
+
+  pack-native-gpu-rocm:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Native.Gpu.Rocm/Faiss.Native.Gpu.Rocm.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v7
+        with:
+          name: faiss-nupkg.zip
+          path: 'nupkg/*.nupkg'
+
   publish-github-packages:
-    needs: [pack, build-linux-pack, build-linux-cuda-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack]
+    needs: [pack, pack-gpu, pack-native, pack-native-gpu-cuda, pack-native-gpu-rocm, build-linux-pack, build-linux-cuda-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack]
     runs-on: ubuntu-24.04
     
     permissions:
