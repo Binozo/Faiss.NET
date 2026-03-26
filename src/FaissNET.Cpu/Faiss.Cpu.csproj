@@ -5,6 +5,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        
+        <AssemblyName>FaissNet</AssemblyName>
 
         <PackageId>Faiss.NET</PackageId>
         <Version>1.0.0-preview.1</Version>
