@@ -6,6 +6,11 @@
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
+        <DebugType>embedded</DebugType>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+        <Deterministic>true</Deterministic>
+
         <PackageId>Faiss.NET.Gpu</PackageId>
         <Version>1.0.0-preview.1</Version>
         <Authors>Binozo</Authors>
