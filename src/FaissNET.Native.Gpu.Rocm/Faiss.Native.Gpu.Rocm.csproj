@@ -19,6 +19,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\FaissNET.Gpu\Faiss.Gpu.csproj" />
         <ProjectReference Include="..\FaissNET.Linux.Gpu.Rocm\Faiss.Linux.Gpu.Rocm.csproj" />
 <!--        <ProjectReference Include="..\FaissNET.Windows.Gpu.Rocm\Faiss.Windows.Gpu.Rocm.csproj" />-->
