@@ -1125,7 +1125,7 @@ jobs:
           path: artifacts/*
 
   publish-github-packages:
-    needs: [build-linux-pack, build-linux-cuda-pack, build-macos-pack, build-windows-pack]
+    needs: [build-linux-pack, build-linux-cuda-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack]
     runs-on: ubuntu-24.04
     
     permissions:
