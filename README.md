@@ -69,3 +69,65 @@ Get the base NuGet:
 ```shell
 $ dotnet add package Faiss.NET
 ```
+
+Then pick a native package:
+
+Either [cpu only](#cpu-only) **or** with additional [gpu](#cpugpu) support.
+
+#### CPU only
+```shell
+$ dotnet add package Faiss.NET.Native
+```
+
+#### CPU+GPU
+```shell
+$ dotnet add package Faiss.NET.Gpu.Cuda # Linux only
+$ dotnet add package Faiss.NET.Windows
+$ dotnet add package Faiss.NET.MacOS
+```
+
+or
+
+```shell
+$ dotnet add package Faiss.NET.Native.Gpu.Rocm # Linux x64 only
+$ dotnet add package Faiss.NET.Windows
+$ dotnet add package Faiss.NET.MacOS
+```
+
+## Usage
+### Basic
+```csharp
+using Faiss.NET;
+
+int dimensions = 4;
+using var index = new FaissIndex<FaissIndexFlatL2>(new FaissIndexFlatL2(dimensions));
+
+float[] vectors = { 1.0f, 2.0f, 3.0f, 4.0f };
+
+index.Add(vectors);
+
+using var searchResult = index.Search(vectors, 1);
+
+float distance = searchResult.Distances[0]; // 0.0f
+long label = searchResult.Labels[0]; // 0
+```
+
+### Examples
+#### Low-Level index usage
+```csharp
+using Faiss.NET;
+
+int dimensions = 2;
+using var index = new FaissIndexFlatIP(dimensions);
+
+float[] vectors = { 2.0f, 3.0f };
+index.Add(1, vectors);
+
+float[] distances = new float[1];
+long[] labels = new long[1];
+
+index.Search(1, vectors, 1, distances, labels);
+
+long foundLabel = labels[0]; // 0
+float foundDistance = distances[0]; // 13
+```
