@@ -1124,8 +1124,31 @@ jobs:
           name: faiss-windows-${{ matrix.arch }}-rocm-binaries.zip
           path: artifacts/*
 
+  pack:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Pack NuGet Package
+        run: |
+          dotnet pack src/FaissNET.Cpu/Faiss.Cpu.csproj -c Release -o ./nupkg
+
+      - name: Upload NuGet Package
+        uses: actions/upload-artifact@v7
+        with:
+          name: faiss-nupkg.zip
+          path: 'nupkg/*.nupkg'
+
   publish-github-packages:
-    needs: [build-linux-pack, build-linux-cuda-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack]
+    needs: [pack, build-linux-pack, build-linux-cuda-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack]
     runs-on: ubuntu-24.04
     
     permissions:
