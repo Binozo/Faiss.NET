@@ -16,5 +16,8 @@
     <ItemGroup>
         <ProjectReference Include="..\FaissNET.Cpu\Faiss.Cpu.csproj" />
         <ProjectReference Include="..\FaissNET.Native\Faiss.Native.csproj" />
+
+        <ProjectReference Include="..\FaissNET.Core\Faiss.csproj" />
+        <ProjectReference Include="..\FaissNET.Interop\Faiss.Interop.csproj" />
     </ItemGroup>
 </Project>
