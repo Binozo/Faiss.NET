@@ -11,6 +11,8 @@
 
         <Deterministic>true</Deterministic>
 
+        <AssemblyName>FaissNet.Gpu</AssemblyName>
+
         <PackageId>Faiss.NET.Gpu</PackageId>
         <Version>1.0.0-preview.1</Version>
         <Authors>Binozo</Authors>
