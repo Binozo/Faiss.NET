@@ -1173,3 +1173,49 @@ jobs:
             --api-key ${{ secrets.GITHUB_TOKEN }} \
             --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
             --skip-duplicate
+          
+  create-release:
+    needs: [pack, build-linux-pack, build-linux-cuda-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack]
+    runs-on: ubuntu-24.04
+    if: startsWith(github.ref, 'refs/tags/')
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all NuGet Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*.nupkg
+          generate_release_notes: true
+          
+  publish-nuget-packages:
+    needs: [create-release]
+    runs-on: ubuntu-24.04
+
+    permissions:
+      id-token: write
+    
+    steps:
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Download all NuGet Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+      
+      - name: NuGet push
+        run: dotnet nuget push "artifacts/**/*.nupkg" \
+          --api-key ${{steps.login.outputs.NUGET_API_KEY}} \
+          --source https://api.nuget.org/v3/index.json
