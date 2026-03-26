@@ -34,10 +34,6 @@
   <Folder Name="/CI/">
     <File Path=".github/workflows/build-faiss.yaml" />
 
-    <File Path=".github/workflows/build-faiss-linux.yaml" />
-    <File Path=".github/workflows/build-faiss-windows.yaml" />
-    <File Path=".github/workflows/build-faiss-macos.yaml" />
-
     <File Path="scripts/download-binaries.py" />
   </Folder>
 </Solution>
