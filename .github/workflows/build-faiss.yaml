@@ -5,6 +5,8 @@ on:
     branches: [ main ]
     paths:
       - "faiss"
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
