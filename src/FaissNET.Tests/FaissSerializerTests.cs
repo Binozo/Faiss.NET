@@ -7,7 +7,7 @@ using Cpu.Indexes;
 using Cpu.Serializer;
 
 /// <summary>
-/// Proving our I/O architecture is goated and doesn't memory leak.
+/// Proving our I/O architecture is solid and doesn't memory leak.
 /// Tests both physical files and pure in-memory cloud streams.
 /// </summary>
 public class FaissSerializerTests

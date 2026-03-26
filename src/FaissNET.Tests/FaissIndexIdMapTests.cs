@@ -41,7 +41,7 @@ public class FaissIndexIdMapTests
         idMapIndex.Search(1, query, 1, distances, labels);
 
         // Assert: If it was a standard index, this would normally return ID 1.
-        // But because our IDMap is goated, it MUST return our exact database ID: 1337!
+        // But because of IDMap it must return our exact database ID: 1337!
         Assert.Equal(1337, labels[0]);
         Assert.Equal(0.0f, distances[0]);
     }
