@@ -27,6 +27,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\FaissNET.Cpu\Faiss.Cpu.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Content Include="runtimes\windows-x64\native\*.dll">
             <Pack>true</Pack>
             <PackagePath>runtimes\windows-x64\native\</PackagePath>

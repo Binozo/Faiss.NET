@@ -23,6 +23,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\FaissNET.Gpu\Faiss.Gpu.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Content Include="runtimes\linux-x64\native\*.so">
             <Pack>true</Pack>
             <PackagePath>runtimes\linux-x64\native\</PackagePath>

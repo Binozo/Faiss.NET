@@ -26,6 +26,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\FaissNET.Cpu\Faiss.Cpu.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Content Include="runtimes\macos-x64\native\*.dylib">
             <Pack>true</Pack>
             <PackagePath>runtimes\macos-x64\native\</PackagePath>
