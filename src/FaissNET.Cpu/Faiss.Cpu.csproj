@@ -16,8 +16,6 @@
         <RepositoryUrl>https://github.com/Binozo/Faiss.NET</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageProjectUrl>https://github.com/Binozo/Faiss.NET</PackageProjectUrl>
-
-        <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);PackProjectReferences</TargetsForTfmSpecificBuildOutput>
     </PropertyGroup>
 
     <ItemGroup>
