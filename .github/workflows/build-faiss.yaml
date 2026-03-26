@@ -1169,7 +1169,7 @@ jobs:
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v7
         with:
-          name: faiss-nupkg.zip
+          name: faiss-gpu-nupkg.zip
           path: 'nupkg/*.nupkg'
 
   pack-native:
@@ -1192,7 +1192,7 @@ jobs:
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v7
         with:
-          name: faiss-nupkg.zip
+          name: faiss-native-nupkg.zip
           path: 'nupkg/*.nupkg'
 
   pack-native-gpu-cuda:
@@ -1215,7 +1215,7 @@ jobs:
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v7
         with:
-          name: faiss-nupkg.zip
+          name: faiss-gpu-cuda-nupkg.zip
           path: 'nupkg/*.nupkg'
 
   pack-native-gpu-rocm:
@@ -1238,7 +1238,7 @@ jobs:
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v7
         with:
-          name: faiss-nupkg.zip
+          name: faiss-gpu-rocm-nupkg.zip
           path: 'nupkg/*.nupkg'
 
   publish-github-packages:
