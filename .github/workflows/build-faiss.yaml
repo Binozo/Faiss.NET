@@ -111,7 +111,7 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Run Tests
-        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release
+        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true
 
   build-linux-pack:
     needs: [test-linux]
@@ -146,7 +146,7 @@ jobs:
 
       - name: Pack NuGet Package
         run: |
-          dotnet pack src/FaissNET.Linux/Faiss.Linux.csproj -c Release -o ./nupkg
+          dotnet pack src/FaissNET.Linux/Faiss.Linux.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
 
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v7
@@ -276,7 +276,7 @@ jobs:
 
       - name: Pack NuGet Package
         run: |
-          dotnet pack src/FaissNET.Linux.Gpu.Cuda/Faiss.Linux.Gpu.Cuda.csproj -c Release -o ./nupkg
+          dotnet pack src/FaissNET.Linux.Gpu.Cuda/Faiss.Linux.Gpu.Cuda.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
 
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v7
@@ -416,7 +416,7 @@ jobs:
 
       - name: Pack NuGet Package
         run: |
-          dotnet pack src/FaissNET.Linux.Gpu.Rocm/Faiss.Linux.Gpu.Rocm.csproj -c Release -o ./nupkg
+          dotnet pack src/FaissNET.Linux.Gpu.Rocm/Faiss.Linux.Gpu.Rocm.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
 
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v7
@@ -524,7 +524,7 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Run Tests
-        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release
+        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true
 
   build-macos-pack:
     needs: [test-macos]
@@ -559,7 +559,7 @@ jobs:
 
       - name: Pack NuGet Package
         run: |
-          dotnet pack src/FaissNET.MacOS/Faiss.MacOS.csproj -c Release -o ./nupkg
+          dotnet pack src/FaissNET.MacOS/Faiss.MacOS.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
 
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v7
@@ -765,7 +765,7 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Run Tests
-        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release
+        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true
 
   build-windows-pack:
     needs: [test-windows]
@@ -800,7 +800,7 @@ jobs:
 
       - name: Pack NuGet Package
         run: |
-          dotnet pack src/FaissNET.Windows/Faiss.Windows.csproj -c Release -o ./nupkg
+          dotnet pack src/FaissNET.Windows/Faiss.Windows.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
 
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v7
@@ -1021,7 +1021,7 @@ jobs:
 
       - name: Pack NuGet Package
         run: |
-          dotnet pack src/FaissNET.Windows.Gpu.Cuda/Faiss.Windows.Gpu.Cuda.csproj -c Release -o ./nupkg
+          dotnet pack src/FaissNET.Windows.Gpu.Cuda/Faiss.Windows.Gpu.Cuda.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
 
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v7
@@ -1141,7 +1141,7 @@ jobs:
 
       - name: Pack NuGet Package
         run: |
-          dotnet pack src/FaissNET.Cpu/Faiss.Cpu.csproj -c Release -o ./nupkg
+          dotnet pack src/FaissNET.Cpu/Faiss.Cpu.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
 
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v7
