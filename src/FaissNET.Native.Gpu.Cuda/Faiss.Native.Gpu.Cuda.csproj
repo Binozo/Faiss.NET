@@ -21,7 +21,7 @@
     <ItemGroup>
         <ProjectReference Include="..\FaissNET.Gpu\Faiss.Gpu.csproj" />
         <ProjectReference Include="..\FaissNET.Linux.Gpu.Cuda\Faiss.Linux.Gpu.Cuda.csproj" />
-        <ProjectReference Include="..\FaissNET.Windows.Gpu.Cuda\Faiss.Windows.Gpu.Cuda.csproj" />
+<!--        <ProjectReference Include="..\FaissNET.Windows.Gpu.Cuda\Faiss.Windows.Gpu.Cuda.csproj" />-->
     </ItemGroup>
 
 </Project>
