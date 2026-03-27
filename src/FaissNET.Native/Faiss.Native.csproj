@@ -22,27 +22,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\FaissNET.Cpu\Faiss.Cpu.csproj"
-                          PrivateAssets="all"
-                          ReferenceOutputAssembly="false" />
-        <ProjectReference Include="..\FaissNET.Linux\Faiss.Linux.csproj"
-                          PrivateAssets="all"
-                          ReferenceOutputAssembly="false" />
-        <ProjectReference Include="..\FaissNET.Windows\Faiss.Windows.csproj"
-                          PrivateAssets="all"
-                          ReferenceOutputAssembly="false" />
-        <ProjectReference Include="..\FaissNET.MacOS\Faiss.MacOS.csproj"
-                          PrivateAssets="all"
-                          ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\FaissNET.Cpu\Faiss.Cpu.csproj" />
+        <ProjectReference Include="..\FaissNET.Linux\Faiss.Linux.csproj" />
+        <ProjectReference Include="..\FaissNET.Windows\Faiss.Windows.csproj" />
+        <ProjectReference Include="..\FaissNET.MacOS\Faiss.MacOS.csproj" />
     </ItemGroup>
-
-    <Target Name="AddPackageDependencies" BeforeTargets="Pack">
-        <ItemGroup>
-            <PackageReference Update="Faiss.NET" Version="$(Version)" />
-            <PackageReference Update="Faiss.NET.Linux" Version="$(Version)" />
-            <PackageReference Update="Faiss.NET.Windows" Version="$(Version)" />
-            <PackageReference Update="Faiss.NET.MacOS" Version="$(Version)" />
-        </ItemGroup>
-    </Target>
 
 </Project>
