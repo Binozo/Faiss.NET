@@ -1290,7 +1290,8 @@ jobs:
           generate_release_notes: true
           
   publish-nuget-packages:
-    needs: [create-release]
+    #needs: [create-release]
+    needs: [publish-github-packages]
     runs-on: ubuntu-24.04
 
     permissions:
