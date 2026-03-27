@@ -6,7 +6,7 @@
 
         <NoWarn>$(NoWarn);NU5128</NoWarn>
 
-        <PackageId>Faiss.NET.Native.Gpu.Rocm</PackageId>
+        <PackageId>Faiss.NET.Gpu.Native.Rocm</PackageId>
         <Version>1.0.0-preview.1</Version>
         <Authors>Binozo</Authors>
         <Description>Meta-package for AMD GPUs. Includes Linux and Windows ROCm runtimes.</Description>

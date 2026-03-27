@@ -6,7 +6,7 @@
 
         <NoWarn>$(NoWarn);NU5128</NoWarn>
 
-        <PackageId>Faiss.NET.Linux.Gpu.Cuda</PackageId>
+        <PackageId>Faiss.NET.Gpu.Native.Cuda.Linux</PackageId>
         <Version>1.0.0-preview.1</Version>
         <Authors>Binozo</Authors>
         <Description>Native Linux (x64 and arm64) CUDA binaries for the Faiss.NET GPU extension. Requires an NVIDIA GPU.</Description>

@@ -5,7 +5,7 @@
         <NoWarn>$(NoWarn);NU5128</NoWarn>
         <IncludeBuildOutput>false</IncludeBuildOutput>
 
-        <PackageId>Faiss.NET.Linux</PackageId>
+        <PackageId>Faiss.NET.Native.Linux</PackageId>
         <Version>1.0.0-preview.1</Version>
         <Authors>Binozo</Authors>
         <Description>Native Linux (x64 and arm64) binaries for Faiss.NET.</Description>

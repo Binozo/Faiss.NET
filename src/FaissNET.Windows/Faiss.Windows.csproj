@@ -6,7 +6,7 @@
 
         <NoWarn>$(NoWarn);NU5128</NoWarn>
 
-        <PackageId>Faiss.NET.Windows</PackageId>
+        <PackageId>Faiss.NET.Native.Windows</PackageId>
         <Version>1.0.0-preview.1</Version>
         <Authors>Binozo</Authors>
         <Description>Native Windows (x64 and arm64) binaries for Faiss.NET.</Description>

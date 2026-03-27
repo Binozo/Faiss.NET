@@ -6,7 +6,7 @@
 
         <NoWarn>$(NoWarn);NU5128</NoWarn>
 
-        <PackageId>Faiss.NET.Gpu.Cuda</PackageId>
+        <PackageId>Faiss.NET.Gpu.Native.Cuda</PackageId>
         <Version>1.0.0-preview.1</Version>
         <Authors>Binozo</Authors>
         <Description>Meta-package for NVIDIA GPUs. Includes Linux and Windows CUDA runtimes.</Description>
