@@ -6,10 +6,10 @@
 
         <NoWarn>$(NoWarn);NU5128</NoWarn>
 
-        <PackageId>Faiss.NET.Gpu.Native.Cuda.Linux</PackageId>
+        <PackageId>Faiss.NET.Gpu.Native.Cuda.Linux.x64</PackageId>
         <Version>1.0.0-preview.1</Version>
         <Authors>Binozo</Authors>
-        <Description>Meta package for Linux (x64 and arm64) CUDA binaries for the Faiss.NET GPU extension. Requires an NVIDIA GPU.</Description>
+        <Description>Native Linux x64 CUDA binaries for the Faiss.NET GPU extension. Requires an NVIDIA GPU.</Description>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
         <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -24,8 +24,16 @@
 
     <ItemGroup>
         <ProjectReference Include="..\FaissNET.Gpu\Faiss.Gpu.csproj" />
-        <ProjectReference Include="..\FaissNET.Linux.Gpu.Cuda.x64\Faiss.Linux.Gpu.Cuda.x64.csproj" />
-        <ProjectReference Include="..\FaissNET.Linux.Gpu.Cuda.arm64\Faiss.Linux.Gpu.Cuda.arm64.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="runtimes\linux-x64\native\*.so">
+            <Pack>true</Pack>
+            <PackagePath>runtimes\linux-x64\native\</PackagePath>
+
+            <Link>%(Filename)%(Extension)</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
 </Project>
