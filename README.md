@@ -81,7 +81,7 @@ $ dotnet add package Faiss.NET.Native
 
 #### CPU+GPU
 ```shell
-$ dotnet add package Faiss.NET.Gpu.Cuda # Linux only
+$ dotnet add package Faiss.NET.Native.Gpu.Cuda # Linux only
 $ dotnet add package Faiss.NET.Windows
 $ dotnet add package Faiss.NET.MacOS
 ```
