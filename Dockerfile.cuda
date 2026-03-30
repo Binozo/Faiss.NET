@@ -20,22 +20,23 @@ WORKDIR /build
 COPY faiss ./faiss
 
 WORKDIR /build/faiss
-RUN cmake -B build . \
-    -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-    -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-    -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache \
-    -DFAISS_ENABLE_C_API=ON \
-    -DBUILD_SHARED_LIBS=ON \
-    -DFAISS_ENABLE_GPU=ON \
-    -DFAISS_OPT_LEVEL=generic \
-    -DFAISS_ENABLE_MKL=OFF \
-    -DFAISS_ENABLE_PYTHON=OFF \
-    -DBUILD_TESTING=OFF \
-    -DFAISS_ENABLE_EXTRAS=OFF \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
-    -DCMAKE_INSTALL_RPATH='$ORIGIN' \
-    -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;120"
+RUN --mount=type=cache,target=/cache/ccache \
+    cmake -B build . \
+        -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+        -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache \
+        -DFAISS_ENABLE_C_API=ON \
+        -DBUILD_SHARED_LIBS=ON \
+        -DFAISS_ENABLE_GPU=ON \
+        -DFAISS_OPT_LEVEL=generic \
+        -DFAISS_ENABLE_MKL=OFF \
+        -DFAISS_ENABLE_PYTHON=OFF \
+        -DBUILD_TESTING=OFF \
+        -DFAISS_ENABLE_EXTRAS=OFF \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+        -DCMAKE_INSTALL_RPATH='$ORIGIN' \
+        -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;120"
 
 RUN --mount=type=cache,target=/cache/ccache \
     make -C build -j $(nproc) faiss_c
