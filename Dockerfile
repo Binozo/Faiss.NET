@@ -1,6 +1,8 @@
 FROM ubuntu:24.04 AS faiss-builder
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,id=apt,sharing=locked,target=/var/cache/apt \
+    --mount=type=cache,id=apt,sharing=locked,target=/var/lib/apt \
+    apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     g++ \
     make \
@@ -33,7 +35,9 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0-noble AS test
 
 ARG TARGETARCH
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,id=apt,sharing=locked,target=/var/cache/apt \
+    --mount=type=cache,id=apt,sharing=locked,target=/var/lib/apt \
+    apt-get update && apt-get install -y --no-install-recommends \
     libopenblas0 \
     libgomp1 \
     libgfortran5 \
