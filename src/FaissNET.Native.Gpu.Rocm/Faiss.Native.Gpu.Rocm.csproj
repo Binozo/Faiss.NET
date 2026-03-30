@@ -9,7 +9,8 @@
         <PackageId>Faiss.NET.Gpu.Native.Rocm</PackageId>
         <Version>1.0.0-preview.1</Version>
         <Authors>Binozo</Authors>
-        <Description>Meta-package for AMD GPUs. Includes Linux and Windows ROCm runtimes.</Description>
+        <Description>Meta-package for AMD GPUs. Includes Linux ROCm runtimes.</Description>
+        <PackageTags>faiss vector search similarity-search machine-learning ai knn hnsw embeddings linux gpu rocm amd x64</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
         <PackageReadmeFile>README.md</PackageReadmeFile>

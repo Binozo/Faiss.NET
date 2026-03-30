@@ -10,6 +10,7 @@
         <Version>1.0.0-preview.1</Version>
         <Authors>Binozo</Authors>
         <Description>Native Windows (x64 and arm64) binaries for Faiss.NET.</Description>
+        <PackageTags>faiss vector search similarity-search machine-learning ai knn hnsw embeddings windows x64 arm64</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
         <PackageReadmeFile>README.md</PackageReadmeFile>
