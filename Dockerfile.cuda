@@ -7,7 +7,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libopenblas-dev \
     liblapack-dev \
     git \
-    && rm -rf /var/lib/apt/lists/*
+    ccache \
+    && rm -rf /var/lib/apt/lists/* 
+
+ENV CCACHE_DIR=/cache/ccache
+ENV CCACHE_MAXSIZE=10G
 
 WORKDIR /build
 
@@ -15,6 +19,9 @@ COPY faiss ./faiss
 
 WORKDIR /build/faiss
 RUN cmake -B build . \
+    -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+    -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+    -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache \
     -DFAISS_ENABLE_C_API=ON \
     -DBUILD_SHARED_LIBS=ON \
     -DFAISS_ENABLE_GPU=ON \
@@ -28,7 +35,8 @@ RUN cmake -B build . \
     -DCMAKE_INSTALL_RPATH='$ORIGIN' \
     -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;120"
 
-RUN make -C build -j $(nproc) faiss_c
+RUN --mount=type=cache,target=/cache/ccache \
+    make -C build -j $(nproc) faiss_c
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0-noble AS test
 

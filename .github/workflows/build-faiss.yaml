@@ -1368,6 +1368,8 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cuda:${{ github.sha }}-${{ matrix.arch }}
           provenance: false
+          cache-from: type=gha,scope=docker-cuda-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=docker-cuda-${{ matrix.arch }}
 
   docker-cuda-manifest:
     needs: build-docker-cuda
