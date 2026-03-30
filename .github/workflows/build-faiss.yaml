@@ -5,7 +5,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/${{ github.event.repository.name }}
+  IMAGE_NAME: binozo/faiss.net
 
 jobs:
   # ============================================================================
