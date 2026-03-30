@@ -1,13 +1,11 @@
 name: Build and Package Faiss
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - "faiss"
-    tags:
-      - 'v*'
   workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   # ============================================================================
@@ -350,7 +348,7 @@ jobs:
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${{ github.job }}-${{ matrix.runner }}-${{ matrix.cuda_arch }}
+          key: ${{ github.job }}-${{ matrix.runner }}-${{ matrix.rocm_arch }}
           max-size: "10G"
 
       - name: Configure Faiss
@@ -1042,7 +1040,7 @@ jobs:
           - arch: x64
             runner: windows-2025
             opt_level: generic
-            rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1100;gfx1101;gfx1200;gfx1201
+            rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1031;gfx1032;gfx1100;gfx1101;gfx1102;gfx1200;gfx1201
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -1243,8 +1241,167 @@ jobs:
           name: faiss-gpu-rocm-nupkg.zip
           path: 'nupkg/*.nupkg'
 
+  build-docker:
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+            docker_platform: linux/amd64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            docker_platform: linux/arm64
+    runs-on: ${{ matrix.runner }}
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and load Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.docker_platform }}
+          load: true
+          tags: faiss-test:${{ matrix.arch }}
+          provenance: false
+
+      - name: Test Docker image
+        run: docker run --rm faiss-test:${{ matrix.arch }}
+
+      - name: Build and push architecture-specific image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.docker_platform }}
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-${{ matrix.arch }}
+          provenance: false
+
+  docker-manifest:
+    needs: build-docker
+    runs-on: ubuntu-24.04
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push multi-arch manifest
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-amd64 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-arm64
+
+      - name: Create latest tag manifest
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-amd64 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-arm64
+
+  build-docker-cuda:
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+            docker_platform: linux/amd64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            docker_platform: linux/arm64
+    runs-on: ${{ matrix.runner }}
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push architecture-specific CUDA image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.cuda
+          platforms: ${{ matrix.docker_platform }}
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cuda:${{ github.sha }}-${{ matrix.arch }}
+          provenance: false
+
+  docker-cuda-manifest:
+    needs: build-docker-cuda
+    runs-on: ubuntu-24.04
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push multi-arch CUDA manifest
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cuda:${{ github.sha }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cuda:${{ github.sha }}-amd64 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cuda:${{ github.sha }}-arm64
+
+      - name: Create latest tag manifest
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cuda:latest \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cuda:${{ github.sha }}-amd64 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cuda:${{ github.sha }}-arm64
+
   publish-github-packages:
-    needs: [pack, pack-gpu, pack-native, pack-native-gpu-cuda, pack-native-gpu-rocm, build-linux-pack, build-linux-cuda-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack]
+    needs: [pack, pack-gpu, pack-native, pack-native-gpu-cuda, pack-native-gpu-rocm, build-linux-pack, build-linux-cuda-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack, docker-manifest, docker-cuda-manifest]
     runs-on: ubuntu-24.04
     
     permissions:
@@ -1271,7 +1428,7 @@ jobs:
             --skip-duplicate
           
   create-release:
-    needs: [pack, build-linux-pack, build-linux-cuda-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack]
+    needs: [publish-github-packages]
     runs-on: ubuntu-24.04
     if: startsWith(github.ref, 'refs/tags/')
 

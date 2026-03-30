@@ -1,0 +1,89 @@
+FROM nvidia/cuda:12.8.0-devel-ubuntu24.04 AS faiss-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cmake \
+    g++ \
+    make \
+    libopenblas-dev \
+    liblapack-dev \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+COPY faiss ./faiss
+
+WORKDIR /build/faiss
+RUN cmake -B build . \
+    -DFAISS_ENABLE_C_API=ON \
+    -DBUILD_SHARED_LIBS=ON \
+    -DFAISS_ENABLE_GPU=ON \
+    -DFAISS_OPT_LEVEL=generic \
+    -DFAISS_ENABLE_MKL=OFF \
+    -DFAISS_ENABLE_PYTHON=OFF \
+    -DBUILD_TESTING=OFF \
+    -DFAISS_ENABLE_EXTRAS=OFF \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+    -DCMAKE_INSTALL_RPATH='$ORIGIN' \
+    -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;120"
+
+RUN make -C build -j $(nproc) faiss_c
+
+FROM mcr.microsoft.com/dotnet/sdk:9.0-noble AS test
+
+ARG TARGETARCH
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libopenblas0 \
+    libgomp1 \
+    libgfortran5 \
+    wget \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+    case ${TARGETARCH} in \
+      amd64) REPO_ARCH=x86_64 ;; \
+      arm64) REPO_ARCH=sbsa ;; \
+      *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+    esac && \
+    wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/${REPO_ARCH}/cuda-keyring_1.1-1_all.deb && \
+    dpkg -i cuda-keyring_1.1-1_all.deb && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        cuda-cudart-12-8 \
+        libcublas-12-8 \
+        libcurand-12-8 \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f cuda-keyring_1.1-1_all.deb
+
+WORKDIR /app
+
+COPY src ./src
+COPY Faiss.NET.slnx .
+COPY README.md .
+COPY LICENSE .
+
+COPY --from=faiss-builder /build/faiss/build/c_api/libfaiss_c.so /tmp/
+COPY --from=faiss-builder /build/faiss/build/faiss/libfaiss.so /tmp/
+
+RUN set -eux; \
+    case ${TARGETARCH} in \
+      amd64) \
+        DEST_PROJECT=FaissNET.Linux.Gpu.Cuda.x64 ; \
+        RID=x64 ; \
+        ;; \
+      arm64) \
+        DEST_PROJECT=FaissNET.Linux.Gpu.Cuda.arm64 ; \
+        RID=arm64 ; \
+        ;; \
+      *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+    esac && \
+    mkdir -p /app/src/${DEST_PROJECT}/runtimes/linux-${RID}/native/ && \
+    cp /tmp/libfaiss_c.so /tmp/libfaiss.so \
+       /app/src/${DEST_PROJECT}/runtimes/linux-${RID}/native/
+
+ENV LD_LIBRARY_PATH=/usr/local/cuda-12.8/lib64:${LD_LIBRARY_PATH}
+
+CMD ["dotnet", "test", "src/FaissNET.Gpu.Tests/Faiss.Gpu.Tests.csproj", "-c", "Release"]
