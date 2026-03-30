@@ -1419,7 +1419,7 @@ jobs:
       - name: Download all NuGet Artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: 'faiss-*-nupkg.zip'
+          pattern: '*-nupkg.zip'
           path: artifacts
           merge-multiple: true
       
@@ -1442,7 +1442,7 @@ jobs:
       - name: Download all NuGet Artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: 'faiss-*-nupkg.zip'
+          pattern: '*-nupkg.zip'
           path: artifacts
           merge-multiple: true
 
@@ -1470,7 +1470,7 @@ jobs:
       - name: Download all NuGet Artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: 'faiss-*-nupkg.zip'
+          pattern: '*-nupkg.zip'
           path: artifacts
           merge-multiple: true
       
