@@ -317,7 +317,20 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Cache ROCm installation
+        id: cache-rocm
+        uses: actions/cache@v5
+        with:
+          path: |
+            /opt/rocm
+            /opt/amdgpu
+            /var/cache/apt/archives
+          key: rocm-7.2-${{ matrix.arch }}-${{ hashFiles('.github/workflows/build-faiss.yaml') }}
+          restore-keys: |
+            rocm-7.2-${{ matrix.arch }}-
+
       - name: Install ROCm 7.2
+        if: steps.cache-rocm.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y wget gnupg2
