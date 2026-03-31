@@ -30,13 +30,15 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="runtimes\linux-x64\native\*.so">
-            <Pack>true</Pack>
-            <PackagePath>runtimes\linux-x64\native\</PackagePath>
+        <None Include="runtimes\linux-x64\native\*.so"
+              Pack="true"
+              PackagePath="runtimes\linux-x64\native\" />
+    </ItemGroup>
 
-            <Link>%(Filename)%(Extension)</Link>
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
+    <ItemGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64'">
+        <ContentWithTargetPath Include="runtimes\linux-x64\native\*.so"
+                               TargetPath="%(Filename)%(Extension)"
+                               CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>

@@ -20,10 +20,6 @@
         <PackageProjectUrl>https://github.com/Binozo/Faiss.NET</PackageProjectUrl>
     </PropertyGroup>
 
-    <PropertyGroup>
-        <ContentTargetFolders>runtimes</ContentTargetFolders>
-    </PropertyGroup>
-
     <ItemGroup>
         <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
         <None Include="..\..\LICENSE" Pack="true" PackagePath="\"/>
@@ -34,21 +30,25 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="runtimes\windows-x64\native\*.dll">
-            <Pack>true</Pack>
-            <PackagePath>runtimes\windows-x64\native\</PackagePath>
+        <None Include="runtimes\windows-x64\native\*.dll"
+              Pack="true"
+              PackagePath="runtimes\win-x64\native\" />
 
-            <Link>%(Filename)%(Extension)</Link>
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
+        <None Include="runtimes\windows-arm64\native\*.dll"
+              Pack="true"
+              PackagePath="runtimes\win-arm64\native\" />
+    </ItemGroup>
 
-        <Content Include="runtimes\windows-arm64\native\*.dll">
-            <Pack>true</Pack>
-            <PackagePath>runtimes\windows-arm64\native\</PackagePath>
+    <ItemGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64'">
+        <ContentWithTargetPath Include="runtimes\windows-x64\native\*.dll"
+                               TargetPath="%(Filename)%(Extension)"
+                               CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
 
-            <Link>%(Filename)%(Extension)</Link>
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
+    <ItemGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64'">
+        <ContentWithTargetPath Include="runtimes\windows-arm64\native\*.dll"
+                               TargetPath="%(Filename)%(Extension)"
+                               CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>
