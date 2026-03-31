@@ -7,7 +7,7 @@
         <NoWarn>$(NoWarn);NU5128</NoWarn>
 
         <PackageId>Faiss.NET.Gpu.Native.Cuda.Windows</PackageId>
-        <Version>1.0.0-preview.2</Version>
+        <Version>1.0.0-preview.3</Version>
         <Authors>Binozo</Authors>
         <Description>Native Windows (x64) CUDA binaries for the Faiss.NET GPU extension. Requires an NVIDIA GPU.</Description>
         <PackageTags>faiss vector search similarity-search machine-learning ai knn hnsw embeddings windows gpu cuda nvidia x64</PackageTags>

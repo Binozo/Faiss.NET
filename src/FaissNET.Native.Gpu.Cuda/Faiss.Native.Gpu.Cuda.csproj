@@ -7,7 +7,7 @@
         <NoWarn>$(NoWarn);NU5128</NoWarn>
 
         <PackageId>Faiss.NET.Gpu.Native.Cuda</PackageId>
-        <Version>1.0.0-preview.2</Version>
+        <Version>1.0.0-preview.3</Version>
         <Authors>Binozo</Authors>
         <Description>Meta-package for NVIDIA GPUs. Includes Linux CUDA runtimes.</Description>
         <PackageTags>faiss vector search similarity-search machine-learning ai knn hnsw embeddings linux gpu cuda nvidia x64 arm64</PackageTags>
