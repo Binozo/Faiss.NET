@@ -1372,6 +1372,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get Faiss submodule commit
+        id: faiss-commit
+        run: |
+          echo "sha=$(git rev-parse HEAD:faiss)" >> $GITHUB_OUTPUT
+
       - name: Build and push architecture-specific CUDA image
         uses: docker/build-push-action@v6
         with:
@@ -1381,8 +1386,9 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cuda:${{ github.sha }}-${{ matrix.arch }}
           provenance: false
-          cache-from: type=gha,scope=docker-cuda-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=docker-cuda-${{ matrix.arch }}
+          pull: true
+          cache-from: type=gha,scope=docker-cuda-${{ matrix.arch }}-${{ steps.faiss-commit.outputs.sha }}
+          cache-to: type=gha,mode=min,scope=docker-cuda-${{ matrix.arch }}-${{ steps.faiss-commit.outputs.sha }}
 
   docker-cuda-manifest:
     needs: build-docker-cuda
@@ -1416,7 +1422,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cuda:${{ github.sha }}-arm64
 
   publish-github-packages:
-    needs: [pack, pack-gpu, pack-native, pack-native-gpu-cuda, pack-native-gpu-rocm, build-linux-pack, build-linux-cuda-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack, docker-manifest, docker-cuda-manifest]
+    needs: [pack, pack-gpu, pack-native, pack-native-gpu-cuda, pack-native-gpu-rocm, build-linux-pack, build-linux-cuda-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack, docker-manifest]
     runs-on: ubuntu-24.04
     
     permissions:
