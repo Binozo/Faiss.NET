@@ -1333,7 +1333,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-arm64
 
       - name: Create latest tag manifest
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         run: |
           docker buildx imagetools create \
             --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
@@ -1414,7 +1414,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cuda:${{ github.sha }}-arm64
 
       - name: Create latest tag manifest
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         run: |
           docker buildx imagetools create \
             --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cuda:latest \
