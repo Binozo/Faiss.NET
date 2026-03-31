@@ -17,7 +17,7 @@ public sealed class FaissIndexFlatIP : FaissCpuIndex, INativeFaissCpuIndex
 
     /// <param name="dimensions">The number of dimensions for vectors in this index.</param>
     /// <exception cref="FaissException">Thrown when the index creation fails.</exception>
-    public FaissIndexFlatIP(int dimensions)
+    public FaissIndexFlatIP(long dimensions)
     {
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexFlatIP_new_with(out _handle, dimensions));
     }

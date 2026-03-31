@@ -35,7 +35,7 @@ public sealed class FaissIndexIDMap : FaissCpuIndex, IFaissIndexWithIds, INative
         _handle = new FaissIndexHandle(handle);
     }
 
-    static INativeFaissIndex INativeFaissCpuIndex.FromHandle(IntPtr handle) => new FaissIndexFlatL2(handle);
+    static INativeFaissIndex INativeFaissCpuIndex.FromHandle(IntPtr handle) => new FaissIndexIDMap(handle);
 
     public unsafe void AddWithIds(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids)
     {
