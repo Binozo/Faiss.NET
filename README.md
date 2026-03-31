@@ -1,127 +1,144 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Build and Package Faiss](https://github.com/Binozo/Faiss.NET/actions/workflows/build-faiss.yaml/badge.svg)](https://github.com/Binozo/Faiss.NET/actions/workflows/build-faiss.yaml)
-[![Nuget](https://img.shields.io/nuget/v/Faiss.NET)](https://www.nuget.org/packages/Faiss.NET)
+[![NuGet](https://img.shields.io/nuget/v/Faiss.NET.Interop)](https://www.nuget.org/packages/Faiss.NET.Interop)
 
 # Faiss.NET
 
-C# bindings for [Faiss](https://github.com/facebookresearch/faiss).
+High-performance C#/.NET bindings for [Faiss](https://github.com/facebookresearch/faiss).
+
+Faiss.NET gives you near-native performance with clean, idiomatic C# wrappers while staying as close as possible to the original Faiss API.
 
 - Faiss [v1.14.1](https://github.com/facebookresearch/faiss/releases/tag/v1.14.1)
 - .NET 9.0
 
-> [!WARNING]
-> This library is under active construction and currently not usable yet.
+> [!IMPORTANT]
+> This library is under active development. Core indexes and functionality are usable, but the API may still evolve and not every feature is complete yet.
 
-#### Implemented Indexes
-- IndexFlatIP
-- IndexFlatL2
-- IndexHNSW
+## Features
+- Thin, "bare-metal" bindings with minimal overhead
+- Strongly-typed wrappers + generic factory for all Faiss indexes
+- Currently implemented indexes:
+    - `IndexFlatIP`
+    - `IndexFlatL2`
+    - `IndexHNSW`
+- Full index serialization / deserialization
+- GPU acceleration (CUDA & ROCm) + GPU sharding
+- Cross-platform support (Windows, Linux, macOS — x64 & arm64)
 
-Also, a generic Index factory is implemented which can be used to instantiate all other Faiss supported indexes.
+## Table of Contents
 
-This library aims to be as "bare metal" as possible while being straightforward to work with.
+- [Supported Platforms](#supported-platforms)
+- [GPU Acceleration](#gpu-acceleration)
+- [Installation](#installation)
+- [Usage](#usage)
+- [License](#license)
 
-Additionally, Index serialization/deserialization and GPU Indexes + sharding is supported.
-
-#### Supported Platforms:
+## Supported Platforms
 
 | Platform | x64 | arm64 |
 |----------|-----|-------|
-| Windows  | ✅   | ✅     |
-| Linux    | ✅   | ✅     |
-| MacOS    | ✅   | ✅     |
+| **Windows** | ✅ | ✅ |
+| **Linux**   | ✅ | ✅ |
+| **macOS**   | ✅ | ✅ |
 
-#### GPU Acceleration:
+## GPU Acceleration
 
-| Platform       | x64 | arm64 |
-|----------------|-----|-------|
-| CUDA (Linux)   | ✅   | ✅     |
-| ROCm (Linux)   | ✅   | ❌     |
+| Backend      | Platform | x64 | arm64 |
+|--------------|----------|-----|-------|
+| **CUDA**     | Linux    | ✅  | ✅    |
+| **ROCm**     | Linux    | ✅  | ❌    |
+
+### Supported CUDA GPUs
+
+| Compute Capability | Architecture    | Example GPUs                      |
+|--------------------|-----------------|-----------------------------------|
+| 75                 | Turing          | RTX 20-series, Tesla T4           |
+| 80                 | Ampere          | A100                              |
+| 86                 | Ampere          | RTX 30-series, A40, A10, A16, A30 |
+| 89                 | Ada Lovelace    | RTX 40-series, L40, L40S, L4      |
+| 90                 | Hopper          | H100, H200                        |
+| 120                | Blackwell       | RTX 50-series, B100, B200, GB200  |
+
+### Supported ROCm GPUs
+
+| GFX Architecture      | Architecture | Example GPUs                             |
+|-----------------------|--------------|------------------------------------------|
+| gfx90a                | CDNA2        | AMD Instinct MI210, MI250, MI250X        |
+| gfx942                | CDNA3        | AMD Instinct MI300A, MI300X, MI325X      |
+| gfx950                | CDNA4        | AMD Instinct MI355X, MI350 series        |
+| gfx1030 / 1031 / 1032 | RDNA2        | Radeon RX 6600–6900 series               |
+| gfx1100 / 1101 / 1102 | RDNA3        | Radeon RX 7700–7900 series               |
+| gfx1200 / 1201        | RDNA4        | Radeon RX 9060 series and RX 9070 series |
 
 ## Installation
 
 ### Prerequisites
-#### Windows
 
-You need a C++ redistributable installed. E.g.
-
-```shell
-$ winget install --id Microsoft.VCRedist.2015+.x64 --silent
+**Windows**
+```bash
+winget install --id Microsoft.VCRedist.2015+.x64 --silent
 ```
 
-#### Linux
-
-OpenBLAS, OpenMP and Fortran runtimes must be installed. E.g.
-
-```shell
-$ sudo apt-get install -y libopenblas0 libgomp1 libgfortran5
+**Linux**
+```bash
+sudo apt-get install -y libopenblas0 libgomp1 libgfortran5
 ```
 
-#### MacOS
-
-An OpenMP runtime is required. E.g.
-```shell
-$ brew install libomp
+**macOS**
+```bash
+brew install libomp
 ```
 
-### NuGet
-Get the base NuGet:
-
-```shell
-$ dotnet add package Faiss.NET
-```
-
-Then pick a native package:
-
-Either [cpu only](#cpu-only) **or** with additional [gpu](#cpugpu) support.
-
+### NuGet Package
 #### CPU only
-```shell
-$ dotnet add package Faiss.NET.Native
+```bash
+dotnet add package Faiss.NET.Native
 ```
 
 #### CPU+GPU
-```shell
-$ dotnet add package Faiss.NET.Native.Gpu.Cuda # Linux only
-$ dotnet add package Faiss.NET.Native.Windows
-$ dotnet add package Faiss.NET.Native.MacOS
+##### CUDA
+```bash
+dotnet add package Faiss.NET.Native.Gpu.Cuda # Linux only
+dotnet add package Faiss.NET.Native.Windows
+dotnet add package Faiss.NET.Native.MacOS
 ```
 
-or
-
-```shell
-$ dotnet add package Faiss.NET.Native.Gpu.Rocm # Linux x64 only
-$ dotnet add package Faiss.NET.Native.Windows
-$ dotnet add package Faiss.NET.Native.MacOS
+##### ROCm
+```bash
+dotnet add package Faiss.NET.Native.Gpu.Rocm # Linux x64 only
+dotnet add package Faiss.NET.Native.Windows
+dotnet add package Faiss.NET.Native.MacOS
 ```
 
 ## Usage
-### Basic
+
+### Basic Example
+
 ```csharp
 using Faiss.NET;
 
 int dimensions = 4;
 using var index = new FaissIndex<FaissIndexFlatL2>(new FaissIndexFlatL2(dimensions));
 
-float[] vectors = { 1.0f, 2.0f, 3.0f, 4.0f };
+float[] vector = [1.0f, 2.0f, 3.0f, 4.0f];
 
-index.Add(vectors);
+index.Add(vector);
 
-using var searchResult = index.Search(vectors, 1);
+using var result = index.Search(vector, k: 1);
 
 float distance = searchResult.Distances[0]; // 0.0f
 long label = searchResult.Labels[0]; // 0
 ```
 
-### Examples
-#### Low-Level index usage
+### Low-Level API Example
+
 ```csharp
 using Faiss.NET;
 
 int dimensions = 2;
 using var index = new FaissIndexFlatIP(dimensions);
 
-float[] vectors = { 2.0f, 3.0f };
+float[] vectors = [2.0f, 3.0f];
 index.Add(1, vectors);
 
 float[] distances = new float[1];
@@ -133,31 +150,8 @@ long foundLabel = labels[0]; // 0
 float foundDistance = distances[0]; // 13
 ```
 
-### GPU Acceleration
-#### Supported CUDA GPUs:
+## License
 
-| Compute Capability | Architecture | GPUs |
-|--------------------|--------------|------|
-| 75 | Turing | RTX 2080/2080 Ti/2070/2060, Tesla T4 |
-| 80 | Ampere | A100 |
-| 86 | Ampere | RTX 3080/3090/3070/3060, A40, A10, A16, A30 |
-| 89 | Ada Lovelace | RTX 4090/4080/4070/4060, L40, L40S, L4 |
-| 90 | Hopper | H100, H200 |
-| 120 | Blackwell | B100, B200, GB200 |
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
-#### Supported ROCm GPUs:
-
-| GFX Architecture | GPUs |
-|------------------|------|
-| gfx90a | AMD Instinct MI210, MI250, MI250X |
-| gfx942 | AMD Instinct MI300A |
-| gfx950 | AMD Instinct MI355X |
-| gfx1030 | Radeon PRO V620, RX 6800/6800 XT/6900 XT |
-| gfx1031 | Radeon RX 6700/6700 XT/6750 XT |
-| gfx1032 | Radeon RX 6600/6600 XT/6600M |
-| gfx1100 | Radeon RX 7600/7600 XT |
-| gfx1101 | Radeon RX 7700 XT/7800 XT |
-| gfx1102 | Radeon RX 7900 GRE/XT/Xt |
-| gfx1200 | Radeon RX 9070 |
-| gfx1201 | Radeon RX 9070 XT/9060 |
-
+*Faiss.NET is not affiliated with Meta or the original Faiss project.*
