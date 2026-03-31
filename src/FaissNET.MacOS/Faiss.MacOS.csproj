@@ -11,6 +11,7 @@
         <Description>Native MacOS (x64 and arm64) binaries for Faiss.NET.</Description>
         <PackageTags>faiss vector search similarity-search machine-learning ai knn hnsw embeddings macos x64 arm64</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Copyright>Copyright (c) 2026 Noah Czaplewski</Copyright>
 
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <RepositoryUrl>https://github.com/Binozo/Faiss.NET</RepositoryUrl>
@@ -24,6 +25,7 @@
 
     <ItemGroup>
         <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+        <None Include="..\..\LICENSE" Pack="true" PackagePath="\"/>
     </ItemGroup>
 
     <ItemGroup>

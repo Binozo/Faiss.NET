@@ -19,6 +19,7 @@
         <Description>Modern C# bindings for Faiss.</Description>
         <PackageTags>faiss vector search similarity-search machine-learning ai knn hnsw embeddings</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Copyright>Copyright (c) 2026 Noah Czaplewski</Copyright>
 
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <RepositoryUrl>https://github.com/Binozo/Faiss.NET</RepositoryUrl>
@@ -42,5 +43,6 @@
 
     <ItemGroup>
         <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+        <None Include="..\..\LICENSE" Pack="true" PackagePath="\"/>
     </ItemGroup>
 </Project>

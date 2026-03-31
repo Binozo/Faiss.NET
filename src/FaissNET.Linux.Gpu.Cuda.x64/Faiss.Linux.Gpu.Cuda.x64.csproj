@@ -12,6 +12,7 @@
         <Description>Native Linux x64 CUDA binaries for the Faiss.NET GPU extension. Requires an NVIDIA GPU.</Description>
         <PackageTags>faiss vector search similarity-search machine-learning ai knn hnsw embeddings linux gpu cuda nvidia x64</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Copyright>Copyright (c) 2026 Noah Czaplewski</Copyright>
 
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <RepositoryUrl>https://github.com/Binozo/Faiss.NET</RepositoryUrl>
@@ -21,6 +22,7 @@
 
     <ItemGroup>
         <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+        <None Include="..\..\LICENSE" Pack="true" PackagePath="\"/>
     </ItemGroup>
 
     <ItemGroup>
