@@ -403,9 +403,9 @@ jobs:
 
       - name: Pack NuGet Packages
         run: |
-          dotnet pack src/FaissNET.Linux.Gpu.Cuda.x64/Faiss.Linux.Gpu.Cuda12.x64.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
-          dotnet pack src/FaissNET.Linux.Gpu.Cuda.arm64/Faiss.Linux.Gpu.Cuda12.arm64.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
-          dotnet pack src/FaissNET.Linux.Gpu.Cuda/Faiss.Linux.Gpu.Cuda12.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
+          dotnet pack src/FaissNET.Linux.Gpu.Cuda12.x64/Faiss.Linux.Gpu.Cuda12.x64.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
+          dotnet pack src/FaissNET.Linux.Gpu.Cuda12.arm64/Faiss.Linux.Gpu.Cuda12.arm64.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
+          dotnet pack src/FaissNET.Linux.Gpu.Cuda12/Faiss.Linux.Gpu.Cuda12.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
 
       - name: Upload NuGet Packages
         uses: actions/upload-artifact@v7
