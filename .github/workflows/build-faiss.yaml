@@ -383,18 +383,18 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: faiss-linux-x64-cuda12-binaries.zip
-          path: x64-cuda
+          path: x64-cuda12
 
       - name: Download ARM64 Artifacts
         uses: actions/download-artifact@v8
         with:
           name: faiss-linux-arm64-cuda12-binaries.zip
-          path: arm64-cuda
+          path: arm64-cuda12
 
       - name: Prepare Native Runtimes
         run: |
-          cp x64-cuda/* src/FaissNET.Linux.Gpu.Cuda.x64/runtimes/linux-x64/native/
-          cp arm64-cuda/* src/FaissNET.Linux.Gpu.Cuda.arm64/runtimes/linux-arm64/native/
+          cp x64-cuda12/* src/FaissNET.Linux.Gpu.Cuda12.x64/runtimes/linux-x64/native/
+          cp arm64-cuda12/* src/FaissNET.Linux.Gpu.Cuda12.arm64/runtimes/linux-arm64/native/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -403,9 +403,9 @@ jobs:
 
       - name: Pack NuGet Packages
         run: |
-          dotnet pack src/FaissNET.Linux.Gpu.Cuda.x64/Faiss.Linux.Gpu.Cuda.x64.csproj -c Release -p:ContinuousIntegrationBuild=true -p:PackageId=Faiss.NET.Gpu.Native.Cuda12.Linux.x64 -o ./nupkg
-          dotnet pack src/FaissNET.Linux.Gpu.Cuda.arm64/Faiss.Linux.Gpu.Cuda.arm64.csproj -c Release -p:ContinuousIntegrationBuild=true -p:PackageId=Faiss.NET.Gpu.Native.Cuda12.Linux.arm64 -o ./nupkg
-          dotnet pack src/FaissNET.Linux.Gpu.Cuda/Faiss.Linux.Gpu.Cuda.csproj -c Release -p:ContinuousIntegrationBuild=true -p:PackageId=Faiss.NET.Gpu.Native.Cuda12.Linux -o ./nupkg
+          dotnet pack src/FaissNET.Linux.Gpu.Cuda.x64/Faiss.Linux.Gpu.Cuda12.x64.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
+          dotnet pack src/FaissNET.Linux.Gpu.Cuda.arm64/Faiss.Linux.Gpu.Cuda12.arm64.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
+          dotnet pack src/FaissNET.Linux.Gpu.Cuda/Faiss.Linux.Gpu.Cuda12.csproj -c Release -p:ContinuousIntegrationBuild=true -o ./nupkg
 
       - name: Upload NuGet Packages
         uses: actions/upload-artifact@v7

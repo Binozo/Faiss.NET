@@ -9,7 +9,7 @@
         <PackageId>Faiss.NET.Gpu.Native.Cuda.Linux.arm64</PackageId>
         <Version>1.0.0-preview.3</Version>
         <Authors>Binozo</Authors>
-        <Description>Native Linux arm64 CUDA binaries for the Faiss.NET GPU extension. Requires an NVIDIA GPU.</Description>
+        <Description>Native Linux arm64 CUDA 13.2 binaries for the Faiss.NET GPU extension. Requires an NVIDIA GPU.</Description>
         <PackageTags>faiss vector search similarity-search machine-learning ai knn hnsw embeddings linux gpu cuda nvidia arm64</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <Copyright>Copyright (c) 2026 Noah Czaplewski</Copyright>

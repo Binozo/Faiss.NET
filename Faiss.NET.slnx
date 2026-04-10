@@ -23,6 +23,11 @@
     <Project Path="src/FaissNET.Linux.Gpu.Cuda/Faiss.Linux.Gpu.Cuda.csproj" />
     <Project Path="src/FaissNET.Linux.Gpu.Cuda.x64/Faiss.Linux.Gpu.Cuda.x64.csproj" />
     <Project Path="src/FaissNET.Linux.Gpu.Cuda.arm64/Faiss.Linux.Gpu.Cuda.arm64.csproj" />
+    
+    <Project Path="src/FaissNET.Linux.Gpu.Cuda12/Faiss.Linux.Gpu.Cuda12.csproj" />
+    <Project Path="src/FaissNET.Linux.Gpu.Cuda12.x64/Faiss.Linux.Gpu.Cuda12.x64.csproj" />
+    <Project Path="src/FaissNET.Linux.Gpu.Cuda12.arm64/Faiss.Linux.Gpu.Cuda12.arm64.csproj" />
+
     <Project Path="src/FaissNET.Linux.Gpu.Rocm/Faiss.Linux.Gpu.Rocm.csproj" />
 
     <Project Path="src/FaissNET.Windows.Gpu.Cuda/Faiss.Windows.Gpu.Cuda.csproj" />
