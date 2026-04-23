@@ -1,9 +1,10 @@
+using Faiss.Cpu.Exceptions;
 using Faiss.Exceptions;
 using Faiss.Models;
 
 namespace Faiss.Interfaces;
 
-public interface IFaissIndex : IDisposable
+public interface IIndex : IDisposable
 {
     /// <summary>
     /// Dimensionality of the vectors in this index.
@@ -16,11 +17,6 @@ public interface IFaissIndex : IDisposable
     long TotalCount { get; }
 
     /// <summary>
-    /// Value indicating whether the index requires training or is already trained.
-    /// </summary>
-    bool IsTrained { get; }
-
-    /// <summary>
     /// Metric type of this index.
     /// </summary>
     MetricType Metric { get; }
@@ -30,6 +26,7 @@ public interface IFaissIndex : IDisposable
     /// </summary>
     /// <param name="count">The number of vectors being added.</param>
     /// <param name="vectors">A flat span of vectors (size: count * Dimensions).</param>
+    /// <exception cref="FaissUntrainedException">Thrown when the index has not been trained yet incase it requires training.</exception>
     /// <exception cref="FaissException">Thrown when the add operation fails.</exception>
     void Add(long count, ReadOnlySpan<float> vectors);
 
@@ -43,6 +40,16 @@ public interface IFaissIndex : IDisposable
     /// <param name="labels">The output labels (indices) for the nearest neighbors.</param>
     /// <exception cref="FaissException">Thrown when the search operation fails.</exception>
     void Search(long count, ReadOnlySpan<float> queryVectors, int k, Span<float> distances, Span<long> labels);
+
+    void Assign(long count, ReadOnlySpan<float> queryVectors, long k, Span<long> labels);
+
+    void SearchWithParams(
+        long count,
+        ReadOnlySpan<float> queryVectors,
+        int k,
+        ISearchParameters parameters,
+        Span<float> distances,
+        Span<long> labels);
 
     /// <summary>
     /// Resets the index by removing all vectors stored within it.
