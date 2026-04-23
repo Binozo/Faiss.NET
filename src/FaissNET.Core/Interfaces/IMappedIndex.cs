@@ -1,9 +1,6 @@
 namespace Faiss.Interfaces;
 
-/// <summary>
-/// Faiss index with custom database IDs support.
-/// </summary>
-public interface IFaissIndexWithIds : IFaissIndex
+public interface IMappedIndex : IIndex
 {
     /// <summary>
     /// Adds vectors to the index using your own custom IDs instead of Faiss's standard sequential ones.
