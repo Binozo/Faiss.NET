@@ -4,7 +4,7 @@ using Microsoft.Win32.SafeHandles;
 
 using NativeMethods;
 
-internal sealed class FaissIndexHandle : SafeHandleZeroOrMinusOneIsInvalid
+public sealed class FaissIndexHandle : SafeHandleZeroOrMinusOneIsInvalid
 {
     public FaissIndexHandle() : base(true)
     {
@@ -24,6 +24,7 @@ internal sealed class FaissIndexHandle : SafeHandleZeroOrMinusOneIsInvalid
             Native.faiss_Index_free(handle);
             handle = IntPtr.Zero;
         }
+
         return true;
     }
 }
