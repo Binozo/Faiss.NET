@@ -9,7 +9,7 @@ namespace Faiss.Cpu.Indexes.Binary;
 /// <summary>
 /// Binary inverted file index with coarse quantization and binary flat lists.
 /// </summary>
-public sealed class IndexBinaryIVF : BinaryIndex<IndexBinaryIVF>, IFromNativeBinaryHandle<IndexBinaryIVF>
+public sealed class IndexBinaryIVF : CpuBinaryIndex<IndexBinaryIVF>, IFromNativeBinaryHandle<IndexBinaryIVF>
 {
     /// <summary>
     /// Creates a binary IVF index.

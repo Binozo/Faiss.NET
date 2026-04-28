@@ -5,7 +5,7 @@ using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Indexes.Binary;
 
-public sealed class IndexBinaryHNSW : BinaryIndex<IndexBinaryHNSW>, IFromNativeBinaryHandle<IndexBinaryHNSW>
+public sealed class IndexBinaryHNSW : CpuBinaryIndex<IndexBinaryHNSW>, IFromNativeBinaryHandle<IndexBinaryHNSW>
 {
     public IndexBinaryHNSW(int dimensions, int m = 32)
     {

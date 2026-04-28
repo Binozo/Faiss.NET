@@ -8,7 +8,7 @@ namespace Faiss.Cpu.Indexes.Binary;
 /// <summary>
 /// Exact binary flat index. Performs exhaustive Hamming search on packed binary vectors.
 /// </summary>
-public sealed class IndexBinaryFlat : BinaryIndex<IndexBinaryFlat>, IFromNativeBinaryHandle<IndexBinaryFlat>
+public sealed class IndexBinaryFlat : CpuBinaryIndex<IndexBinaryFlat>, IFromNativeBinaryHandle<IndexBinaryFlat>
 {
     /// <summary>
     /// Creates an exact binary flat index.
