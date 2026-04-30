@@ -8,7 +8,7 @@ using Faiss.Models;
 
 namespace Faiss.Cpu.Indexes.Binary;
 
-public abstract class BinaryIndex<T> : INativeBinaryIndex<T> where T : BinaryIndex<T>
+public abstract class BinaryIndex<T> : INativeBinaryIndex<T>, ITrainableBinaryIndex where T : BinaryIndex<T>
 {
     FaissIndexBinaryHandle INativeBinaryIndex.Handle => SafeHandle;
 
@@ -28,7 +28,7 @@ public abstract class BinaryIndex<T> : INativeBinaryIndex<T> where T : BinaryInd
     public long TotalCount => Native.faiss_IndexBinary_ntotal(SafeHandle);
 
     public bool IsTrained => Native.faiss_IndexBinary_is_trained(SafeHandle) != 0;
-    
+
     public MetricType Metric => Native.faiss_IndexBinary_metric_type(SafeHandle);
 
     public unsafe void Add(long count, ReadOnlySpan<byte> vectors)
@@ -84,6 +84,22 @@ public abstract class BinaryIndex<T> : INativeBinaryIndex<T> where T : BinaryInd
                     SafeHandle, count, pQuery, k, ((INativeSearchParameters)parameters).DangerousGetHandle(), pDistances, pLabels)
             );
         }
+    }
+    
+    public Task TrainAsync(long count, ReadOnlyMemory<byte> vectors)
+    {
+        return Task.Run(() =>
+        {
+            unsafe
+            {
+                using var handle = vectors.Pin();
+                byte* pVectors = (byte*)handle.Pointer;
+
+                FaissErrorHandler.ThrowIfError(
+                    Native.faiss_IndexBinary_train(SafeHandle, count, pVectors)
+                );
+            }
+        });
     }
 
     public void Reset()
