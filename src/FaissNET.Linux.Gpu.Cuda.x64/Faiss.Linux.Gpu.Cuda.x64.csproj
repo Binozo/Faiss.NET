@@ -7,7 +7,7 @@
         <NoWarn>$(NoWarn);NU5128</NoWarn>
 
         <PackageId>Faiss.NET.Gpu.Native.Cuda.Linux.x64</PackageId>
-        <Version>1.0.0-preview.3</Version>
+        <Version>1.0.0-preview.4</Version>
         <Authors>Binozo</Authors>
         <Description>Native Linux x64 CUDA 13.2 binaries for the Faiss.NET GPU extension. Requires an NVIDIA GPU.</Description>
         <PackageTags>faiss vector search similarity-search machine-learning ai knn hnsw embeddings linux gpu cuda nvidia x64</PackageTags>
