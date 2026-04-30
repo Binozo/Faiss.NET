@@ -16,6 +16,11 @@ public sealed class IndexBinaryFlat : CpuBinaryIndex<IndexBinaryFlat>, IFromNati
     /// <param name="dimensions">Vector dimensionality in bits.</param>
     public IndexBinaryFlat(int dimensions)
     {
+        if (dimensions == 0 || dimensions % 8 != 0)
+        {
+            throw new ArgumentException("Dimensions must be dividable by 8", nameof(dimensions));
+        }
+
         FaissErrorHandler.ThrowIfError(
             Native.faiss_index_binary_factory(out IntPtr ptr, dimensions, "BFlat")
         );

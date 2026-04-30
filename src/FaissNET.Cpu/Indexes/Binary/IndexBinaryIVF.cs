@@ -18,6 +18,11 @@ public sealed class IndexBinaryIVF : CpuBinaryIndex<IndexBinaryIVF>, IFromNative
     /// <param name="nlist">Number of inverted lists (coarse clusters).</param>
     public IndexBinaryIVF(int dimensions, int nlist)
     {
+        if (dimensions == 0 || dimensions % 8 != 0)
+        {
+            throw new ArgumentException("Dimensions must be dividable by 8", nameof(dimensions));
+        }
+
         string description = $"BIVF{nlist}";
 
         FaissErrorHandler.ThrowIfError(
@@ -32,6 +37,11 @@ public sealed class IndexBinaryIVF : CpuBinaryIndex<IndexBinaryIVF>, IFromNative
     /// </summary>
     public static IndexBinaryIVF WithHNSWQuantizer(int dimensions, int nlist, int m = 32)
     {
+        if (dimensions == 0 || dimensions % 8 != 0)
+        {
+            throw new ArgumentException("Dimensions must be dividable by 8", nameof(dimensions));
+        }
+
         string description = $"BIVF{nlist}_HNSW{m}";
         return BinaryIndexFactory.Create<IndexBinaryIVF>(description, dimensions);
     }
@@ -44,7 +54,7 @@ public sealed class IndexBinaryIVF : CpuBinaryIndex<IndexBinaryIVF>, IFromNative
 
     public int Nlist => (int)Native.faiss_IndexBinaryIVF_nlist(SafeHandle);
 
-    public int Nprobe
+    public int NProbe
     {
         get => (int)Native.faiss_IndexBinaryIVF_nprobe(SafeHandle);
         set => Native.faiss_IndexBinaryIVF_set_nprobe(SafeHandle, (UIntPtr)value);
