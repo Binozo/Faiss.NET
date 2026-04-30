@@ -6,7 +6,7 @@ namespace Faiss.Gpu.Indexes;
 
 public sealed class GpuShardedIndex<T> : Index<T>, INativeGpuIndex<T> where T : Index<T>, INativeIndex<T>, IFromNativeHandle<T>
 {
-    public readonly int[] Devices;
+    public readonly IReadOnlyList<int> Devices;
     
     internal GpuShardedIndex(IntPtr handle, int[] devices) : base(handle)
     {
