@@ -1,10 +1,13 @@
 using Faiss.Interop.NativeMethods;
+using Faiss.Search;
 
 namespace Faiss.Cpu.Selectors;
 
-public abstract class IDSelector : IDisposable
+public abstract class IDSelector : IIDSelector, IDisposable
 {
     internal FaissIDSelectorHandle SafeHandle { get; }
+    
+    IntPtr IIDSelector.ToNative() => SafeHandle.DangerousGetHandle();
     
     protected IDSelector(IntPtr handle)
     {

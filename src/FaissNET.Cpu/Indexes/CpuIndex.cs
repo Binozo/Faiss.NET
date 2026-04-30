@@ -18,7 +18,7 @@ public abstract class CpuIndex<T> : Index<T>, ICpuIndex<T> where T : Index<T>, I
         
     }
 
-    public long RemoveIds(IDSelector selector)
+    public long RemoveIds(IIDSelector selector)
     {
         ArgumentNullException.ThrowIfNull(selector);
 

@@ -11,7 +11,7 @@ public interface ICpuIndex : IIndex
     /// </summary>
     /// <param name="selector">The selector containing the IDs to drop.</param>
     /// <returns>The number of vectors successfully removed.</returns>
-    public long RemoveIds(IDSelector selector);
+    public long RemoveIds(IIDSelector selector);
 
     /// <summary>
     /// Reconstructs the original vector for a given ID.
