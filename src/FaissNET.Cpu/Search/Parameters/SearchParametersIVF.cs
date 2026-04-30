@@ -7,7 +7,7 @@ namespace Faiss.Cpu.Search.Parameters;
 public sealed class SearchParametersIVF : SearchParameters
 {
     public SearchParametersIVF(int nprobe, int maxCodes = 0, IDSelector? selector = null) 
-        : base(CreateHandle(nprobe, maxCodes))
+        : base(CreateHandle(nprobe, maxCodes, selector))
     {
     }
     
