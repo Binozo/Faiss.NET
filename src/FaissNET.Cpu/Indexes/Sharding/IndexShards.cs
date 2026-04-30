@@ -17,12 +17,12 @@ public class IndexShards : CpuIndex<IndexShards>, IFromNativeHandle<IndexShards>
         );
 
         SafeHandle = new FaissIndexHandle(ptr);
-        Native.faiss_IndexShards_set_own_fields(SafeHandle, false);
+        Native.faiss_IndexShards_set_own_indices(SafeHandle, false);
     }
 
     private IndexShards(IntPtr handle) : base(handle)
     {
-        Native.faiss_IndexShards_set_own_fields(SafeHandle, true);
+        Native.faiss_IndexShards_set_own_indices(SafeHandle, true);
     }
 
     static IndexShards IFromNativeHandle<IndexShards>.FromHandle(IntPtr handle) => new(handle);

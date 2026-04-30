@@ -21,10 +21,10 @@ internal static unsafe partial class Native
     internal static partial IntPtr faiss_IndexShards_at(FaissIndexHandle index, int i);
 
     [LibraryImport(LibraryName)]
-    internal static partial int faiss_IndexShards_own_fields(FaissIndexHandle index);
+    internal static partial int faiss_IndexShards_own_indices(FaissIndexHandle index);
 
     [LibraryImport(LibraryName)]
-    internal static partial void faiss_IndexShards_set_own_fields(FaissIndexHandle index, [MarshalAs(UnmanagedType.Bool)] bool ownFields);
+    internal static partial void faiss_IndexShards_set_own_indices(FaissIndexHandle index, [MarshalAs(UnmanagedType.Bool)] bool ownFields);
 
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexShards_successive_ids(FaissIndexHandle index);
