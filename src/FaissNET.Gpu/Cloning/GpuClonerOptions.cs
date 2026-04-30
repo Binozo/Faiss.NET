@@ -152,13 +152,13 @@ public class GpuClonerOptions : IDisposable
     /// </remarks>
     public long ReserveVecs
     {
-        get => GpuNative.faiss_GpuClonerOptions_reserveVecs(NativeHandle);
+        get => GpuNative.faiss_GpuClonerOptions_reserveVecs(NativeHandle).Value.ToInt64();
         set
         {
-            if (OperatingSystem.IsWindows() && value > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(value), "Value exceeds the maximum supported on Windows (int.MaxValue).");
-
-            GpuNative.faiss_GpuClonerOptions_set_reserveVecs(NativeHandle, (nint)value);
+            var clong = Marshal.SizeOf<CLong>() == sizeof(int)
+                ? new CLong(checked((int)value))
+                : new CLong(new IntPtr(value));
+            GpuNative.faiss_GpuClonerOptions_set_reserveVecs(NativeHandle, clong);
         }
     }
 

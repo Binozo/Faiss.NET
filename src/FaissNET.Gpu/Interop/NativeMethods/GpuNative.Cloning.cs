@@ -54,10 +54,10 @@ internal static partial class GpuNative
     internal static partial void faiss_GpuClonerOptions_set_useFloat16CoarseQuantizer(GpuClonerOptionsHandle options, int value);
 
     [LibraryImport(LibraryName)]
-    internal static partial nint faiss_GpuClonerOptions_reserveVecs(GpuClonerOptionsHandle options);
+    internal static partial CLong faiss_GpuClonerOptions_reserveVecs(GpuClonerOptionsHandle options);
 
     [LibraryImport(LibraryName)]
-    internal static partial void faiss_GpuClonerOptions_set_reserveVecs(GpuClonerOptionsHandle options, nint value);
+    internal static partial void faiss_GpuClonerOptions_set_reserveVecs(GpuClonerOptionsHandle options, CLong value);
 
     [LibraryImport(LibraryName)]
     internal static partial int faiss_GpuClonerOptions_storeTransposed(GpuClonerOptionsHandle options);
