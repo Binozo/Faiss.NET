@@ -30,8 +30,6 @@ Faiss.NET gives you near-native performance with clean, idiomatic C# wrappers wh
 - [Supported Platforms](#supported-platforms)
 - [License](#license)
 
-See [CHANGELOG.md](CHANGELOG.md) for all changes.
-
 ## Installation
 
 ### Prerequisites
