@@ -7,16 +7,22 @@ internal static unsafe partial class Native
 {
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexRefineFlat_new(out IntPtr pIndex, FaissIndexHandle baseIndex);
+
     [LibraryImport(LibraryName)]
     internal static partial void faiss_IndexRefineFlat_free(FaissIndexHandle index);
+
     [LibraryImport(LibraryName)]
-    internal static partial IntPtr faiss_IndexRefineFlat_cast(FaissIndexHandle index);
+    internal static partial IntPtr faiss_IndexRefineFlat_cast(IntPtr index);
+
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexRefineFlat_own_fields(FaissIndexHandle index);
+
     [LibraryImport(LibraryName)]
     internal static partial void faiss_IndexRefineFlat_set_own_fields(FaissIndexHandle index, [MarshalAs(UnmanagedType.Bool)] bool ownFields);
+
     [LibraryImport(LibraryName)]
     internal static partial float faiss_IndexRefineFlat_k_factor(FaissIndexHandle index);
+
     [LibraryImport(LibraryName)]
     internal static partial void faiss_IndexRefineFlat_set_k_factor(FaissIndexHandle index, float kFactor);
 }

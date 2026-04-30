@@ -26,7 +26,6 @@ public sealed class IndexRefineFlat : CpuIndex<IndexRefineFlat>, IFromNativeHand
     
     internal IndexRefineFlat(IntPtr handle) : base(handle)
     {
-        SafeHandle = new FaissIndexHandle(handle);
         Native.faiss_IndexRefineFlat_set_own_fields(SafeHandle, true);
     }
 

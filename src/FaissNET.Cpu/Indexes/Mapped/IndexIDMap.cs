@@ -41,7 +41,7 @@ public class IndexIDMap<T> : CpuIndex<IndexIDMap<T>>, IFromNativeHandle<IndexIDM
 
     private IndexIDMap(IntPtr handle, bool takeOwnership = false) : base(handle)
     {
-        _index = T.FromHandle(Native.faiss_IndexIDMap_sub_index(new FaissIndexHandle(handle)));
+        _index = T.FromHandle(Native.faiss_IndexIDMap_sub_index(handle));
         
 
         Native.faiss_IndexIDMap_set_own_fields(SafeHandle, takeOwnership);

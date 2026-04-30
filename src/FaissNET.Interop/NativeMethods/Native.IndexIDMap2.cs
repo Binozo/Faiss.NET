@@ -18,11 +18,11 @@ internal static unsafe partial class Native
     internal static partial int faiss_IndexIDMap2_construct_rev_map(FaissIndexHandle index);
 
     [LibraryImport(LibraryName)]
-    internal static partial IntPtr faiss_IndexIDMap2_cast(FaissIndexHandle index);
+    internal static partial IntPtr faiss_IndexIDMap2_cast(IntPtr index);
 
     [LibraryImport(LibraryName)]
     internal static partial void faiss_IndexIDMap2_id_map(FaissIndexHandle index, out IntPtr pIdMap, out UIntPtr pSize);
 
     [LibraryImport(LibraryName)]
-    internal static partial IntPtr faiss_IndexIDMap2_sub_index(FaissIndexHandle index);
+    internal static partial IntPtr faiss_IndexIDMap2_sub_index(IntPtr index);
 }
