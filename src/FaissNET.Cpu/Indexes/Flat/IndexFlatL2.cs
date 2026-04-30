@@ -10,7 +10,7 @@ using Interop.NativeMethods;
 /// Exact search for L2 (Euclidean) distance.
 /// The most basic and accurate Faiss index.
 /// </summary>
-public sealed class IndexFlatL2 : CpuIndex<IndexFlatL2>, IFromNativeHandle<IndexFlatL2>, IFlatIndex
+public sealed class IndexFlatL2 : CpuIndex<IndexFlatL2>, IFromNativeHandle<IndexFlatL2>, IFlatIndex, ISequentialIDIndex
 {
     /// <param name="dimensions">The number of dimensions for vectors in this index.</param>
     /// <exception cref="FaissException">Thrown when the index creation fails.</exception>

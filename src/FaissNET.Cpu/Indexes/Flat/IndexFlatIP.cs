@@ -10,7 +10,7 @@ using Interop.NativeMethods;
 /// Exact search for Inner Product (useful for Cosine Similarity).
 /// Ideal for NLP and embedding-based search.
 /// </summary>
-public sealed class IndexFlatIP : CpuIndex<IndexFlatIP>, IFromNativeHandle<IndexFlatIP>, IFlatIndex
+public sealed class IndexFlatIP : CpuIndex<IndexFlatIP>, IFromNativeHandle<IndexFlatIP>, IFlatIndex, ISequentialIDIndex
 {
     /// <param name="dimensions">The number of dimensions for vectors in this index.</param>
     /// <exception cref="FaissException">Thrown when the index creation fails.</exception>
