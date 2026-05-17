@@ -64,7 +64,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Download Faiss.NET runtime NuGet packages from nuget.org and update local native libraries."
     )
-    parser.add_argument("-v", "--version", default="1.0.0-preview.4", help="NuGet package version (e.g. 1.0.0-preview.2)")
+    parser.add_argument("-v", "--version", default="1.0.0-preview.5", help="NuGet package version (e.g. 1.0.0-preview.5)")
     args = parser.parse_args()
 
     root_dir = Path(__file__).resolve().parent.parent

@@ -6,7 +6,7 @@
         <IncludeBuildOutput>false</IncludeBuildOutput>
 
         <PackageId>Faiss.NET.Native</PackageId>
-        <Version>1.0.0-preview.4</Version>
+        <Version>1.0.0-preview.5</Version>
         <Authors>Binozo</Authors>
         <Description>Cross-platform native binaries meta-package for Faiss.NET. Includes Linux, Windows, and macOS runtimes.</Description>
         <PackageTags>faiss vector search similarity-search machine-learning ai knn hnsw embeddings linux windows macos cross-platform x64 arm64</PackageTags>
