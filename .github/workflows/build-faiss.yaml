@@ -880,8 +880,8 @@ jobs:
         include:
           - arch: x64
             runner: windows-2025
-          - arch: arm64
-            runner: windows-11-arm
+          #- arch: arm64
+          #  runner: windows-11-arm
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -924,16 +924,14 @@ jobs:
           name: faiss-windows-x64-binaries.zip
           path: x64
 
-      - name: Download ARM64 Artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: faiss-windows-arm64-binaries.zip
-          path: arm64
+      #- name: Download ARM64 Artifacts
+      #  uses: actions/download-artifact@v8
+      #  with:
+      #    name: faiss-windows-arm64-binaries.zip
+      #    path: arm64
 
       - name: Prepare Native Runtimes
-        run: |
-          cp x64/* src/FaissNET.Windows/runtimes/windows-x64/native/
-          cp arm64/* src/FaissNET.Windows/runtimes/windows-arm64/native/
+        run: cp x64/* src/FaissNET.Windows/runtimes/win-x64/native/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
