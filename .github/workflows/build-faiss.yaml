@@ -732,6 +732,8 @@ jobs:
             openblas_flags: >-
               -DTARGET=ARMV8
               -DARCH=arm64
+        exclude:
+          - arch: arm64 # faiss arm64 temporary not working
     runs-on: ${{ matrix.runner }}
 
     env:
