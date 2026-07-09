@@ -724,14 +724,14 @@ jobs:
             # DYNAMIC_ARCH builds kernels for many x64 CPUs, picks the best at runtime
             openblas_flags: >-
               -DDYNAMIC_ARCH=ON
-          #- arch: arm64
-          #  runner: windows-11-arm
-          #  opt_level: generic
-          #  msvc_arch: arm64
-          #  llvm_asset: LLVM-19.1.7-woa64.exe
-          #  openblas_flags: >-
-          #    -DTARGET=ARMV8
-          #    -DARCH=arm64
+          - arch: arm64
+            runner: windows-11-arm
+            opt_level: generic
+            msvc_arch: arm64
+            llvm_asset: LLVM-19.1.7-woa64.exe
+            openblas_flags: >-
+              -DTARGET=ARMV8
+              -DARCH=arm64
     runs-on: ${{ matrix.runner }}
 
     env:
