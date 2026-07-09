@@ -17,10 +17,10 @@ jobs:
         include:
           - arch: x64
             runner: ubuntu-24.04
-            opt_level: generic
+            opt_level: dd
           - arch: arm64
             runner: ubuntu-24.04-arm
-            opt_level: generic
+            opt_level: dd
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -46,6 +46,7 @@ jobs:
           -DBUILD_SHARED_LIBS=ON \
           -DFAISS_ENABLE_GPU=OFF \
           -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
+          -DFAISS_USE_LTO=ON \
           -DFAISS_ENABLE_MKL=OFF \
           -DFAISS_ENABLE_PYTHON=OFF \
           -DBUILD_TESTING=OFF \
@@ -162,11 +163,11 @@ jobs:
           - arch: x64
             runner: ubuntu-24.04
             cuda_arch: x86_64
-            opt_level: generic
+            opt_level: dd
           - arch: arm64
             runner: ubuntu-24.04-arm
             cuda_arch: sbsa
-            opt_level: generic
+            opt_level: dd
     runs-on: ${{ matrix.runner }}
 
     env:
@@ -214,6 +215,7 @@ jobs:
             -DBUILD_SHARED_LIBS=ON \
             -DFAISS_ENABLE_GPU=ON \
             -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
+            -DFAISS_USE_LTO=ON \
             -DFAISS_ENABLE_MKL=OFF \
             -DFAISS_ENABLE_PYTHON=OFF \
             -DBUILD_TESTING=OFF \
@@ -221,7 +223,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
             -DCMAKE_INSTALL_RPATH='$ORIGIN' \
-            -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;120"
+            -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;100;120"
 
       - name: Build Faiss C API
         working-directory: faiss
@@ -291,11 +293,11 @@ jobs:
           - arch: x64
             runner: ubuntu-24.04
             cuda_arch: x86_64
-            opt_level: generic
+            opt_level: dd
           - arch: arm64
             runner: ubuntu-24.04-arm
             cuda_arch: sbsa
-            opt_level: generic
+            opt_level: dd
     runs-on: ${{ matrix.runner }}
 
     env:
@@ -343,6 +345,7 @@ jobs:
             -DBUILD_SHARED_LIBS=ON \
             -DFAISS_ENABLE_GPU=ON \
             -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
+            -DFAISS_USE_LTO=ON \
             -DFAISS_ENABLE_MKL=OFF \
             -DFAISS_ENABLE_PYTHON=OFF \
             -DBUILD_TESTING=OFF \
@@ -350,7 +353,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
             -DCMAKE_INSTALL_RPATH='$ORIGIN' \
-            -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;120"
+            -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;100;120"
 
       - name: Build Faiss C API
         working-directory: faiss
@@ -422,7 +425,7 @@ jobs:
         include:
           - arch: x64
             runner: ubuntu-24.04
-            opt_level: generic
+            opt_level: dd
             rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1031;gfx1032;gfx1100;gfx1101;gfx1102;gfx1200;gfx1201
     runs-on: ${{ matrix.runner }}
 
@@ -505,6 +508,7 @@ jobs:
             -DFAISS_ENABLE_GPU=ON \
             -DFAISS_ENABLE_ROCM=ON \
             -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
+            -DFAISS_USE_LTO=ON \
             -DFAISS_ENABLE_MKL=OFF \
             -DFAISS_ENABLE_PYTHON=OFF \
             -DBUILD_TESTING=OFF \
@@ -576,9 +580,15 @@ jobs:
           - arch: arm64
             runner: macos-26
             opt_level: sve
+            build_targets: faiss_sve faiss_c_sve
+            faiss_src: libfaiss_sve.dylib
+            faiss_c_src: libfaiss_c_sve.dylib
           - arch: x64
             runner: macos-26-intel
             opt_level: avx2
+            build_targets: faiss_avx2 faiss_c_avx2
+            faiss_src: libfaiss_avx2.dylib
+            faiss_c_src: libfaiss_c_avx2.dylib
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -601,6 +611,7 @@ jobs:
           -DBUILD_SHARED_LIBS=ON \
           -DFAISS_ENABLE_GPU=OFF \
           -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
+          -DFAISS_USE_LTO=ON \
           -DFAISS_ENABLE_MKL=OFF \
           -DCMAKE_CXX_FLAGS="-I$LIBOMP_PATH/include" \
           -DOpenMP_ROOT=$LIBOMP_PATH \
@@ -614,13 +625,13 @@ jobs:
     - name: Build Faiss C API
       working-directory: faiss
       run: |
-        cmake --build build --config Release --target faiss_c
+        make -C build -j$(sysctl -n hw.logicalcpu) ${{ matrix.build_targets }}
 
     - name: Prepare artifacts
       run: |
         mkdir -p artifacts
-        cp faiss/build/c_api/libfaiss_c.dylib artifacts/
-        cp faiss/build/faiss/libfaiss.dylib artifacts/
+        cp faiss/build/c_api/${{ matrix.faiss_c_src }} artifacts/libfaiss_c.dylib
+        cp faiss/build/faiss/${{ matrix.faiss_src }} artifacts/libfaiss.dylib
 
     - name: Upload Zip Artifact
       uses: actions/upload-artifact@v7
@@ -718,7 +729,7 @@ jobs:
         include:
           - arch: x64
             runner: windows-2025
-            opt_level: generic
+            opt_level: dd
             msvc_arch: amd64
             llvm_asset: LLVM-19.1.7-win64.exe
             # DYNAMIC_ARCH builds kernels for many x64 CPUs, picks the best at runtime
@@ -726,6 +737,7 @@ jobs:
               -DDYNAMIC_ARCH=ON
           - arch: arm64
             runner: windows-11-arm
+            # MSVC ARM64 lacks NEON SIMD support in Faiss; generic is the only viable level
             opt_level: generic
             msvc_arch: arm64
             llvm_asset: LLVM-19.1.7-woa64.exe
@@ -840,6 +852,7 @@ jobs:
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=OFF `
             -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} `
+            -DFAISS_USE_LTO=ON `
             -DFAISS_ENABLE_PYTHON=OFF `
             -DFAISS_ENABLE_MKL=OFF `
             -DBUILD_TESTING=OFF `
@@ -880,8 +893,8 @@ jobs:
         include:
           - arch: x64
             runner: windows-2025
-          #- arch: arm64
-          #  runner: windows-11-arm
+          - arch: arm64
+            runner: windows-11-arm
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -924,14 +937,16 @@ jobs:
           name: faiss-windows-x64-binaries.zip
           path: x64
 
-      #- name: Download ARM64 Artifacts
-      #  uses: actions/download-artifact@v8
-      #  with:
-      #    name: faiss-windows-arm64-binaries.zip
-      #    path: arm64
+      - name: Download ARM64 Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-windows-arm64-binaries.zip
+          path: arm64
 
       - name: Prepare Native Runtimes
-        run: cp x64/* src/FaissNET.Windows/runtimes/win-x64/native/
+        run: |
+          cp x64/* src/FaissNET.Windows/runtimes/windows-x64/native/
+          cp arm64/* src/FaissNET.Windows/runtimes/windows-arm64/native/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -1083,13 +1098,14 @@ jobs:
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=ON `
             -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} `
+            -DFAISS_USE_LTO=ON `
             -DFAISS_ENABLE_PYTHON=OFF `
             -DFAISS_ENABLE_MKL=OFF `
             -DBUILD_TESTING=OFF `
             -DFAISS_ENABLE_EXTRAS=OFF `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
-            -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;120"
+            -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;100;120"
 
       - name: Verify Faiss submodule (debug)
         shell: pwsh
@@ -1237,6 +1253,7 @@ jobs:
             -DFAISS_ENABLE_GPU=ON `
             -DFAISS_ENABLE_ROCM=ON `
             -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} `
+            -DFAISS_USE_LTO=ON `
             -DFAISS_ENABLE_PYTHON=OFF `
             -DFAISS_ENABLE_MKL=OFF `
             -DBUILD_TESTING=OFF `
