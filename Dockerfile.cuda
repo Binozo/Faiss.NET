@@ -28,7 +28,8 @@ RUN --mount=type=cache,target=/cache/ccache \
         -DFAISS_ENABLE_C_API=ON \
         -DBUILD_SHARED_LIBS=ON \
         -DFAISS_ENABLE_GPU=ON \
-        -DFAISS_OPT_LEVEL=generic \
+        -DFAISS_OPT_LEVEL=dd \
+        -DFAISS_USE_LTO=ON \
         -DFAISS_ENABLE_MKL=OFF \
         -DFAISS_ENABLE_PYTHON=OFF \
         -DBUILD_TESTING=OFF \
@@ -36,7 +37,7 @@ RUN --mount=type=cache,target=/cache/ccache \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
         -DCMAKE_INSTALL_RPATH='$ORIGIN' \
-        -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;120"
+        -DCMAKE_CUDA_ARCHITECTURES="75;80;86;89;90;100;120"
 
 RUN --mount=type=cache,target=/cache/ccache \
     make -C build -j $(nproc) faiss_c
