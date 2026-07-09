@@ -31,4 +31,22 @@ public sealed class SearchParametersIVF : SearchParameters
         get => (int)Native.faiss_SearchParametersIVF_max_codes(SafeHandle);
         set => Native.faiss_SearchParametersIVF_set_max_codes(SafeHandle, (UIntPtr)value);
     }
+    
+    public int MaxListsNum
+    {
+        get => (int)Native.faiss_SearchParametersIVF_max_lists_num(SafeHandle);
+        set => Native.faiss_SearchParametersIVF_set_max_lists_num(SafeHandle, (UIntPtr)value);
+    }
+    
+    public int EnsureTopKFull
+    {
+        get => Native.faiss_SearchParametersIVF_ensure_topk_full(SafeHandle);
+        set => Native.faiss_SearchParametersIVF_set_ensure_topk_full(SafeHandle, value);
+    }
+    
+    public int MaxEmptyResultBuckets
+    {
+        get => (int)Native.faiss_SearchParametersIVF_max_empty_result_buckets(SafeHandle);
+        set => Native.faiss_SearchParametersIVF_set_max_empty_result_buckets(SafeHandle, (UIntPtr)value);
+    }
 }
