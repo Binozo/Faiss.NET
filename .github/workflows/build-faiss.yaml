@@ -579,16 +579,10 @@ jobs:
         include:
           - arch: arm64
             runner: macos-26
-            opt_level: sve
-            build_targets: faiss_sve faiss_c_sve
-            faiss_src: libfaiss_sve.dylib
-            faiss_c_src: libfaiss_c_sve.dylib
+            opt_level: dd # sve
           - arch: x64
             runner: macos-26-intel
-            opt_level: avx2
-            build_targets: faiss_avx2 faiss_c_avx2
-            faiss_src: libfaiss_avx2.dylib
-            faiss_c_src: libfaiss_c_avx2.dylib
+            opt_level: dd # avx2
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -625,13 +619,13 @@ jobs:
     - name: Build Faiss C API
       working-directory: faiss
       run: |
-        make -C build -j$(sysctl -n hw.logicalcpu) ${{ matrix.build_targets }}
+        cmake --build build --config Release --target faiss_c
 
     - name: Prepare artifacts
       run: |
         mkdir -p artifacts
-        cp faiss/build/c_api/${{ matrix.faiss_c_src }} artifacts/libfaiss_c.dylib
-        cp faiss/build/faiss/${{ matrix.faiss_src }} artifacts/libfaiss.dylib
+        cp faiss/build/c_api/libfaiss_c.dylib artifacts/
+        cp faiss/build/faiss/libfaiss.dylib artifacts/
 
     - name: Upload Zip Artifact
       uses: actions/upload-artifact@v7
