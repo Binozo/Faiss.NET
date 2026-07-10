@@ -732,6 +732,7 @@ jobs:
             opt_level: dd
             msvc_arch: amd64
             llvm_asset: LLVM-19.1.7-win64.exe
+            lto: ON
             # DYNAMIC_ARCH builds kernels for many x64 CPUs, picks the best at runtime
             openblas_flags: >-
               -DDYNAMIC_ARCH=ON
@@ -741,6 +742,7 @@ jobs:
             opt_level: generic
             msvc_arch: arm64
             llvm_asset: LLVM-19.1.7-woa64.exe
+            lto: OFF
             openblas_flags: >-
               -DTARGET=ARMV8
               -DARCH=arm64
@@ -852,7 +854,7 @@ jobs:
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=OFF `
             -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} `
-            -DFAISS_USE_LTO=ON `
+            -DFAISS_USE_LTO=${{ matrix.lto }} `
             -DFAISS_ENABLE_PYTHON=OFF `
             -DFAISS_ENABLE_MKL=OFF `
             -DBUILD_TESTING=OFF `
@@ -1098,7 +1100,7 @@ jobs:
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=ON `
             -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} `
-            -DFAISS_USE_LTO=ON `
+            -DFAISS_USE_LTO=OFF `
             -DFAISS_ENABLE_PYTHON=OFF `
             -DFAISS_ENABLE_MKL=OFF `
             -DBUILD_TESTING=OFF `
@@ -1253,7 +1255,7 @@ jobs:
             -DFAISS_ENABLE_GPU=ON `
             -DFAISS_ENABLE_ROCM=ON `
             -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} `
-            -DFAISS_USE_LTO=ON `
+            -DFAISS_USE_LTO=OFF `
             -DFAISS_ENABLE_PYTHON=OFF `
             -DFAISS_ENABLE_MKL=OFF `
             -DBUILD_TESTING=OFF `
