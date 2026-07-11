@@ -879,7 +879,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           compression-level: 9
-          name: faiss-windows-${{ matrix.arch }}-binaries.zip
+          name: faiss-win-${{ matrix.arch }}-binaries.zip
           path: artifacts/*
 
   test-windows:
@@ -901,14 +901,14 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-windows-${{ matrix.arch }}-binaries.zip
+          name: faiss-win-${{ matrix.arch }}-binaries.zip
           path: artifacts
 
       - name: Prepare Native Libraries
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path src/FaissNET.Windows/runtimes/windows-${{ matrix.arch }}/native/
-          Copy-Item artifacts/* src/FaissNET.Windows/runtimes/windows-${{ matrix.arch }}/native/
+          New-Item -ItemType Directory -Force -Path src/FaissNET.Windows/runtimes/win-${{ matrix.arch }}/native/
+          Copy-Item artifacts/* src/FaissNET.Windows/runtimes/win-${{ matrix.arch }}/native/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -930,19 +930,19 @@ jobs:
       - name: Download x64 Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-windows-x64-binaries.zip
+          name: faiss-win-x64-binaries.zip
           path: x64
 
       - name: Download ARM64 Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-windows-arm64-binaries.zip
+          name: faiss-win-arm64-binaries.zip
           path: arm64
 
       - name: Prepare Native Runtimes
         run: |
-          cp x64/* src/FaissNET.Windows/runtimes/windows-x64/native/
-          cp arm64/* src/FaissNET.Windows/runtimes/windows-arm64/native/
+          cp x64/* src/FaissNET.Windows/runtimes/win-x64/native/
+          cp arm64/* src/FaissNET.Windows/runtimes/win-arm64/native/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -956,7 +956,7 @@ jobs:
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v7
         with:
-          name: faiss-windows-nupkg.zip
+          name: faiss-win-nupkg.zip
           path: 'nupkg/*.nupkg'
 
   # ============================================================================
@@ -1144,7 +1144,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           compression-level: '9'
-          name: faiss-windows-${{ matrix.arch }}-cuda-binaries.zip
+          name: faiss-win-${{ matrix.arch }}-cuda-binaries.zip
           path: artifacts/*
 
   build-windows-cuda-pack:
@@ -1159,12 +1159,12 @@ jobs:
       - name: Download x64 Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-windows-x64-cuda-binaries.zip
+          name: faiss-win-x64-cuda-binaries.zip
           path: x64-cuda
 
       - name: Prepare Native Runtimes
         run: |
-          cp x64-cuda/* src/FaissNET.Windows.Gpu.Cuda/runtimes/windows-x64/native/
+          cp x64-cuda/* src/FaissNET.Windows.Gpu.Cuda/runtimes/win-x64/native/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -1178,7 +1178,7 @@ jobs:
       - name: Upload NuGet Package
         uses: actions/upload-artifact@v7
         with:
-          name: faiss-windows-cuda-nupkg.zip
+          name: faiss-win-cuda-nupkg.zip
           path: 'nupkg/*.nupkg'
 
   # ============================================================================
@@ -1276,7 +1276,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           compression-level: '9'
-          name: faiss-windows-${{ matrix.arch }}-rocm-binaries.zip
+          name: faiss-win-${{ matrix.arch }}-rocm-binaries.zip
           path: artifacts/*
 
   pack:
