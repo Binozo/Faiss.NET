@@ -726,7 +726,7 @@ jobs:
             opt_level: dd
             msvc_arch: amd64
             llvm_asset: LLVM-19.1.7-win64.exe
-            lto: ON
+            lto: OFF
             # DYNAMIC_ARCH builds kernels for many x64 CPUs, picks the best at runtime
             openblas_flags: >-
               -DDYNAMIC_ARCH=ON
