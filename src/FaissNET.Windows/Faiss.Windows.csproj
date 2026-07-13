@@ -30,23 +30,23 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="runtimes\windows-x64\native\*.dll"
+        <None Include="runtimes\win-x64\native\*.dll"
               Pack="true"
               PackagePath="runtimes\win-x64\native\" />
 
-        <None Include="runtimes\windows-arm64\native\*.dll"
+        <None Include="runtimes\win-arm64\native\*.dll"
               Pack="true"
               PackagePath="runtimes\win-arm64\native\" />
     </ItemGroup>
 
     <ItemGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64'">
-        <ContentWithTargetPath Include="runtimes\windows-x64\native\*.dll"
+        <ContentWithTargetPath Include="runtimes\win-x64\native\*.dll"
                                TargetPath="%(Filename)%(Extension)"
                                CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64'">
-        <ContentWithTargetPath Include="runtimes\windows-arm64\native\*.dll"
+        <ContentWithTargetPath Include="runtimes\win-arm64\native\*.dll"
                                TargetPath="%(Filename)%(Extension)"
                                CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>

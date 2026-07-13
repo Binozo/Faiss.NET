@@ -30,9 +30,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="runtimes\windows-x64\native\*.dll">
+        <Content Include="runtimes\win-x64\native\*.dll">
             <Pack>true</Pack>
-            <PackagePath>runtimes\windows-x64\native\</PackagePath>
+            <PackagePath>runtimes\win-x64\native\</PackagePath>
 
             <Link>%(Filename)%(Extension)</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
