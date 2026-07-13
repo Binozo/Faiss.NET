@@ -18,9 +18,15 @@ jobs:
           - arch: x64
             runner: ubuntu-24.04
             opt_level: dd
+            blas: openblas
+          - arch: x64
+            runner: ubuntu-24.04
+            opt_level: dd
+            blas: mkl
           - arch: arm64
             runner: ubuntu-24.04-arm
             opt_level: dd
+            blas: openblas
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -36,7 +42,44 @@ jobs:
 
     - name: Install Build Dependencies
       run: |
-        sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev
+        sudo apt-get install -y cmake g++
+
+    - name: Install OpenBLAS
+      if: matrix.blas == 'openblas'
+      run: |
+        sudo apt-get install -y libopenblas-dev liblapack-dev
+
+    - name: Prepare oneMKL Cache Directory
+      if: matrix.blas == 'mkl'
+      run: |
+        # actions/cache restores as the runner user; /opt is root-owned
+        sudo mkdir -p /opt/intel
+        sudo chown -R "$USER" /opt/intel
+
+    - name: Cache oneMKL
+      if: matrix.blas == 'mkl'
+      id: cache-mkl
+      uses: actions/cache@v4
+      with:
+        path: /opt/intel/oneapi
+        key: oneapi-mkl-${{ runner.os }}-x64-v1
+
+    - name: Install oneMKL
+      if: matrix.blas == 'mkl' && steps.cache-mkl.outputs.cache-hit != 'true'
+      run: |
+        wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
+          | sudo gpg --dearmor -o /usr/share/keyrings/oneapi-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" \
+          | sudo tee /etc/apt/sources.list.d/oneAPI.list
+        sudo apt-get update
+        sudo apt-get install -y intel-oneapi-mkl-devel
+
+    - name: Setup MKL Environment
+      if: matrix.blas == 'mkl'
+      run: |
+        sudo apt-get install -y patchelf
+        echo "MKLROOT=/opt/intel/oneapi/mkl/latest" >> "$GITHUB_ENV"
+        echo "BLAS_CMAKE_FLAGS=-DFAISS_ENABLE_MKL=ON -DBLA_VENDOR=Intel10_64lp_seq -DBLA_STATIC=ON" >> "$GITHUB_ENV"
 
     - name: Configure Faiss
       working-directory: faiss
@@ -47,13 +90,19 @@ jobs:
           -DFAISS_ENABLE_GPU=OFF \
           -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
           -DFAISS_USE_LTO=ON \
-          -DFAISS_ENABLE_MKL=OFF \
+          ${BLAS_CMAKE_FLAGS:--DFAISS_ENABLE_MKL=OFF} \
           -DFAISS_ENABLE_PYTHON=OFF \
           -DBUILD_TESTING=OFF \
           -DFAISS_ENABLE_EXTRAS=OFF \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
           -DCMAKE_INSTALL_RPATH='$ORIGIN'
+
+        # The MKL leg must not silently fall back to another BLAS
+        if [ "${{ matrix.blas }}" = "mkl" ]; then
+          grep -q "mkl_intel_lp64" build/CMakeCache.txt || \
+            { echo "::error::FindMKL fell back to system BLAS"; exit 1; }
+        fi
 
     - name: Build Faiss C API
       working-directory: faiss
@@ -66,11 +115,28 @@ jobs:
         cp faiss/build/c_api/libfaiss_c.so artifacts/
         cp faiss/build/faiss/libfaiss.so artifacts/
 
+    - name: Rename MKL Variant
+      if: matrix.blas == 'mkl'
+      working-directory: artifacts
+      run: |
+        mv libfaiss.so libfaiss.mkl.so
+        mv libfaiss_c.so libfaiss_c.mkl.so
+        patchelf --set-soname libfaiss.mkl.so libfaiss.mkl.so
+        patchelf --replace-needed libfaiss.so libfaiss.mkl.so libfaiss_c.mkl.so
+
+        # Static-link acceptance gate
+        if ldd libfaiss.mkl.so | grep -qiE 'mkl|openblas|lapack|iomp'; then
+          echo "::error::dynamic BLAS dependency leaked into libfaiss.mkl.so"; exit 1
+        fi
+        if nm -D --undefined-only libfaiss.mkl.so | grep -qi gemm; then
+          echo "::error::unresolved BLAS symbols in libfaiss.mkl.so"; exit 1
+        fi
+
     - name: Upload Zip Artifact
       uses: actions/upload-artifact@v7
       with:
         compression-level: '9'
-        name: faiss-linux-${{ matrix.arch }}-binaries.zip
+        name: faiss-linux-${{ matrix.arch }}-${{ matrix.blas }}-binaries.zip
         path: artifacts/*
 
   test-linux:
@@ -80,8 +146,13 @@ jobs:
         include:
           - arch: x64
             runner: ubuntu-24.04
+            blas: openblas
+          - arch: x64
+            runner: ubuntu-24.04
+            blas: mkl
           - arch: arm64
             runner: ubuntu-24.04-arm
+            blas: openblas
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -90,13 +161,14 @@ jobs:
           fetch-depth: 0
 
       - name: Install Dependencies
+        if: matrix.blas == 'openblas'
         run: |
           sudo apt-get install -y libopenblas0 libgomp1 libgfortran5
 
       - name: Download Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-linux-${{ matrix.arch }}-binaries.zip
+          name: faiss-linux-${{ matrix.arch }}-${{ matrix.blas }}-binaries.zip
           path: artifacts
 
       - name: Prepare Native Libraries
@@ -110,6 +182,8 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Run Tests
+        env:
+          FAISSNET_BLAS: ${{ matrix.blas }}
         run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true
 
   build-linux-pack:
@@ -124,13 +198,19 @@ jobs:
       - name: Download x64 Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-linux-x64-binaries.zip
+          name: faiss-linux-x64-openblas-binaries.zip
+          path: x64
+
+      - name: Download x64 MKL Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-linux-x64-mkl-binaries.zip
           path: x64
 
       - name: Download ARM64 Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-linux-arm64-binaries.zip
+          name: faiss-linux-arm64-openblas-binaries.zip
           path: arm64
 
       - name: Prepare Native Runtimes
