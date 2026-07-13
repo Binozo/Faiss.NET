@@ -803,18 +803,32 @@ jobs:
         include:
           - arch: x64
             runner: windows-2025
-            opt_level: dd
+            # dd (runtime dispatch) is broken under MSVC: SIMD detection in
+            # simd_levels.cpp is GCC-only (__x86_64__ + inline asm), causing
+            # STATUS_ILLEGAL_INSTRUCTION at runtime. Hard AVX2 instead.
+            opt_level: avx2
+            c_target: faiss_c_avx2
             msvc_arch: amd64
+            blas: openblas
             llvm_asset: LLVM-19.1.7-win64.exe
             lto: OFF
             # DYNAMIC_ARCH builds kernels for many x64 CPUs, picks the best at runtime
             openblas_flags: >-
               -DDYNAMIC_ARCH=ON
+          - arch: x64
+            runner: windows-2025
+            opt_level: avx2
+            c_target: faiss_c_avx2
+            msvc_arch: amd64
+            blas: mkl # static sequential oneMKL; no LLVM/OpenBLAS toolchain needed
+            lto: OFF
           - arch: arm64
             runner: windows-11-arm
             # MSVC ARM64 lacks NEON SIMD support in Faiss; generic is the only viable level
             opt_level: generic
+            c_target: faiss_c
             msvc_arch: arm64
+            blas: openblas
             llvm_asset: LLVM-19.1.7-woa64.exe
             lto: OFF
             openblas_flags: >-
@@ -825,6 +839,7 @@ jobs:
     env:
       LLVM_VERSION: "19.1.7"
       OPENBLAS_VERSION: "0.3.31"
+      MKL_NUGET_VERSION: "2026.1.0.226"
 
     steps:
       - uses: actions/checkout@v6
@@ -847,6 +862,7 @@ jobs:
           arch: ${{ matrix.msvc_arch }}
 
       - name: Cache OpenBLAS
+        if: matrix.blas == 'openblas'
         id: cache-openblas
         uses: actions/cache@v5
         with:
@@ -855,7 +871,7 @@ jobs:
 
       # Provides clang-cl (C) + flang-new (Fortran)
       - name: Install LLVM ${{ env.LLVM_VERSION }}
-        if: steps.cache-openblas.outputs.cache-hit != 'true'
+        if: matrix.blas == 'openblas' && steps.cache-openblas.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           $url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-${{ env.LLVM_VERSION }}/${{ matrix.llvm_asset }}"
@@ -869,7 +885,7 @@ jobs:
 
       # Build OpenBLAS from source (MSVC ABI)
       - name: Build OpenBLAS ${{ env.OPENBLAS_VERSION }}
-        if: steps.cache-openblas.outputs.cache-hit != 'true'
+        if: matrix.blas == 'openblas' && steps.cache-openblas.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           git clone --depth 1 -b "v${{ env.OPENBLAS_VERSION }}" `
@@ -892,45 +908,93 @@ jobs:
           cmake --install build
 
       - name: Set OpenBLAS Environment
+        if: matrix.blas == 'openblas'
         shell: pwsh
         run: |
           $install = "${{ github.workspace }}\openblas_install"
           echo "OPENBLAS_PREFIX=$install" | Out-File $env:GITHUB_ENV -Append
-          Get-ChildItem $install -Recurse -File | Format-Table FullName, Length
+
+          $prefix = $install.Replace('\', '/')
+          $lib = (Get-ChildItem "$prefix/lib" -Filter "*openblas*.lib" |
+                  Select-Object -First 1).FullName.Replace('\', '/')
+          Write-Host "OpenBLAS lib: $lib"
+
+          # '|'-joined; the configure step splits and splats these
+          $flags = @(
+            "-DBLA_VENDOR=OpenBLAS",
+            "-DBLAS_LIBRARIES=$lib",
+            "-DLAPACK_LIBRARIES=$lib",
+            "-DCMAKE_INCLUDE_PATH=$prefix/include",
+            "-DFAISS_ENABLE_MKL=OFF"
+          ) -join '|'
+          echo "BLAS_CMAKE_FLAGS=$flags" | Out-File $env:GITHUB_ENV -Append
+
+      - name: Cache oneMKL
+        if: matrix.blas == 'mkl'
+        id: cache-mkl
+        uses: actions/cache@v5
+        with:
+          path: ${{ github.workspace }}\mklroot
+          key: mkl-static-${{ runner.os }}-${{ matrix.arch }}-${{ env.MKL_NUGET_VERSION }}
+
+      - name: Install oneMKL
+        if: matrix.blas == 'mkl' && steps.cache-mkl.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $ver = $env:MKL_NUGET_VERSION
+          $url = "https://api.nuget.org/v3-flatcontainer/intelmkl.static.win-x64/$ver/intelmkl.static.win-x64.$ver.nupkg"
+          curl.exe -sL -o mkl.zip $url
+          Expand-Archive mkl.zip -DestinationPath mkl_pkg
+
+          # FindMKL probes $MKLROOT/lib; the nupkg nests libs under build/native/win-x64
+          New-Item -ItemType Directory -Force -Path mklroot/lib | Out-Null
+          Copy-Item mkl_pkg/build/native/win-x64/*.lib mklroot/lib/
+          Get-ChildItem mklroot/lib | Format-Table Name, Length
+
+      - name: Set MKL Environment
+        if: matrix.blas == 'mkl'
+        shell: pwsh
+        run: |
+          $root = "${{ github.workspace }}\mklroot".Replace('\', '/')
+          $inject = "${{ github.workspace }}\scripts\faiss-mkl-output-names.cmake".Replace('\', '/')
+          echo "MKLROOT=$root" | Out-File $env:GITHUB_ENV -Append
+
+          # Static sequential MKL + output rename (faiss_c.mkl.dll / faiss_avx2.mkl.dll)
+          # so the variant coexists with the OpenBLAS DLLs in one directory
+          $flags = @(
+            "-DFAISS_ENABLE_MKL=ON",
+            "-DBLA_VENDOR=Intel10_64lp_seq",
+            "-DBLA_STATIC=ON",
+            "-DCMAKE_PROJECT_faiss_INCLUDE=$inject"
+          ) -join '|'
+          echo "BLAS_CMAKE_FLAGS=$flags" | Out-File $env:GITHUB_ENV -Append
 
       - name: Setup sccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.runner }}-${{ matrix.arch }}
+          key: ${{ github.job }}-${{ matrix.runner }}-${{ matrix.arch }}-${{ matrix.blas }}
           max-size: "10G"
 
       - name: Configure Faiss
         working-directory: faiss
         shell: pwsh
         run: |
-          $prefix = $env:OPENBLAS_PREFIX.Replace('\', '/')
-          $lib = (Get-ChildItem "$prefix/lib" -Filter "*openblas*.lib" |
-                  Select-Object -First 1).FullName.Replace('\', '/')
-
-          Write-Host "OpenBLAS lib: $lib"
+          $blasArgs = $env:BLAS_CMAKE_FLAGS -split '\|'
+          Write-Host "BLAS args: $blasArgs"
 
           cmake -B build -G Ninja . `
             -DCMAKE_C_COMPILER_LAUNCHER=sccache `
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `
             -DCMAKE_C_COMPILER=cl `
             -DCMAKE_CXX_COMPILER=cl `
-            -DBLA_VENDOR=OpenBLAS `
-            -DBLAS_LIBRARIES="$lib" `
-            -DLAPACK_LIBRARIES="$lib" `
-            -DCMAKE_INCLUDE_PATH="$prefix/include" `
+            @blasArgs `
             -DFAISS_ENABLE_C_API=ON `
             -DBUILD_SHARED_LIBS=ON `
             -DFAISS_ENABLE_GPU=OFF `
             -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} `
             -DFAISS_USE_LTO=${{ matrix.lto }} `
             -DFAISS_ENABLE_PYTHON=OFF `
-            -DFAISS_ENABLE_MKL=OFF `
             -DBUILD_TESTING=OFF `
             -DFAISS_ENABLE_EXTRAS=OFF `
             -DCMAKE_BUILD_TYPE=Release `
@@ -938,20 +1002,41 @@ jobs:
 
       - name: Build Faiss C API
         working-directory: faiss
-        run: cmake --build build --config Release --target faiss_c
+        run: cmake --build build --config Release --target ${{ matrix.c_target }}
 
       - name: Collect artifacts
         shell: pwsh
         run: |
           New-Item artifacts -ItemType Directory -Force | Out-Null
 
-          # Faiss DLLs
-          Get-ChildItem faiss/build -Recurse -Include faiss.dll, faiss_c.dll |
-              Copy-Item -Destination artifacts/
+          if ("${{ matrix.blas }}" -eq "mkl") {
+            # MKL is statically linked; outputs are renamed by the CMake inject
+            # (faiss_c.mkl.dll imports faiss_avx2.mkl.dll by that name)
+            Get-ChildItem faiss/build -Recurse -Include faiss_c.mkl.dll, faiss_avx2.mkl.dll, faiss.mkl.dll |
+                Copy-Item -Destination artifacts/
 
-          # OpenBLAS DLL
-          Get-ChildItem "$env:OPENBLAS_PREFIX\bin" -Filter *.dll |
-              Copy-Item -Destination artifacts/
+            # Static-link acceptance gate: no dynamic BLAS/OpenMP-runtime deps
+            $deps = dumpbin /dependents artifacts/faiss_c.mkl.dll | Out-String
+            $deps += dumpbin /dependents (Get-ChildItem artifacts/faiss*avx2*.dll, artifacts/faiss.mkl.dll -ErrorAction SilentlyContinue | Select-Object -First 1).FullName | Out-String
+            Write-Host $deps
+            if ($deps -match 'mkl_(core|rt|intel|sequential)|openblas|libiomp') {
+              Write-Error "dynamic BLAS dependency leaked into MKL variant"
+              exit 1
+            }
+          } else {
+            # Faiss DLLs. For avx2 builds the C API DLL is faiss_c_avx2.dll and
+            # links faiss_avx2.dll; ship it renamed to faiss_c.dll (the name the
+            # .NET bindings load) but keep faiss_avx2.dll as-is. It is referenced
+            # by name in faiss_c.dll's import table.
+            Get-ChildItem faiss/build -Recurse -Include faiss.dll, faiss_c.dll, faiss_avx2.dll |
+                Copy-Item -Destination artifacts/
+            Get-ChildItem faiss/build -Recurse -Include faiss_c_avx2.dll |
+                Copy-Item -Destination artifacts/faiss_c.dll
+
+            # OpenBLAS DLL
+            Get-ChildItem "$env:OPENBLAS_PREFIX\bin" -Filter *.dll |
+                Copy-Item -Destination artifacts/
+          }
 
           Write-Host "`n=== Final artifacts ==="
           Get-ChildItem artifacts/ | Format-Table Name, Length
@@ -959,7 +1044,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           compression-level: 9
-          name: faiss-win-${{ matrix.arch }}-binaries.zip
+          name: faiss-win-${{ matrix.arch }}-${{ matrix.blas }}-binaries.zip
           path: artifacts/*
 
   test-windows:
@@ -969,8 +1054,13 @@ jobs:
         include:
           - arch: x64
             runner: windows-2025
+            blas: openblas
+          - arch: x64
+            runner: windows-2025
+            blas: mkl
           - arch: arm64
             runner: windows-11-arm
+            blas: openblas
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -981,7 +1071,7 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-win-${{ matrix.arch }}-binaries.zip
+          name: faiss-win-${{ matrix.arch }}-${{ matrix.blas }}-binaries.zip
           path: artifacts
 
       - name: Prepare Native Libraries
@@ -996,6 +1086,8 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Run Tests
+        env:
+          FAISSNET_BLAS: ${{ matrix.blas }}
         run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true
 
   build-windows-pack:
@@ -1010,13 +1102,19 @@ jobs:
       - name: Download x64 Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-win-x64-binaries.zip
+          name: faiss-win-x64-openblas-binaries.zip
+          path: x64
+
+      - name: Download x64 MKL Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-win-x64-mkl-binaries.zip
           path: x64
 
       - name: Download ARM64 Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-win-arm64-binaries.zip
+          name: faiss-win-arm64-openblas-binaries.zip
           path: arm64
 
       - name: Prepare Native Runtimes
