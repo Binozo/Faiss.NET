@@ -43,6 +43,7 @@
 
     <File Path="scripts/download-binaries.py" />
     <File Path="Dockerfile" />
+    <File Path="Dockerfile.blas" />
     <File Path="Dockerfile.cuda" />
   </Folder>
 </Solution>
