@@ -30,7 +30,7 @@ public static class GpuIndexProvider
     /// <exception cref="FaissException">
     /// Thrown when the native transfer operation fails.
     /// </exception>
-    public static INativeGpuIndex<T> TransferToGpu<T>(GpuResourcesProvider context, T cpuIndex, int deviceId = 0) where T : CpuIndex<T>, IFromNativeHandle<T>
+    public static INativeGpuIndex<T> TransferToGpu<T>(GpuResourcesProvider context, T cpuIndex, int deviceId = 0) where T : CpuIndex<T>, IFromNativeHandle<T>, IGpuClonableIndex
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(cpuIndex);

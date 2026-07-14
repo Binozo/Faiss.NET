@@ -68,23 +68,6 @@ public class GpuIndexTransferTests
     }
 
     [Fact]
-    public void TransferToGpu_HnswIndex_ThrowsNotImplemented()
-    {
-        GpuFact.SkipIfNoGpu();
-
-        int dimensions = 4;
-        using var cpuIndex = new IndexHNSW(dimensions, m: 16);
-        cpuIndex.Add([1.0f, 2.0f, 3.0f, 4.0f]);
-
-        using var resources = new GpuResourcesProvider();
-
-        var ex = Assert.Throws<Faiss.Exceptions.FaissNativeException>(() =>
-            GpuIndexProvider.TransferToGpu(resources, cpuIndex));
-
-        Assert.Contains("not implemented on GPU", ex.Message);
-    }
-
-    [Fact]
     public void TransferToCpu_RoundTrip_PreservesData()
     {
         GpuFact.SkipIfNoGpu();
