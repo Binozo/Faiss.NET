@@ -15,6 +15,14 @@ Faiss.NET gives you near-native performance with clean, idiomatic C# wrappers wh
 > [!IMPORTANT]
 > This library is under active development. Core indexes and functionality are usable, but the API may still evolve and not every feature is complete yet.
 
+## Development Roadmap
+About ~90% is done. I still need to add some bindings such as the distance util functions, polish the generic constraints and class hierarchy design before I feel comfortable publishing a v1.0 release.
+
+- [ ] Adding bindings for `distances_c.h`
+- [ ] Improving class hierarchy and generic constraints design to further prevent footguns
+- [ ] Adding more tests
+- [ ] Adding examples
+
 ## Features
 - Thin, "bare-metal" bindings with minimal overhead
 - Extensions on top bindings for excellent DX
