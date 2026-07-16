@@ -30,4 +30,13 @@ public static class Blas
         get => Native.faiss_get_distance_compute_blas_database_bs();
         set => Native.faiss_set_distance_compute_blas_database_bs(value);
     }
+    
+    /// <summary>
+    /// Number of results we switch to a reservoir to collect results rather than a heap
+    /// </summary>
+    public static int DistanceComputeMinKReservoir
+    {
+        get => Native.faiss_get_distance_compute_blas_database_bs();
+        set => Native.faiss_set_distance_compute_blas_database_bs(value);
+    }
 }

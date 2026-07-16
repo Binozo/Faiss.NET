@@ -40,4 +40,15 @@ public class BlasTests
         
         Assert.Equal(newThreshold, Blas.DistanceComputeBlasDatabaseBlockSizes);
     }
+    
+    [Fact]
+    public void DistanceComputeComputeMinKReservoir_Initial_And_Modification()
+    {
+        Assert.Equal(1024, Blas.DistanceComputeMinKReservoir);
+
+        var newThreshold = 1024 / 2;
+        Blas.DistanceComputeMinKReservoir = newThreshold;
+        
+        Assert.Equal(newThreshold, Blas.DistanceComputeMinKReservoir);
+    }
 }
