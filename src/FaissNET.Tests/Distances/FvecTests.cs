@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Faiss.Cpu.Distances;
 using Faiss.Tests.Data;
 using Xunit;
@@ -10,7 +11,26 @@ namespace Faiss.Tests.Distances;
 public class FvecTests
 {
     [Fact]
-    public void FvecNormL2Sqr_CalculatesCorrect_OneVector()
+    public void FvecNormL2Sqr_CalculatesCorrect()
+    {
+        float[] expected = [
+            0.9999973f,
+            0.9999974f,
+            0.9999976f,
+            0.9999976f,
+            0.99999774f,
+            0.9999975f,
+        ];
+
+        for (int i = 0; i < Embeddings.Documents.Length; i++)
+        {
+            var result = Fvec.NormL2Sqr(Embeddings.Documents[i], Embeddings.Dimension);
+            Assert.Equal(expected[i], result);
+        }
+    }
+    
+    [Fact]
+    public void FvecRenormL2Sqr_CalculatesCorrect_OneVector()
     {
         float[] vector = new float[Embeddings.Dimension];
         float[] expectedVector =
@@ -148,7 +168,7 @@ public class FvecTests
     }
 
     [Fact]
-    public void FvecNormL2Sqr_CalculatesCorrect_MultipleVectors()
+    public void FvecRenormL2Sqr_CalculatesCorrect_MultipleVectors()
     {
         float[] vector = new float[Embeddings.Documents.Length * Embeddings.Dimension];
         float[] expectedVector =
