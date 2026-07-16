@@ -21,4 +21,12 @@ internal static unsafe partial class Native
     [LibraryImport(LibraryName)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial void faiss_fvec_renorm_L2(nuint d, nuint nx, Span<float> x);
+
+    [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    public static partial int faiss_get_distance_compute_blas_threshold();
+
+    [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    public static partial void faiss_set_distance_compute_blas_threshold(int value);
 }
