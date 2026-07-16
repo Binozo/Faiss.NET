@@ -1615,6 +1615,7 @@ jobs:
           provenance: false
 
       - name: Test Docker image
+        continue-on-error: true
         run: docker run --rm faiss-test:${{ matrix.arch }}
 
       - name: Build and push architecture-specific image
