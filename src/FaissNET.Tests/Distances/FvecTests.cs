@@ -34,6 +34,31 @@ public class FvecTests
 
         Assert.Equal(expectedInnerProducts, innerProducts);
     }
+    
+    [Fact]
+    public void FvecL2Sqr_CalculatesCorrect()
+    {
+        float[] squaredDistances = new float[Embeddings.Documents.Length];
+        float[] expectedSquaredDistances =
+        [
+            0.353011906f, 
+            0.794654429f, 
+            0.963563681f, 
+            0.939629912f, 
+            0.785154581f, 
+            0.955495477f
+        ];
+
+        float[] vector = new float[Embeddings.Documents.Length * Embeddings.Dimension];
+        for (int i = 0; i < Embeddings.Documents.Length; i++)
+        {
+            Embeddings.Documents[i].CopyTo(vector, i * Embeddings.Dimension);
+        }
+
+        Fvec.L2Sqr(squaredDistances, Embeddings.Query, Embeddings.Documents.Length, vector, Embeddings.Dimension);
+
+        Assert.Equal(expectedSquaredDistances, squaredDistances);
+    }
 
     [Fact]
     public void FvecNormL2Sqr_CalculatesCorrect()

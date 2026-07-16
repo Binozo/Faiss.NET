@@ -26,6 +26,29 @@ public static class Fvec
         
         Native.faiss_fvec_inner_products_ny(innerProducts, queryVector, vectors, (nuint)dimension, (nuint)count);
     }
+    
+    /// <summary>
+    /// Compute count square L2 distance between x and a set of contiguous y vectors
+    /// </summary>
+    public static void L2Sqr(Span<float> squaredDistances, ReadOnlySpan<float> queryVector, int count, Span<float> vectors, int dimension)
+    {
+        if (Decimal.IsNegative(dimension) || dimension == 0)
+            throw new ArgumentOutOfRangeException(nameof(dimension), dimension, "must be a positive integer.");
+        
+        if (Decimal.IsNegative(count) || count == 0)
+            throw new ArgumentOutOfRangeException(nameof(count), count, "must be a positive integer.");
+
+        if (squaredDistances.Length != count)
+            throw new ArgumentOutOfRangeException(nameof(squaredDistances), squaredDistances.Length, "array must be count");
+
+        if (queryVector.Length != dimension)
+            throw new ArgumentOutOfRangeException(nameof(queryVector), queryVector.Length, "array length must be dimension");
+
+        if (vectors.Length % dimension != 0)
+            throw new ArgumentOutOfRangeException(nameof(vectors), vectors.Length, "array length must be dividable by dimension");
+        
+        Native.faiss_fvec_L2sqr_ny(squaredDistances, queryVector, vectors, (nuint)dimension, (nuint)count);
+    }
 
     /// <summary>
     /// Calculates the squared norm of a vector
