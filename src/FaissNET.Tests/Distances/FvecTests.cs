@@ -30,7 +30,7 @@ public class FvecTests
     }
 
     [Fact]
-    public void FvecNormL2_CalculatesCorrect()
+    public void FvecNormsL2_CalculatesCorrect()
     {
         float[] vector = new float[Embeddings.Documents.Length * Embeddings.Dimension];
         float[] norms = new float[Embeddings.Documents.Length];
@@ -42,6 +42,23 @@ public class FvecTests
         }
 
         Fvec.NormsL2(norms, vector, Embeddings.Dimension, Embeddings.Documents.Length);
+
+        Assert.Equal(expectedNorms, norms);
+    }
+
+    [Fact]
+    public void FvecNormsL2Sqr_CalculatesCorrect()
+    {
+        float[] vector = new float[Embeddings.Documents.Length * Embeddings.Dimension];
+        float[] norms = new float[Embeddings.Documents.Length];
+        float[] expectedNorms = [0.999997318f, 0.999997377f, 0.999997616f, 0.999997616f, 0.999997735f, 0.999997497f];
+
+        for (int i = 0; i < Embeddings.Documents.Length; i++)
+        {
+            Embeddings.Documents[i].CopyTo(vector, i * Embeddings.Dimension);
+        }
+
+        Fvec.NormsL2Sqr(norms, vector, Embeddings.Dimension, Embeddings.Documents.Length);
 
         Assert.Equal(expectedNorms, norms);
     }

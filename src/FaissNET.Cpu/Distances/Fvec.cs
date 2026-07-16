@@ -37,6 +37,24 @@ public static class Fvec
     }
     
     /// <summary>
+    /// Compute the squared L2 norms for a set of vectors
+    /// </summary>
+    /// <param name="norms">The output norm for each vector (norms.Length = nx)</param>
+    /// <param name="count">Count of total vectors concatenated in the vectors span</param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public static void NormsL2Sqr(Span<float> norms, ReadOnlySpan<float> vectors, int dimensions, int count)
+    {
+        if (Decimal.IsNegative(dimensions) || dimensions == 0)
+            throw new ArgumentOutOfRangeException(nameof(dimensions), "must be a positive integer.");
+
+        if (vectors.Length / dimensions != count)
+            throw new ArgumentOutOfRangeException(nameof(vectors), "array must be equal to count * dimensions");
+        
+        Native.faiss_fvec_norms_L2sqr(norms, vectors, (nuint)dimensions, (nuint)count);
+    }
+    
+    /// <summary>
     /// L2-renormalize a set of vector. Nothing done if the vector is 0-normed
     /// </summary>
     /// <param name="count">Count of total vectors concatenated in the vectors span</param>

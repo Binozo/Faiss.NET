@@ -16,5 +16,9 @@ internal static unsafe partial class Native
     
     [LibraryImport(LibraryName)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    public static partial void faiss_fvec_norms_L2sqr(Span<float> norms, ReadOnlySpan<float> x, nuint d, nuint nx);
+    
+    [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial void faiss_fvec_renorm_L2(nuint d, nuint nx, Span<float> x);
 }
