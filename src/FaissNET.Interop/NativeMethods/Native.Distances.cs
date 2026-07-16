@@ -8,6 +8,10 @@ internal static unsafe partial class Native
 {
     [LibraryImport(LibraryName)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    public static partial void faiss_pairwise_L2sqr(long d, long nq, ReadOnlySpan<float> xq, long nb, ReadOnlySpan<float> xb, Span<float> dis, long ldq, long ldb, long ldd);
+
+    [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial float faiss_fvec_norm_L2sqr(ReadOnlySpan<float> x, nuint d);
     
     [LibraryImport(LibraryName)]
