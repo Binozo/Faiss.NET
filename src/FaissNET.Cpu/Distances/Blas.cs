@@ -21,4 +21,13 @@ public static class Blas
         get => Native.faiss_get_distance_compute_blas_query_bs();
         set => Native.faiss_set_distance_compute_blas_query_bs(value);
     }
+    
+    /// <summary>
+    /// Block sizes value for BLAS database distance computations
+    /// </summary>
+    public static int DistanceComputeBlasDatabaseBlockSizes
+    {
+        get => Native.faiss_get_distance_compute_blas_database_bs();
+        set => Native.faiss_set_distance_compute_blas_database_bs(value);
+    }
 }
