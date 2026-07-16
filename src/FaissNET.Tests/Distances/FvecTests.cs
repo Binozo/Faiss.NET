@@ -11,9 +11,35 @@ namespace Faiss.Tests.Distances;
 public class FvecTests
 {
     [Fact]
+    public void FvecInnerProducts_CalculatesCorrect()
+    {
+        float[] innerProducts = new float[Embeddings.Documents.Length];
+        float[] expectedInnerProducts =
+        [
+            0.823491395f, 
+            0.602670193f, 
+            0.518215656f, 
+            0.53018254f, 
+            0.607420206f, 
+            0.522249818f
+        ];
+
+        float[] vector = new float[Embeddings.Documents.Length * Embeddings.Dimension];
+        for (int i = 0; i < Embeddings.Documents.Length; i++)
+        {
+            Embeddings.Documents[i].CopyTo(vector, i * Embeddings.Dimension);
+        }
+
+        Fvec.InnerProducts(innerProducts, Embeddings.Query, Embeddings.Documents.Length, vector, Embeddings.Dimension);
+
+        Assert.Equal(expectedInnerProducts, innerProducts);
+    }
+
+    [Fact]
     public void FvecNormL2Sqr_CalculatesCorrect()
     {
-        float[] expected = [
+        float[] expected =
+        [
             0.9999973f,
             0.9999974f,
             0.9999976f,
@@ -62,7 +88,7 @@ public class FvecTests
 
         Assert.Equal(expectedNorms, norms);
     }
-    
+
     [Fact]
     public void FvecRenormL2Sqr_CalculatesCorrect_OneVector()
     {

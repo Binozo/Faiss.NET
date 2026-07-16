@@ -5,6 +5,29 @@ namespace Faiss.Cpu.Distances;
 public static class Fvec
 {
     /// <summary>
+    /// Compute one queryVector against vectors (vector => vectors) inner products.
+    /// </summary>
+    public static void InnerProducts(Span<float> innerProducts, ReadOnlySpan<float> queryVector, int count, Span<float> vectors, int dimension)
+    {
+        if (Decimal.IsNegative(dimension) || dimension == 0)
+            throw new ArgumentOutOfRangeException(nameof(dimension), dimension, "must be a positive integer.");
+        
+        if (Decimal.IsNegative(count) || count == 0)
+            throw new ArgumentOutOfRangeException(nameof(count), count, "must be a positive integer.");
+
+        if (innerProducts.Length != count)
+            throw new ArgumentOutOfRangeException(nameof(innerProducts), innerProducts.Length, "array must be count");
+
+        if (queryVector.Length != dimension)
+            throw new ArgumentOutOfRangeException(nameof(queryVector), queryVector.Length, "array length must be dimension");
+
+        if (vectors.Length % dimension != 0)
+            throw new ArgumentOutOfRangeException(nameof(vectors), vectors.Length, "array length must be dividable by dimension");
+        
+        Native.faiss_fvec_inner_products_ny(innerProducts, queryVector, vectors, (nuint)dimension, (nuint)count);
+    }
+
+    /// <summary>
     /// Calculates the squared norm of a vector
     /// </summary>
     public static float NormL2Sqr(ReadOnlySpan<float> vectors, int dimensions)
