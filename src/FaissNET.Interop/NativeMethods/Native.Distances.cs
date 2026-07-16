@@ -29,4 +29,12 @@ internal static unsafe partial class Native
     [LibraryImport(LibraryName)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     public static partial void faiss_set_distance_compute_blas_threshold(int value);
+
+    [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    public static partial int faiss_get_distance_compute_blas_query_bs();
+
+    [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    public static partial void faiss_set_distance_compute_blas_query_bs(int value);
 }

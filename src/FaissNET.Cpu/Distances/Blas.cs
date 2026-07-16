@@ -12,4 +12,13 @@ public static class Blas
         get => Native.faiss_get_distance_compute_blas_threshold();
         set => Native.faiss_set_distance_compute_blas_threshold(value);
     }
+    
+    /// <summary>
+    /// Block sizes value for BLAS distance computations
+    /// </summary>
+    public static int DistanceComputeBlasBlockSizes
+    {
+        get => Native.faiss_get_distance_compute_blas_query_bs();
+        set => Native.faiss_set_distance_compute_blas_query_bs(value);
+    }
 }
