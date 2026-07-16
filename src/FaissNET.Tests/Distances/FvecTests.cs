@@ -28,6 +28,23 @@ public class FvecTests
             Assert.Equal(expected[i], result);
         }
     }
+
+    [Fact]
+    public void FvecNormL2_CalculatesCorrect()
+    {
+        float[] vector = new float[Embeddings.Documents.Length * Embeddings.Dimension];
+        float[] norms = new float[Embeddings.Documents.Length];
+        float[] expectedNorms = [0.9999986f, 0.9999987f, 0.9999988f, 0.9999988f, 0.99999887f, 0.99999875f];
+
+        for (int i = 0; i < Embeddings.Documents.Length; i++)
+        {
+            Embeddings.Documents[i].CopyTo(vector, i * Embeddings.Dimension);
+        }
+
+        Fvec.NormsL2(norms, vector, Embeddings.Dimension, Embeddings.Documents.Length);
+
+        Assert.Equal(expectedNorms, norms);
+    }
     
     [Fact]
     public void FvecRenormL2Sqr_CalculatesCorrect_OneVector()
