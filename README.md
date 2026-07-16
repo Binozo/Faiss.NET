@@ -18,7 +18,7 @@ Faiss.NET gives you near-native performance with clean, idiomatic C# wrappers wh
 ## Development Roadmap
 About ~90% is done. I still need to add some bindings such as the distance util functions, polish the generic constraints and class hierarchy design before I feel comfortable publishing a v1.0 release.
 
-- [ ] Adding bindings for `distances_c.h`
+- [x] Adding bindings for `distances_c.h`
 - [ ] Improving class hierarchy and generic constraints design to further prevent footguns
 - [ ] Adding more tests
 - [ ] Adding examples
