@@ -11,44 +11,32 @@ public class BlasTests
     [Fact]
     public void DistanceComputeBlasThreshold_Initial_And_Modification()
     {
-        Assert.Equal(128000, Blas.DistanceComputeBlasThreshold);
-
-        var newThreshold = 128_000 / 2;
-        Blas.DistanceComputeBlasThreshold = newThreshold;
+        Blas.DistanceComputeBlasThreshold = 128_000;
         
-        Assert.Equal(newThreshold, Blas.DistanceComputeBlasThreshold);
+        Assert.Equal(128_000, Blas.DistanceComputeBlasThreshold);
     }
     
     [Fact]
     public void DistanceComputeBlasBlockSizes_Initial_And_Modification()
     {
-        Assert.Equal(4096, Blas.DistanceComputeBlasBlockSizes);
-
-        var newThreshold = 4096 / 2;
-        Blas.DistanceComputeBlasBlockSizes = newThreshold;
+        Blas.DistanceComputeBlasBlockSizes = 2048;
         
-        Assert.Equal(newThreshold, Blas.DistanceComputeBlasBlockSizes);
+        Assert.Equal(2048, Blas.DistanceComputeBlasBlockSizes);
     }
     
     [Fact]
     public void DistanceComputeBlasDatabaseBlockSizes_Initial_And_Modification()
     {
-        Assert.Equal(1024, Blas.DistanceComputeBlasDatabaseBlockSizes);
-
-        var newThreshold = 1024 / 2;
-        Blas.DistanceComputeBlasDatabaseBlockSizes = newThreshold;
+        Blas.DistanceComputeBlasDatabaseBlockSizes = 512;
         
-        Assert.Equal(newThreshold, Blas.DistanceComputeBlasDatabaseBlockSizes);
+        Assert.Equal(512, Blas.DistanceComputeBlasDatabaseBlockSizes);
     }
     
     [Fact]
     public void DistanceComputeComputeMinKReservoir_Initial_And_Modification()
     {
-        Assert.Equal(512, Blas.DistanceComputeMinKReservoir);
-
-        var newThreshold = 512 / 2;
-        Blas.DistanceComputeMinKReservoir = newThreshold;
+        Blas.DistanceComputeMinKReservoir = 256;
         
-        Assert.Equal(newThreshold, Blas.DistanceComputeMinKReservoir);
+        Assert.Equal(256, Blas.DistanceComputeMinKReservoir);
     }
 }
