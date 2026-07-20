@@ -810,9 +810,19 @@ jobs:
             c_target: faiss_c_avx2
             msvc_arch: amd64
             blas: openblas
-            llvm_asset: LLVM-19.1.7-win64.exe
+            llvm_asset: LLVM-22.1.8-win64.exe
             lto: OFF
             # DYNAMIC_ARCH builds kernels for many x64 CPUs, picks the best at runtime
+            openblas_flags: >-
+              -DDYNAMIC_ARCH=ON
+          - arch: x64
+            runner: windows-2025
+            opt_level: generic
+            c_target: faiss_c
+            msvc_arch: amd64
+            blas: openblas
+            llvm_asset: LLVM-22.1.8-win64.exe
+            lto: OFF
             openblas_flags: >-
               -DDYNAMIC_ARCH=ON
           - arch: x64
@@ -829,7 +839,7 @@ jobs:
             c_target: faiss_c
             msvc_arch: arm64
             blas: openblas
-            llvm_asset: LLVM-19.1.7-woa64.exe
+            llvm_asset: LLVM-22.1.8-woa64.exe
             lto: OFF
             openblas_flags: >-
               -DTARGET=ARMV8
@@ -837,8 +847,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     env:
-      LLVM_VERSION: "19.1.7"
-      OPENBLAS_VERSION: "0.3.31"
+      LLVM_VERSION: "22.1.8"
+      OPENBLAS_VERSION: "0.3.34"
       MKL_NUGET_VERSION: "2026.1.0.226"
 
     steps:
@@ -1156,15 +1166,15 @@ jobs:
             runner: windows-2025
             opt_level: generic
             msvc_arch: amd64
-            llvm_asset: LLVM-19.1.7-win64.exe
+            llvm_asset: LLVM-22.1.8-win64.exe
             # DYNAMIC_ARCH builds kernels for many x64 CPUs, picks the best at runtime
             openblas_flags: >-
               -DDYNAMIC_ARCH=ON
     runs-on: ${{ matrix.runner }}
 
     env:
-      LLVM_VERSION: "19.1.7"
-      OPENBLAS_VERSION: "0.3.31"
+      LLVM_VERSION: "22.1.8"
+      OPENBLAS_VERSION: "0.3.34"
 
     steps:
       - uses: actions/checkout@v6
