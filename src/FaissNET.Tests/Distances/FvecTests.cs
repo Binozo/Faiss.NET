@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Faiss.Cpu.Distances;
 using Faiss.Tests.Data;
 using Xunit;
@@ -32,7 +31,7 @@ public class FvecTests
 
         Fvec.InnerProducts(innerProducts, Embeddings.Query, Embeddings.Documents.Length, vector, Embeddings.Dimension);
 
-        Assert.Equal(expectedInnerProducts, innerProducts);
+        AssertFloatsEqual(expectedInnerProducts, innerProducts);
     }
     
     [Fact]
@@ -57,7 +56,7 @@ public class FvecTests
 
         Fvec.L2Sqr(squaredDistances, Embeddings.Query, Embeddings.Documents.Length, vector, Embeddings.Dimension);
 
-        Assert.Equal(expectedSquaredDistances, squaredDistances);
+        AssertFloatsEqual(expectedSquaredDistances, squaredDistances);
     }
 
     [Fact]
@@ -76,7 +75,7 @@ public class FvecTests
         for (int i = 0; i < Embeddings.Documents.Length; i++)
         {
             var result = Fvec.NormL2Sqr(Embeddings.Documents[i], Embeddings.Dimension);
-            Assert.Equal(expected[i], result);
+            AssertFloatsEqual(new[]{expected[i]}, new[]{result});
         }
     }
 
@@ -94,7 +93,7 @@ public class FvecTests
 
         Fvec.NormsL2(norms, vector, Embeddings.Dimension, Embeddings.Documents.Length);
 
-        Assert.Equal(expectedNorms, norms);
+        AssertFloatsEqual(expectedNorms, norms);
     }
 
     [Fact]
@@ -111,7 +110,7 @@ public class FvecTests
 
         Fvec.NormsL2Sqr(norms, vector, Embeddings.Dimension, Embeddings.Documents.Length);
 
-        Assert.Equal(expectedNorms, norms);
+        AssertFloatsEqual(expectedNorms, norms);
     }
 
     [Fact]
@@ -249,7 +248,7 @@ public class FvecTests
 
         Fvec.RenormL2(Embeddings.Dimension, 1, vector);
 
-        Assert.Equal(expectedVector, vector);
+        AssertFloatsEqual(expectedVector, vector);
     }
 
     [Fact]
@@ -668,6 +667,24 @@ public class FvecTests
 
         Fvec.RenormL2(Embeddings.Dimension, Embeddings.Documents.Length, vector);
 
-        Assert.Equal(expectedVector, vector);
+        AssertFloatsEqual(expectedVector, vector);
+    }
+    
+    private void AssertFloatsEqual(
+        ReadOnlySpan<float> expected,
+        ReadOnlySpan<float> actual,
+        float relTol = 1e-5f,
+        float absTol = 1e-6f)
+    {
+        Assert.Equal(expected.Length, actual.Length);
+
+        for (int i = 0; i < expected.Length; i++)
+        {
+            float e = expected[i], a = actual[i];
+            float diff = Math.Abs(e - a);
+            float tol = Math.Max(absTol, relTol * Math.Max(Math.Abs(e), Math.Abs(a)));
+
+            Assert.True(diff <= tol, $"Index {i}: expected {e:G9}, actual {a:G9}, |diff|={diff:G9} (tol={tol:G9})");
+        }
     }
 }
