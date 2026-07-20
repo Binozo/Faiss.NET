@@ -907,6 +907,7 @@ jobs:
           cmake -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_C_COMPILER=clang-cl `
+            -DCMAKE_C_FLAGS="-Wno-incompatible-pointer-types" `
             -DC_LAPACK=ON `
             -DNOFORTRAN=ON `
             -DBUILD_SHARED_LIBS=ON `
