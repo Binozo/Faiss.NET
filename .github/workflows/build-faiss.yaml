@@ -1066,11 +1066,19 @@ jobs:
           - arch: x64
             runner: windows-2025
             blas: openblas
-            opt_level: [generic, avx2]
+            opt_level: generic
+          - arch: x64
+            runner: windows-2025
+            blas: openblas
+            opt_level: avx2
           - arch: x64
             runner: windows-2025
             blas: mkl
-            opt_level: [generic, avx2]
+            opt_level: generic
+          - arch: x64
+            runner: windows-2025
+            blas: mkl
+            opt_level: avx2
           - arch: arm64
             runner: windows-11-arm
             blas: openblas
