@@ -937,7 +937,16 @@ jobs:
             "-DLAPACK_LIBRARIES=$lib",
             "-DCMAKE_INCLUDE_PATH=$prefix/include",
             "-DFAISS_ENABLE_MKL=OFF"
-          ) -join '|'
+          )
+
+          if ("${{ matrix.arch }}" -eq "x64" -and "${{ matrix.opt_level }}" -eq "generic") {
+            # Output rename (faiss_c.generic.dll / faiss.generic.dll) at link time
+            # so the variant coexists with the avx2/MKL DLLs in one directory.
+            # x64 only: the arm64 generic build is the sole variant for its RID.
+            $inject = "${{ github.workspace }}\scripts\faiss-generic-output-names.cmake".Replace('\', '/')
+            $flags += "-DCMAKE_PROJECT_faiss_INCLUDE=$inject"
+          }
+          $flags = $flags -join '|'
           echo "BLAS_CMAKE_FLAGS=$flags" | Out-File $env:GITHUB_ENV -Append
 
       - name: Cache oneMKL
@@ -1039,7 +1048,7 @@ jobs:
             # links faiss_avx2.dll; ship it renamed to faiss_c.dll (the name the
             # .NET bindings load) but keep faiss_avx2.dll as-is. It is referenced
             # by name in faiss_c.dll's import table.
-            Get-ChildItem faiss/build -Recurse -Include faiss.dll, faiss_c.dll, faiss_avx2.dll |
+            Get-ChildItem faiss/build -Recurse -Include faiss.dll, faiss_c.dll, faiss_avx2.dll, faiss.generic.dll, faiss_c.generic.dll |
                 Copy-Item -Destination artifacts/
             Get-ChildItem faiss/build -Recurse -Include faiss_c_avx2.dll |
                 Copy-Item -Destination artifacts/faiss_c.dll
@@ -1105,7 +1114,9 @@ jobs:
 
       - name: Run Tests
         env:
+          # generic x64 leg ships only faiss_c.generic.dll; resolver needs the hint
           FAISSNET_BLAS: ${{ matrix.blas }}
+          FAISSNET_OPTIMIZATION: ${{ matrix.opt_level }}
         run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true
 
   build-windows-pack:
@@ -1144,7 +1155,10 @@ jobs:
       - name: Prepare Native Runtimes
         run: |
           cp x64/* src/FaissNET.Windows/runtimes/win-x64/native/
-          cp x64-generic/* src/FaissNET.Windows/runtimes/win-x64/native/generic
+          # Generic variant ships as faiss.generic.dll / faiss_c.generic.dll flat
+          # in native/ (openblas.dll is identical to the avx2 leg's; skip the dup)
+          cp x64-generic/faiss.generic.dll x64-generic/faiss_c.generic.dll \
+            src/FaissNET.Windows/runtimes/win-x64/native/
           cp arm64/* src/FaissNET.Windows/runtimes/win-arm64/native/
 
       - name: Setup .NET
