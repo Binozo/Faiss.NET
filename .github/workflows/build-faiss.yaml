@@ -1044,7 +1044,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           compression-level: 9
-          name: faiss-win-${{ matrix.arch }}-${{ matrix.blas }}-binaries.zip
+          name: faiss-win-${{ matrix.arch }}-${{ matrix.blas }}-${{ matrix.opt_level }}-binaries.zip
           path: artifacts/*
 
   test-windows:
@@ -1102,24 +1102,31 @@ jobs:
       - name: Download x64 Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-win-x64-openblas-binaries.zip
+          name: faiss-win-x64-openblas-avx2-binaries.zip
           path: x64
 
       - name: Download x64 MKL Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-win-x64-mkl-binaries.zip
+          name: faiss-win-x64-mkl-avx2-binaries.zip
           path: x64
+
+      - name: Download x64 generic Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: faiss-win-x64-openblas-generic-binaries.zip
+          path: x64-generic
 
       - name: Download ARM64 Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-win-arm64-openblas-binaries.zip
+          name: faiss-win-arm64-openblas-generic-binaries.zip
           path: arm64
 
       - name: Prepare Native Runtimes
         run: |
           cp x64/* src/FaissNET.Windows/runtimes/win-x64/native/
+          cp x64-generic/* src/FaissNET.Windows/runtimes/win-x64/native/generic
           cp arm64/* src/FaissNET.Windows/runtimes/win-arm64/native/
 
       - name: Setup .NET
