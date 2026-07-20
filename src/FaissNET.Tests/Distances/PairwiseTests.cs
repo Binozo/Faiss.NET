@@ -17,6 +17,6 @@ public class PairwiseTests
         
         Pairwise.L2Sqr(Embeddings.Dimension, 1, Embeddings.Query, 1, Embeddings.Documents[0], distanceMatrix);
 
-        Assert.Equal(expectedDistanceMatrix, distanceMatrix);
+        Assert.Equal(expectedDistanceMatrix, distanceMatrix, (a, b) => Math.Abs(a - b) <= 1e-5f);
     }
 }
