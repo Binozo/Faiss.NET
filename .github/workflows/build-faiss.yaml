@@ -1066,12 +1066,15 @@ jobs:
           - arch: x64
             runner: windows-2025
             blas: openblas
+            opt_level: [generic, avx2]
           - arch: x64
             runner: windows-2025
             blas: mkl
+            opt_level: [generic, avx2]
           - arch: arm64
             runner: windows-11-arm
             blas: openblas
+            opt_level: generic
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -1082,7 +1085,7 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-win-${{ matrix.arch }}-${{ matrix.blas }}-binaries.zip
+          name: faiss-win-${{ matrix.arch }}-${{ matrix.blas }}-${{ matrix.opt_level }}-binaries.zip
           path: artifacts
 
       - name: Prepare Native Libraries
