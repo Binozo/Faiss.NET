@@ -1239,14 +1239,15 @@ jobs:
           $install = "${{ github.workspace }}\openblas_install"
 
           cmake -B build -G Ninja `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_C_COMPILER=clang-cl `
-            -DC_LAPACK=ON `
-            -DNOFORTRAN=ON `
-            -DBUILD_SHARED_LIBS=ON `
-            -DBINARY=64 `
-            ${{ matrix.openblas_flags }} `
-            -DCMAKE_INSTALL_PREFIX="$install"
+          -DCMAKE_BUILD_TYPE=Release `
+          -DCMAKE_C_COMPILER=clang-cl `
+          -DCMAKE_C_FLAGS="-Wno-incompatible-pointer-types" `
+          -DC_LAPACK=ON `
+          -DNOFORTRAN=ON `
+          -DBUILD_SHARED_LIBS=ON `
+          -DBINARY=64 `
+          ${{ matrix.openblas_flags }} `
+          -DCMAKE_INSTALL_PREFIX="$install"
           
           cmake --build build --config Release -j
           cmake --install build
