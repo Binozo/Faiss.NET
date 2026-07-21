@@ -184,7 +184,7 @@ jobs:
       - name: Run Tests
         env:
           FAISSNET_BLAS: ${{ matrix.blas }}
-        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true
+        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true --blame-crash
 
   build-linux-pack:
     needs: [test-linux]
@@ -751,7 +751,7 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Run Tests
-        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true
+        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true --blame-crash
 
   build-macos-pack:
     needs: [test-macos]
@@ -1089,7 +1089,7 @@ jobs:
       - name: Run Tests
         env:
           FAISSNET_BLAS: ${{ matrix.blas }}
-        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true
+        run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true --blame-crash
 
   build-windows-pack:
     needs: [test-windows]
