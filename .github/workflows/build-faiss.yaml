@@ -1090,6 +1090,16 @@ jobs:
         env:
           FAISSNET_BLAS: ${{ matrix.blas }}
         run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true --blame-crash
+        
+      - name: Upload crash dumps / TestResults
+        if: failure() || always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-win-${{ matrix.arch }}-${{ matrix.blas }}-${{ matrix.opt_level }}
+          path: |
+            src/FaissNET.Tests/TestResults/**
+            **/TestResults/**
+          retention-days: 7
 
   build-windows-pack:
     needs: [test-windows]
