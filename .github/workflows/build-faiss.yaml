@@ -803,11 +803,8 @@ jobs:
         include:
           - arch: x64
             runner: windows-2025
-            # dd (runtime dispatch) is broken under MSVC: SIMD detection in
-            # simd_levels.cpp is GCC-only (__x86_64__ + inline asm), causing
-            # STATUS_ILLEGAL_INSTRUCTION at runtime. Hard AVX2 instead.
-            opt_level: avx2
-            c_target: faiss_c_avx2
+            opt_level: dd
+            c_target: faiss_c
             msvc_arch: amd64
             blas: openblas
             llvm_asset: LLVM-22.1.8-win64.exe
@@ -817,24 +814,15 @@ jobs:
               -DDYNAMIC_ARCH=ON
           - arch: x64
             runner: windows-2025
-            opt_level: generic
+            opt_level: dd
             c_target: faiss_c
             msvc_arch: amd64
-            blas: openblas
-            llvm_asset: LLVM-22.1.8-win64.exe
-            lto: OFF
-            openblas_flags: >-
-              -DDYNAMIC_ARCH=ON
-          - arch: x64
-            runner: windows-2025
-            opt_level: avx2
-            c_target: faiss_c_avx2
-            msvc_arch: amd64
-            blas: mkl # static sequential oneMKL; no LLVM/OpenBLAS toolchain needed
+            blas: mkl
             lto: OFF
           - arch: arm64
             runner: windows-11-arm
-            # MSVC ARM64 lacks NEON SIMD support in Faiss; generic is the only viable level
+            # MSVC ARM64 lacks NEON SIMD support in Faiss; generic is the only viable level.
+            # dd would define COMPILE_SIMD_ARM_NEON under MSVC and hit the same wall.
             opt_level: generic
             c_target: faiss_c
             msvc_arch: arm64
@@ -939,13 +927,6 @@ jobs:
             "-DFAISS_ENABLE_MKL=OFF"
           )
 
-          if ("${{ matrix.arch }}" -eq "x64" -and "${{ matrix.opt_level }}" -eq "generic") {
-            # Output rename (faiss_c.generic.dll / faiss.generic.dll) at link time
-            # so the variant coexists with the avx2/MKL DLLs in one directory.
-            # x64 only: the arm64 generic build is the sole variant for its RID.
-            $inject = "${{ github.workspace }}\scripts\faiss-generic-output-names.cmake".Replace('\', '/')
-            $flags += "-DCMAKE_PROJECT_faiss_INCLUDE=$inject"
-          }
           $flags = $flags -join '|'
           echo "BLAS_CMAKE_FLAGS=$flags" | Out-File $env:GITHUB_ENV -Append
 
@@ -979,7 +960,7 @@ jobs:
           $inject = "${{ github.workspace }}\scripts\faiss-mkl-output-names.cmake".Replace('\', '/')
           echo "MKLROOT=$root" | Out-File $env:GITHUB_ENV -Append
 
-          # Static sequential MKL + output rename (faiss_c.mkl.dll / faiss_avx2.mkl.dll)
+          # Static sequential MKL + output rename (faiss_c.mkl.dll / faiss.mkl.dll)
           # so the variant coexists with the OpenBLAS DLLs in one directory
           $flags = @(
             "-DFAISS_ENABLE_MKL=ON",
@@ -1031,27 +1012,24 @@ jobs:
 
           if ("${{ matrix.blas }}" -eq "mkl") {
             # MKL is statically linked; outputs are renamed by the CMake inject
-            # (faiss_c.mkl.dll imports faiss_avx2.mkl.dll by that name)
-            Get-ChildItem faiss/build -Recurse -Include faiss_c.mkl.dll, faiss_avx2.mkl.dll, faiss.mkl.dll |
+            # (faiss_c.mkl.dll imports faiss.mkl.dll by that name)
+            Get-ChildItem faiss/build -Recurse -Include faiss_c.mkl.dll, faiss.mkl.dll |
                 Copy-Item -Destination artifacts/
 
             # Static-link acceptance gate: no dynamic BLAS/OpenMP-runtime deps
             $deps = dumpbin /dependents artifacts/faiss_c.mkl.dll | Out-String
-            $deps += dumpbin /dependents (Get-ChildItem artifacts/faiss*avx2*.dll, artifacts/faiss.mkl.dll -ErrorAction SilentlyContinue | Select-Object -First 1).FullName | Out-String
+            $deps += dumpbin /dependents artifacts/faiss.mkl.dll | Out-String
             Write-Host $deps
             if ($deps -match 'mkl_(core|rt|intel|sequential)|openblas|libiomp') {
               Write-Error "dynamic BLAS dependency leaked into MKL variant"
               exit 1
             }
           } else {
-            # Faiss DLLs. For avx2 builds the C API DLL is faiss_c_avx2.dll and
-            # links faiss_avx2.dll; ship it renamed to faiss_c.dll (the name the
-            # .NET bindings load) but keep faiss_avx2.dll as-is. It is referenced
-            # by name in faiss_c.dll's import table.
-            Get-ChildItem faiss/build -Recurse -Include faiss.dll, faiss_c.dll, faiss_avx2.dll, faiss.generic.dll, faiss_c.generic.dll |
+            # Faiss DLLs. dd (dynamic dispatch) and generic builds both emit a
+            # single pair — faiss.dll + faiss_c.dll, with faiss_c.dll importing
+            # faiss.dll by name. No per-SIMD variant DLLs to collect or rename.
+            Get-ChildItem faiss/build -Recurse -Include faiss.dll, faiss_c.dll |
                 Copy-Item -Destination artifacts/
-            Get-ChildItem faiss/build -Recurse -Include faiss_c_avx2.dll |
-                Copy-Item -Destination artifacts/faiss_c.dll
 
             # OpenBLAS DLL
             Get-ChildItem "$env:OPENBLAS_PREFIX\bin" -Filter *.dll |
@@ -1075,15 +1053,11 @@ jobs:
           - arch: x64
             runner: windows-2025
             blas: openblas
-            opt_level: generic
-          - arch: x64
-            runner: windows-2025
-            blas: openblas
-            opt_level: avx2
+            opt_level: dd
           - arch: x64
             runner: windows-2025
             blas: mkl
-            opt_level: avx2
+            opt_level: dd
           - arch: arm64
             runner: windows-11-arm
             blas: openblas
@@ -1114,9 +1088,7 @@ jobs:
 
       - name: Run Tests
         env:
-          # generic x64 leg ships only faiss_c.generic.dll; resolver needs the hint
           FAISSNET_BLAS: ${{ matrix.blas }}
-          FAISSNET_OPTIMIZATION: ${{ matrix.opt_level }}
         run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true
 
   build-windows-pack:
@@ -1131,20 +1103,14 @@ jobs:
       - name: Download x64 Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-win-x64-openblas-avx2-binaries.zip
+          name: faiss-win-x64-openblas-dd-binaries.zip
           path: x64
 
       - name: Download x64 MKL Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: faiss-win-x64-mkl-avx2-binaries.zip
+          name: faiss-win-x64-mkl-dd-binaries.zip
           path: x64
-
-      - name: Download x64 generic Artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: faiss-win-x64-openblas-generic-binaries.zip
-          path: x64-generic
 
       - name: Download ARM64 Artifacts
         uses: actions/download-artifact@v8
@@ -1155,10 +1121,6 @@ jobs:
       - name: Prepare Native Runtimes
         run: |
           cp x64/* src/FaissNET.Windows/runtimes/win-x64/native/
-          # Generic variant ships as faiss.generic.dll / faiss_c.generic.dll flat
-          # in native/ (openblas.dll is identical to the avx2 leg's; skip the dup)
-          cp x64-generic/faiss.generic.dll x64-generic/faiss_c.generic.dll \
-            src/FaissNET.Windows/runtimes/win-x64/native/
           cp arm64/* src/FaissNET.Windows/runtimes/win-arm64/native/
 
       - name: Setup .NET

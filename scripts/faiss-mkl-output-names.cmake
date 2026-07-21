@@ -6,6 +6,10 @@
 #   faiss        -> (lib)faiss.mkl        faiss_avx2   -> (lib)faiss_avx2.mkl
 #   faiss_c      -> (lib)faiss_c.mkl      faiss_c_avx2 -> (lib)faiss_c.mkl
 #
+# FAISS_OPT_LEVEL=dd (fleet default) builds only faiss + faiss_c, so the
+# effective rename is faiss -> faiss.mkl and faiss_c -> faiss_c.mkl. The
+# SIMD-suffixed targets exist but are EXCLUDE_FROM_ALL and never built.
+#
 # The C API targets are normalized to "faiss_c.mkl" regardless of SIMD suffix,
 # because the .NET resolver probes exactly NativeLibrary.TryLoad("faiss_c.mkl").
 # Core-library names keep their suffix; dependent import tables / DT_NEEDED and

@@ -9,12 +9,10 @@ internal static class FaissLibraryResolver
 {
     private const string LibraryName = "faiss_c";
     private const string MklLibraryName = "faiss_c.mkl";
-    private const string GenericLibraryName = "faiss_c.generic";
 
     internal static string? LoadedFlavor { get; private set; }
 
     private static readonly Lazy<bool> PreferMkl = new(DetectPreferMkl);
-    private static readonly Lazy<bool> PreferGeneric = new(DetectPreferGeneric);
 
 #pragma warning disable CA2255 // must register before any P/Invoke in this assembly; no app entry point exists in a library
     [ModuleInitializer]
@@ -30,16 +28,10 @@ internal static class FaissLibraryResolver
         {
             return IntPtr.Zero;
         }
-
+        
         if (PreferMkl.Value && NativeLibrary.TryLoad(MklLibraryName, assembly, searchPath, out var handle))
         {
             LoadedFlavor = "mkl";
-            return handle;
-        }
-
-        if (PreferGeneric.Value && NativeLibrary.TryLoad(GenericLibraryName, assembly, searchPath, out handle))
-        {
-            LoadedFlavor = "generic";
             return handle;
         }
 
@@ -59,9 +51,6 @@ internal static class FaissLibraryResolver
 
         return IsGenuineIntel();
     }
-
-    private static bool DetectPreferGeneric() =>
-        Environment.GetEnvironmentVariable("FAISSNET_OPTIMIZATION")?.ToLowerInvariant() == "generic";
 
     private static bool IsGenuineIntel()
     {
