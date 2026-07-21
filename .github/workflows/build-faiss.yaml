@@ -1646,6 +1646,9 @@ jobs:
 
       - name: Build and load Docker image
         uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
           file: ./Dockerfile
@@ -1660,6 +1663,9 @@ jobs:
 
       - name: Build and push architecture-specific image
         uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
           file: ./Dockerfile
@@ -1738,6 +1744,9 @@ jobs:
 
       - name: Build and push architecture-specific CUDA image
         uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
           file: ./Dockerfile.cuda
