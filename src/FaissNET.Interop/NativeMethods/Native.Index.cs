@@ -63,5 +63,5 @@ internal static unsafe partial class Native
     internal static unsafe partial int faiss_Index_assign(FaissIndexHandle index, long n, float* x, long* labels, long k);
 
     [LibraryImport(LibraryName)]
-    internal static unsafe partial int faiss_Index_search_with_params(FaissIndexHandle index, long n, float* x, long k, IntPtr params_ptr, float* distances, long* labels);
+    internal static unsafe partial int faiss_Index_search_with_params(FaissIndexHandle index, long n, float* x, long k, FaissSearchParametersHandle params_ptr, float* distances, long* labels);
 }
