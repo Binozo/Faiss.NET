@@ -16,12 +16,13 @@ Faiss.NET gives you near-native performance with clean, idiomatic C# wrappers wh
 > This library is under active development. Core indexes and functionality are usable, but the API may still evolve and not every feature is complete yet.
 
 ## Development Roadmap
-About ~90% is done. I still need to add some bindings such as the distance util functions, polish the generic constraints and class hierarchy design before I feel comfortable publishing a v1.0 release.
+About ~90% is done. I am reworking the class hierarchy to make the api as elegant as possible. This includes preventing most of the footguns there are with faiss, including making the compiler enforce all the rules.
 
 - [x] Adding bindings for `distances_c.h`
-- [ ] Improving class hierarchy and generic constraints design to further prevent footguns
-- [ ] Adding more tests
-- [ ] Adding examples
+- [ ] Improving class hierarchy and generic constraints design to further prevent footguns (~ September 2026)
+- [ ] Adding more tests (~ Oktober 2026)
+- [ ] Adding examples (~ Oktober 2026)
+- [ ] v1.0 Release 🚀 (~ November 2026)
 
 ## Features
 - Thin, "bare-metal" bindings with minimal overhead
@@ -49,7 +50,7 @@ winget install --id Microsoft.VCRedist.2015+.x64 --silent
 
 **Linux**
 ```bash
-sudo apt-get install -y libopenblas0 libgomp1 libgfortran5
+sudo apt-get install -y libopenblas0 libgomp1
 ```
 
 **macOS**
