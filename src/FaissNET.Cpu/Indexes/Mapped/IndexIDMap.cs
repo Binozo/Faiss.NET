@@ -8,64 +8,49 @@ using Faiss.Interop.SafeHandles;
 namespace Faiss.Cpu.Indexes.Mapped;
 
 /// <summary>
-/// Wraps any index to add support for custom vector IDs.
+/// Wraps any unpopulated index to add support for custom vector IDs.
 /// Translates internal sequential IDs to user-provided IDs on search results.
 /// </summary>
 /// <typeparam name="T">The type of the underlying index to wrap.</typeparam>
 /// <remarks>
 /// Use this wrapper with indexes that do not natively support custom IDs
 /// (e.g. <see cref="IndexFlatL2"/>, <see cref="IndexHNSW"/>, <see cref="IndexPQ"/>).
-/// Only <see cref="Add(long, ReadOnlySpan{float}, ReadOnlySpan{long})"/> is supported;
-/// <see cref="Index{T}.Add(long, ReadOnlySpan{float})"/> will throw.
 /// </remarks>
-public class IndexIDMap<T> : CpuIndex<IndexIDMap<T>>, IFromNativeHandle<IndexIDMap<T>>, IIndexIDMapped where T : CpuIndex<T>, IFromNativeHandle<T>, ISequentialIDIndex
+public sealed class IndexIDMap<T> : MappedIndex<IndexIDMap<T>, T>, IFromNativeIndexHandle<IndexIDMap<T>> where T : IIDSequentialIndex, IFloatIndex, IFromNativeIndexHandle<T>
 {
-    private readonly T _index;
+    private readonly T _subIndex;
 
-    public IndexIDMap(T index, bool takeOwnership = false)
+    public IndexIDMap(T index, bool takeOwnership = false) : this(index.Handle, takeOwnership)
     {
-        _index = index;
-
-        FaissErrorHandler.ThrowIfError(
-            Native.faiss_IndexIDMap_new(out IntPtr ptr, index.Handle)
-        );
-
-        SafeHandle = new FaissIndexHandle(ptr);
-
-        Native.faiss_IndexIDMap_set_own_fields(SafeHandle, takeOwnership);
-        if (takeOwnership)
-        {
-            _index.Handle.SetHandleAsInvalid();
-        }
     }
 
-    private IndexIDMap(IntPtr handle, bool takeOwnership = false) : base(handle)
+    private IndexIDMap(FaissIndexHandle subIndexHandle, bool takeOwnership = false) : base(CreateHandle(subIndexHandle))
     {
-        _index = T.FromHandle(Native.faiss_IndexIDMap_sub_index(handle));
-        
-
-        Native.faiss_IndexIDMap_set_own_fields(SafeHandle, takeOwnership);
-        if (takeOwnership)
-        {
-            _index.Handle.SetHandleAsInvalid();
-        }
+        _subIndex = T.FromPointer(Native.faiss_IndexIDMap_sub_index(subIndexHandle));
+        OwnsSubIndex = takeOwnership;
     }
 
-    static IndexIDMap<T> IFromNativeHandle<IndexIDMap<T>>.FromHandle(IntPtr handle) => new(handle);
-    
-    public unsafe void Add(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids)
+    public bool OwnsSubIndex
     {
-        if (xids.Length < count)
+        get => Native.faiss_IndexIDMap_own_fields(NativeHandle) != 0;
+        private set => Native.faiss_IndexIDMap_set_own_fields(NativeHandle, value);
+    }
+
+    private static FaissIndexHandle CreateHandle(FaissIndexHandle subIndexHandle)
+    {
+        FaissErrorHandler.ThrowIfError(Native.faiss_IndexIDMap_new(out var ptr, subIndexHandle));
+        return new FaissIndexHandle(ptr);
+    }
+
+    static IndexIDMap<T> IFromNativeIndexHandle<IndexIDMap<T>>.FromHandle(FaissIndexHandle handle) => new(handle, true);
+
+    public override void Dispose()
+    {
+        if (OwnsSubIndex)
         {
-            throw new ArgumentException("Not enough custom IDs for the vectors.", nameof(xids));
+            _subIndex.Dispose();
         }
 
-        fixed (float* pVectors = vectors)
-        fixed (long* pXids = xids)
-        {
-            FaissErrorHandler.ThrowIfError(
-                Native.faiss_Index_add_with_ids(SafeHandle, count, pVectors, pXids)
-            );
-        }
+        base.Dispose();
     }
 }
