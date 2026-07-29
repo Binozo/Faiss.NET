@@ -3,6 +3,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Faiss.Interop.SafeHandles;
 
+[Obsolete("Use FaissBinaryIndexHandle instead")]
 public sealed class FaissIndexBinaryHandle : SafeHandleZeroOrMinusOneIsInvalid
 {
     public FaissIndexBinaryHandle() : base(true)
