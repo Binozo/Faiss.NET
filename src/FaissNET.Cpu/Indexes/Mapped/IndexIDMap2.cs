@@ -8,7 +8,7 @@ using Faiss.Interop.SafeHandles;
 namespace Faiss.Cpu.Indexes.Mapped;
 
 /// <summary>
-/// Wraps any index to add support for custom vector IDs with reverse lookup capability.
+/// Wraps any unpopulated index to add support for custom vector IDs with reverse lookup capability.
 /// Extends <see cref="IndexIDMap{T}"/> by maintaining a reverse map from custom IDs
 /// to internal sequential IDs, enabling efficient vector reconstruction by custom ID.
 /// </summary>
@@ -16,67 +16,54 @@ namespace Faiss.Cpu.Indexes.Mapped;
 /// <remarks>
 /// Use this wrapper with indexes that do not natively support custom IDs
 /// (e.g. <see cref="IndexFlatL2"/>, <see cref="IndexHNSW"/>, <see cref="IndexPQ"/>).
-/// Only <see cref="Add(long, ReadOnlySpan{float}, ReadOnlySpan{long})"/> is supported;
-/// <see cref="Index{T}.Add(long, ReadOnlySpan{float})"/> will throw.
-/// The reverse map is automatically maintained during <see cref="Add"/> and
-/// is rebuilt when constructing from an existing native handle.
 /// </remarks>
-public class IndexIDMap2<T> : CpuIndex<IndexIDMap2<T>>, IFromNativeHandle<IndexIDMap2<T>>, IIndexIDMapped where T : CpuIndex<T>, IFromNativeHandle<T>, ISequentialIDIndex
+public sealed class IndexIDMap2<T> : MappedIndex<IndexIDMap2<T>, T>, IFromNativeIndexHandle<IndexIDMap2<T>>, IComputeResidualFloatIndex, IReconstructFloatIndex where T : IIDSequentialIndex, IFloatIndex, IFromNativeIndexHandle<T>
 {
-    private readonly T _index;
+    private readonly T _subIndex;
 
-    public IndexIDMap2(T index, bool takeOwnership = false)
+    public IndexIDMap2(T index, bool takeOwnership = false) : this(index.Handle, takeOwnership)
     {
-        _index = index;
-
-        FaissErrorHandler.ThrowIfError(
-            Native.faiss_IndexIDMap2_new(out IntPtr ptr, index.Handle)
-        );
-
-        SafeHandle = new FaissIndexHandle(ptr);
-
-        Native.faiss_IndexIDMap2_set_own_fields(SafeHandle, takeOwnership);
-        if (takeOwnership)
-        {
-            _index.Handle.SetHandleAsInvalid();
-        }
     }
 
-    private IndexIDMap2(IntPtr handle, bool takeOwnership = false) : base(handle)
+    private IndexIDMap2(FaissIndexHandle subIndexHandle, bool takeOwnership = false) : base(CreateHandle(subIndexHandle))
     {
-        _index = T.FromHandle(Native.faiss_IndexIDMap2_sub_index(handle));
-        ReconstructRevMap();
+        _subIndex = T.FromPointer(Native.faiss_IndexIDMap2_sub_index(subIndexHandle));
+        OwnsSubIndex = takeOwnership;
         
-
-        Native.faiss_IndexIDMap2_set_own_fields(SafeHandle, takeOwnership);
-        if (takeOwnership)
-        {
-            _index.Handle.SetHandleAsInvalid();
-        }
+        ReconstructRevMap();
     }
 
-    static IndexIDMap2<T> IFromNativeHandle<IndexIDMap2<T>>.FromHandle(IntPtr handle) => new(handle);
-
-    private void ReconstructRevMap()
+    public bool OwnsSubIndex
     {
-        FaissErrorHandler.ThrowIfError(
-            Native.faiss_IndexIDMap2_construct_rev_map(SafeHandle)
-        );
+        get => Native.faiss_IndexIDMap2_own_fields(NativeHandle) != 0;
+        private set => Native.faiss_IndexIDMap2_set_own_fields(NativeHandle, value);
     }
+
+    private void ReconstructRevMap() => FaissErrorHandler.ThrowIfError( Native.faiss_IndexIDMap2_construct_rev_map(NativeHandle));
+
+    public float[] Reconstruct(long key) =>  ((IReconstructFloatIndex)this).Reconstruct(key);
+
+    public float[] Reconstruct(long startKey, long count)  => ((IReconstructFloatIndex)this).Reconstruct(startKey, count);
+
+    public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVector, residualVector, key);
     
-    public unsafe void Add(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids)
+    public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVectors, residualVectors, keys);
+
+    private static FaissIndexHandle CreateHandle(FaissIndexHandle subIndexHandle)
     {
-        if (xids.Length < count)
+        FaissErrorHandler.ThrowIfError(Native.faiss_IndexIDMap2_new(out var ptr, subIndexHandle));
+        return new FaissIndexHandle(ptr);
+    }
+
+    static IndexIDMap2<T> IFromNativeIndexHandle<IndexIDMap2<T>>.FromHandle(FaissIndexHandle handle) => new(handle, true);
+
+    public override void Dispose()
+    {
+        if (OwnsSubIndex)
         {
-            throw new ArgumentException("Not enough custom IDs for the vectors.", nameof(xids));
+            _subIndex.Dispose();
         }
 
-        fixed (float* pVectors = vectors)
-        fixed (long* pXids = xids)
-        {
-            FaissErrorHandler.ThrowIfError(
-                Native.faiss_Index_add_with_ids(SafeHandle, count, pVectors, pXids)
-            );
-        }
+        base.Dispose();
     }
 }
