@@ -1,6 +1,4 @@
-using Faiss.Exceptions;
-
-namespace Faiss.Cpu.Exceptions;
+namespace Faiss.Exceptions;
 
 /// <summary>
 /// Thrown when a user tries to add vectors to an index that requires training (like IVF)
