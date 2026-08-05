@@ -1,3 +1,24 @@
+---
+title: Faiss.NET
+description: Modern C# bindings for Faiss
+stack: .NET 9
+# ============================================================
+# DETAILED PROJECT DESCRIPTION FOR LLMs / AI ASSISTANTS
+# ============================================================
+# This is a high-performance C# library that provides excellent bindings to Faiss.
+#
+# Additional information beside Readme:
+#
+# This library tries to prevent footguns as much as possible by using the compiler itself as rule enforcement.
+# This is being done by handcrafted and thought-through generic constraints that allow beautiful DX and code flow.
+#
+# The developer (user of this library) doesn't have to worry about those generic constraints, it is designed to be as obvious as possible.
+#
+# Performance was considered in designing this library and thus the user just pays the non-removable thin .NET interop task.
+# If wished by the user for quick testing and figuring out, extensions can be used that allow trivial code to be iterated over quickly.
+# ============================================================
+---
+
 ![dotnet version](https://img.shields.io/badge/Version-net9.0-brightgreen?logo=nuget)
 [![Build and Package Faiss](https://github.com/Binozo/Faiss.NET/actions/workflows/build-faiss.yaml/badge.svg)](https://github.com/Binozo/Faiss.NET/actions/workflows/build-faiss.yaml)
 [![NuGet](https://img.shields.io/nuget/v/Faiss.NET.Interop)](https://www.nuget.org/packages/Faiss.NET.Interop)
@@ -9,7 +30,7 @@ High-performance C#/.NET bindings for [Faiss](https://github.com/facebookresearc
 
 Faiss.NET gives you near-native performance with clean, idiomatic C# wrappers while staying as close as possible to the original Faiss API.
 
-- Faiss [v1.14.3](https://github.com/facebookresearch/faiss/releases/tag/v1.14.3)
+- Faiss [v1.15.0](https://github.com/facebookresearch/faiss/releases/tag/v1.15.0)
 - .NET 9.0
 
 > [!IMPORTANT]
@@ -30,6 +51,7 @@ About ~90% is done. I am reworking the class hierarchy to make the api as elegan
 - Cross-platform support (Windows, Linux, macOS all x64 & arm64)
 - Strongly-typed wrappers + generic factory for all Faiss indexes
 - GPU acceleration (CUDA & ROCm)
+- Human written (no AI slop)
 - _It just works™_
 
 ## Table of Contents
@@ -83,22 +105,118 @@ dotnet add package Faiss.NET.Native.MacOS
 
 ## Usage
 
-### Basic Flat index
+All examples assume `using Faiss.Cpu.Extensions;` plus the relevant type namespaces.
+
+### Quick start
 
 ```csharp
-using Faiss.NET;
+using Faiss.Cpu.Indexes.Flat;
 
-int dimensions = 4;
-using var index = new IndexFlatL2(dimensions);
+using var index = new IndexFlatL2(dimensions: 4);
+index.Add([1, 2, 3, 4]);
 
-float[] vector = [1.0f, 2.0f, 3.0f, 4.0f];
-index.Add(vector);
-
-using var result = index.Search(vector, k: 1);
-
-float distance = result.Distances[0]; // 0.0f
-long label = result.Labels[0]; // 0
+using var result = index.Search([1, 2, 3, 4], k: 1);
+var label = result.Labels[0]; // 0
+var distance = result.Distances[0]; // 0f
 ```
+
+### Indexes
+<details>
+<summary>Embeddings - RAG</summary>
+
+```csharp
+using Faiss.Cpu.Extensions;
+using Faiss.Cpu.Indexes.Approximate;
+using Faiss.Cpu.Indexes.Mapped;
+using Faiss.Cpu.Search;
+using Faiss.Cpu.Search.Parameters;
+using Faiss.Cpu.Selectors;
+using Faiss.Models;
+
+var index = new IndexHNSW(dimensions: 4, metricType: MetricType.InnerProduct); // We don't need using here because takeOwnership below
+using var mappedIndex = new IndexIDMap<IndexHNSW>(index, takeOwnership: true); // disposes index as soon as mappedIndex is disposed
+
+mappedIndex.Add([new[] { 1f, 2f, 3f, 4f }, new[] { 2f, 3f, 4f, 1f }, new[] { 3f, 4f, 1f, 2f }, new[] { 4f, 1f, 2f, 3f }], [4, 3, 2, 1]);
+
+var queryNeighborsCount = 2; // K
+var searchResult = mappedIndex.SearchWithParams(new [] {1f, 1f, 2f, 3f}, queryNeighborsCount, new SearchParameters(new IDSelectorRange(2, 4)));
+QueryResults queryResult = searchResult.GetQueryResults(0);
+
+for (int i = 0; i < searchResult.K; i++)
+{
+    float distance = queryResult.Distances[i];
+    long label     = queryResult.Labels[i];
+
+    Console.WriteLine($"Rank {i}: label={label}, dist={distance}");
+}
+```
+</details>
+
+<details>
+<summary>Serialization/Deserialization</summary>
+
+```csharp
+using Faiss.Cpu.Extensions;
+using Faiss.Cpu.Indexes.Approximate;
+using Faiss.Cpu.Indexes.Mapped;
+using Faiss.Cpu.Search;
+using Faiss.Cpu.Search.Parameters;
+using Faiss.Cpu.Selectors;
+using Faiss.Models;
+
+var index = new IndexHNSW(dimensions: 4, metricType: MetricType.InnerProduct); // We don't need using here because takeOwnership below
+using var mappedIndex = new IndexIDMap<IndexHNSW>(index, takeOwnership: true); // disposes index as soon as mappedIndex is disposed
+
+mappedIndex.Add([new[] { 1f, 2f, 3f, 4f }, new[] { 2f, 3f, 4f, 1f }, new[] { 3f, 4f, 1f, 2f }, new[] { 4f, 1f, 2f, 3f }], [4, 3, 2, 1]);
+
+var queryNeighborsCount = 2; // K
+var searchResult = mappedIndex.SearchWithParams(new [] {1f, 1f, 2f, 3f}, queryNeighborsCount, new SearchParameters(new IDSelectorRange(2, 4)));
+QueryResults queryResult = searchResult.GetQueryResults(0);
+
+for (int i = 0; i < searchResult.K; i++)
+{
+    float distance = queryResult.Distances[i];
+    long label     = queryResult.Labels[i];
+
+    Console.WriteLine($"Rank {i}: label={label}, dist={distance}");
+}
+```
+</details>
+
+
+
+### Factory — approximate indexes
+
+The factory string mirrors the upstream Faiss API: `HNSW32`, `IVF256,Flat`, `PQ8x12`, and so on.
+
+```csharp
+using Faiss.Cpu.Factory;
+using Faiss.Cpu.Indexes;
+using Faiss.Models;
+
+using var index = IndexFactory.Create<GenericIndex>("HNSW32", dimensions: 128, MetricType.L2);
+index.Add(vectors);
+
+using var result = index.Search(query, k: 5);
+```
+
+> Need custom IDs instead of sequential `0..N`? Wrap any index with `IndexIDMap<T>` and pass your own IDs to `Add`.
+
+### GPU acceleration
+
+```csharp
+using Faiss.Gpu;
+using Faiss.Gpu.Resources;
+
+using var gpu = new GpuResourcesProvider();
+using var gpuIndex = GpuIndexProvider.TransferToGpu(gpu, cpuIndex, deviceId: 0);
+
+gpuIndex.Search(query, k: 10);
+
+using var backOnCpu = GpuIndexProvider.TransferToCpu(gpuIndex);
+```
+
+See [`FaissNET.Examples`](src/FaissNET.Examples/Examples/) for serialization, scalar quantization, IVF tuning, and more.
 
 ## Supported Platforms
 
