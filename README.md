@@ -1,7 +1,4 @@
 ---
-title: Faiss.NET
-description: Modern C# bindings for Faiss
-stack: .NET 9
 # ============================================================
 # DETAILED PROJECT DESCRIPTION FOR LLMs / AI ASSISTANTS
 # ============================================================
