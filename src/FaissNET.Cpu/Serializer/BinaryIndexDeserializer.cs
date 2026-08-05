@@ -8,15 +8,14 @@ namespace Faiss.Cpu.Serializer;
 
 public static class BinaryIndexDeserializer
 {
-    public static T Read<T>(string filePath, IoFlags flags = IoFlags.None) where T : INativeBinaryIndex<T>, IFromNativeBinaryHandle<T>
+    public static T Read<T>(string filePath, IoFlags flags = IoFlags.None) where T : INativeBinaryIndex, IFromNativeBinaryIndexHandle<T>
     {
-        FaissErrorHandler.ThrowIfError(
-            Native.faiss_read_index_binary_fname(filePath, (int)flags, out IntPtr indexPtr)
-        );
-        return T.FromHandle(indexPtr);
+        FaissErrorHandler.ThrowIfError(Native.faiss_read_index_binary_fname(filePath, (int)flags, out IntPtr ptr));
+
+        return T.FromPointer(ptr);
     }
 
-    public static T Read<T>(Stream stream, IoFlags flags = IoFlags.None) where T : INativeBinaryIndex<T>, IFromNativeBinaryHandle<T>
+    public static T Read<T>(Stream stream, IoFlags flags = IoFlags.None) where T : INativeBinaryIndex, IFromNativeBinaryIndexHandle<T>
     {
         Native.CustomIoReaderCallback readerCallback = (ptr, size, nitems) =>
         {
@@ -38,10 +37,8 @@ public static class BinaryIndexDeserializer
             );
             try
             {
-                FaissErrorHandler.ThrowIfError(
-                    Native.faiss_read_index_binary_custom(ioReader, (int)flags, out IntPtr indexPtr)
-                );
-                return T.FromHandle(indexPtr);
+                FaissErrorHandler.ThrowIfError(Native.faiss_read_index_binary_custom(ioReader, (int)flags, out IntPtr ptr));
+                return T.FromPointer(ptr);
             }
             finally
             {
