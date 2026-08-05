@@ -14,12 +14,12 @@ public static class IndexFactory
     /// <param name="dimensions">Vector dimensionality.</param>
     /// <param name="metric">Distance metric.</param>
     public static T Create<T>(string description, int dimensions, MetricType metric = MetricType.L2)
-        where T : INativeIndex<T>, IFromNativeHandle<T>
+        where T : INativeIndex, IFromNativeIndexHandle<T>
     {
         FaissErrorHandler.ThrowIfError(
             Native.faiss_index_factory(out IntPtr ptr, dimensions, description, metric)
         );
 
-        return T.FromHandle(ptr);
+        return T.FromPointer(ptr);
     }
 }
