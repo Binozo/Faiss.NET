@@ -3,7 +3,7 @@ using Faiss.Cpu.Indexes.Binary;
 using Faiss.Cpu.Indexes.Flat;
 using Xunit;
 
-namespace Faiss.Tests;
+namespace Faiss.Tests.Indexes;
 
 /// <summary>
 /// Tests for index cloning.

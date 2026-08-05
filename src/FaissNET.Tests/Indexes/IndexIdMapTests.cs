@@ -1,3 +1,4 @@
+using Faiss.Cpu.Extensions;
 using Faiss.Cpu.Indexes.Flat;
 using Faiss.Cpu.Indexes.Mapped;
 using Xunit;

@@ -6,7 +6,7 @@ using Faiss.Models;
 
 namespace Faiss.Cpu.Serializer;
 
-public static class BinaryDeserializer
+public static class BinaryIndexDeserializer
 {
     public static T Read<T>(string filePath, IoFlags flags = IoFlags.None) where T : INativeBinaryIndex<T>, IFromNativeBinaryHandle<T>
     {
