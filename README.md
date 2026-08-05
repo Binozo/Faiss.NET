@@ -1,21 +1,3 @@
----
-# ============================================================
-# DETAILED PROJECT DESCRIPTION FOR LLMs / AI ASSISTANTS
-# ============================================================
-# This is a high-performance C# library that provides excellent bindings to Faiss.
-#
-# Additional information beside Readme:
-#
-# This library tries to prevent footguns as much as possible by using the compiler itself as rule enforcement.
-# This is being done by handcrafted and thought-through generic constraints that allow beautiful DX and code flow.
-#
-# The developer (user of this library) doesn't have to worry about those generic constraints, it is designed to be as obvious as possible.
-#
-# Performance was considered in designing this library and thus the user just pays the non-removable thin .NET interop task.
-# If wished by the user for quick testing and figuring out, extensions can be used that allow trivial code to be iterated over quickly.
-# ============================================================
----
-
 ![dotnet version](https://img.shields.io/badge/Version-net9.0-brightgreen?logo=nuget)
 [![Build and Package Faiss](https://github.com/Binozo/Faiss.NET/actions/workflows/build-faiss.yaml/badge.svg)](https://github.com/Binozo/Faiss.NET/actions/workflows/build-faiss.yaml)
 [![NuGet](https://img.shields.io/nuget/v/Faiss.NET.Interop)](https://www.nuget.org/packages/Faiss.NET.Interop)
