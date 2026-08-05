@@ -63,6 +63,12 @@ public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIn
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVFFlat_new_with_metric(out IntPtr handle, quantizer.Handle, (nuint)dimensions, (nuint)nlist, metric));
         return new FaissIndexHandle<IndexIVFFlatRelease>(handle);
     }
+    
+    private static FaissIndexHandle Wrap(IntPtr handle, bool ownsHandle = true)
+        => new FaissIndexHandle<IndexIVFFlatRelease>(handle, ownsHandle);
+
+    static IndexIVFFlat<T> IFromNativeIndexHandle<IndexIVFFlat<T>>.FromPointer(IntPtr handle, bool ownsHandle)
+        => new(Wrap(handle, ownsHandle));
 
     static IndexIVFFlat<T> IFromNativeIndexHandle<IndexIVFFlat<T>>.FromHandle(FaissIndexHandle handle) => new(handle);
 
