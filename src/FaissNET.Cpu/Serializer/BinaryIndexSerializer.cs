@@ -5,7 +5,7 @@ using Faiss.Interop.NativeMethods;
 
 namespace Faiss.Cpu.Serializer;
 
-public static class BinarySerializer
+public static class BinaryIndexSerializer
 {
     public static void Write(INativeBinaryIndex index, string filePath)
     {
