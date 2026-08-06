@@ -17,7 +17,7 @@ namespace Faiss.Cpu.Indexes.Mapped;
 /// Use this wrapper with indexes that do not natively support custom IDs
 /// (e.g. <see cref="IndexFlatL2"/>, <see cref="IndexHNSW"/>, <see cref="IndexPQ"/>).
 /// </remarks>
-public sealed class IndexIDMap2<T> : MappedIndex<IndexIDMap2<T>, T>, IFromNativeIndexHandle<IndexIDMap2<T>>, IComputeResidualFloatIndex, IReconstructFloatIndex where T : IIDSequentialIndex, IFloatIndex, IFromNativeIndexHandle<T>
+public sealed class IndexIDMap2<T> : MappedIndex<IndexIDMap2<T>, T>, IFromNativeIndexHandle<IndexIDMap2<T>>, IComputeResidualFloatIndex, IReconstructFloatIndex where T : IIDSequentialFloatIndex, IFloatIndex, IFromNativeIndexHandle<T>
 {
     private readonly T _subIndex;
 
@@ -61,7 +61,7 @@ public sealed class IndexIDMap2<T> : MappedIndex<IndexIDMap2<T>, T>, IFromNative
     {
         if (OwnsSubIndex)
         {
-            _subIndex.Dispose();
+            _subIndex.Handle.SetHandleAsInvalid();
         }
 
         base.Dispose();

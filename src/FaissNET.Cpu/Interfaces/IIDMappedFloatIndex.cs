@@ -6,7 +6,7 @@ namespace Faiss.Cpu.Interfaces;
 /// <summary>
 /// Represents an index that supports adding vectors with custom IDs.
 /// </summary>
-public interface IIDMappedIndex : INativeIndex
+public interface IIDMappedFloatIndex : INativeIndex
 {
     /// <summary>
     /// Adds vectors to the index with the specified IDs.

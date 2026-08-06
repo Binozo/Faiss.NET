@@ -11,7 +11,7 @@ public abstract class MappedIndex<T, TIndex> : FloatIndex, IRangeSearchFloatInde
 {
     protected MappedIndex(FaissIndexHandle handle) : base(handle) { }
 
-    public void Add(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids) => ((IIDMappedIndex)this).Add(count, vectors, xids);
+    public void Add(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids) => ((IIDMappedFloatIndex)this).Add(count, vectors, xids);
     
     public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, ISearchParameters parameters, Span<float> distances, Span<long> labels) => ((IParamsFloatSearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
 
