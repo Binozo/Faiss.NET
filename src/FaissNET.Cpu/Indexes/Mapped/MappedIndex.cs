@@ -1,16 +1,19 @@
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Range;
+using Faiss.Interfaces;
 using Faiss.Interop.SafeHandles;
 using Faiss.Search;
 
 namespace Faiss.Cpu.Indexes.Mapped;
 
 /// <inheritdoc cref="MappedIndex{T, TIndex}"/>
-public abstract class MappedIndex<T, TIndex> : FloatIndex, IRangeSearchFloatIndex, IIDRemovableFloatIndex, IIDMappedIndex, ITrainableFloatIndex, ICodeFloatIndex, ICpuFloatIndex, IClonableFloatIndex<T> where T : MappedIndex<T, TIndex>, IFromNativeIndexHandle<T> where TIndex : IIDSequentialIndex, IFloatIndex, IFromNativeIndexHandle<TIndex>
+public abstract class MappedIndex<T, TIndex> : FloatIndex, IRangeSearchFloatIndex, IIDRemovableFloatIndex, IIDMappedFloatIndex, ITrainableFloatIndex, ICodeFloatIndex, ICpuFloatIndex, IParamsFloatSearchIndex, IClonableFloatIndex<T> where T : MappedIndex<T, TIndex>, IFromNativeIndexHandle<T> where TIndex : IIDSequentialFloatIndex, IFloatIndex, IFromNativeIndexHandle<TIndex>
 {
     protected MappedIndex(FaissIndexHandle handle) : base(handle) { }
 
     public void Add(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids) => ((IIDMappedIndex)this).Add(count, vectors, xids);
+    
+    public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, ISearchParameters parameters, Span<float> distances, Span<long> labels) => ((IParamsFloatSearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
 
     public void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result) => ((IRangeSearchFloatIndex)this).RangeSearch(count, queryVectors, radius, result);
     

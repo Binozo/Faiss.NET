@@ -6,9 +6,11 @@ using Faiss.Search;
 namespace Faiss.Cpu.Indexes.Flat;
 
 /// <inheritdoc cref="FlatFloatIndex{T}" />
-public abstract class FlatFloatIndex<T> : FloatIndex, IFlatIndex, IRangeSearchFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex where T : FloatIndex, INativeIndex, IFromNativeIndexHandle<T>
+public abstract class FlatFloatIndex<T> : FloatIndex, IFlatIndex, IRangeSearchFloatIndex, IParamsFloatSearchIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex where T : FloatIndex, INativeIndex, IFromNativeIndexHandle<T>
 {
     protected FlatFloatIndex(FaissIndexHandle handle) : base(handle) { }
+    
+    public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, ISearchParameters parameters, Span<float> distances, Span<long> labels) => ((IParamsFloatSearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
 
     public virtual float[] Reconstruct(long key) =>  ((IReconstructFloatIndex)this).Reconstruct(key);
 
