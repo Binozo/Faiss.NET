@@ -10,14 +10,14 @@ namespace Faiss.Cpu.Serializer;
 /// </summary>
 public static class IndexSerializer
 {
-    public static void Write(INativeIndex index, string filePath)
+    public static void Write(ICpuFloatIndex index, string filePath)
     {
         FaissErrorHandler.ThrowIfError(
             Native.faiss_write_index_fname(index.Handle, filePath)
         );
     }
     
-    public static void Write(INativeIndex index, Stream stream)
+    public static void Write(ICpuFloatIndex index, Stream stream)
     {
         Native.CustomIoWriterCallback writerCallback = (ptr, size, nitems) =>
         {
