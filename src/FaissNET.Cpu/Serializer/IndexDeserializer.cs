@@ -8,16 +8,13 @@ namespace Faiss.Cpu.Serializer;
 
 public static class IndexDeserializer
 {
-    public static T Read<T>(string filePath, IoFlags flags = IoFlags.None) where T : INativeIndex<T>, IFromNativeHandle<T>
+    public static T Read<T>(string filePath, IoFlags flags = IoFlags.None) where T : INativeIndex, IFromNativeIndexHandle<T>, ICpuFloatIndex
     {
-        FaissErrorHandler.ThrowIfError(
-            Native.faiss_read_index_fname(filePath, (int)flags, out IntPtr indexPtr)
-        );
-
-        return T.FromHandle(indexPtr);
+        FaissErrorHandler.ThrowIfError(Native.faiss_read_index_fname(filePath, (int)flags, out IntPtr indexPtr));
+        return T.FromPointer(indexPtr);
     }
     
-    public static T Read<T>(Stream stream, IoFlags flags = IoFlags.None) where T : INativeIndex<T>, IFromNativeHandle<T>
+    public static T Read<T>(Stream stream, IoFlags flags = IoFlags.None) where T : INativeIndex, IFromNativeIndexHandle<T>
     {
         Native.CustomIoReaderCallback readerCallback = (ptr, size, nitems) =>
         {
@@ -43,11 +40,8 @@ public static class IndexDeserializer
 
             try
             {
-                FaissErrorHandler.ThrowIfError(
-                    Native.faiss_read_index_custom(ioReader, (int)flags, out IntPtr indexPtr)
-                );
-
-                return T.FromHandle(indexPtr);
+                FaissErrorHandler.ThrowIfError(Native.faiss_read_index_custom(ioReader, (int)flags, out IntPtr indexPtr));
+                return T.FromPointer(indexPtr);
             }
             finally
             {
