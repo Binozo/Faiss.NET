@@ -7,13 +7,13 @@ namespace Faiss.Interop.NativeMethods;
 internal static unsafe partial class Native
 {
     [LibraryImport(LibraryName)]
-    internal static partial int faiss_SearchParameters_new(out IntPtr pSp, IntPtr sel);
+    internal static partial int faiss_SearchParameters_new(out FaissSearchParametersHandle pSp, IntPtr sel);
 
     [LibraryImport(LibraryName)]
     internal static partial void faiss_SearchParameters_free(IntPtr sp);
 
     [LibraryImport(LibraryName)]
-    internal static partial int faiss_SearchParametersIVF_new_with(out IntPtr pSp, IntPtr sel, UIntPtr nprobe, UIntPtr maxCodes);
+    internal static partial int faiss_SearchParametersIVF_new_with(out FaissSearchParametersHandle pSp, IntPtr sel, UIntPtr nprobe, UIntPtr maxCodes);
 
     [LibraryImport(LibraryName)]
     internal static partial void faiss_SearchParametersIVF_free(FaissSearchParametersHandle sp);
