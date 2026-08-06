@@ -21,7 +21,7 @@ public sealed class IndexFlatL2 : CpuFlatFloatIndex<IndexFlatL2>, IFromNativeInd
 {
     /// <param name="dimensions">The number of dimensions for vectors in this index.</param>
     /// <exception cref="FaissException">Thrown when the index creation fails.</exception>
-    public IndexFlatL2(long dimensions) : base(CreateHandle(dimensions))
+    public IndexFlatL2(long dimensions) : this(CreateHandle(dimensions))
     {
     }
 
