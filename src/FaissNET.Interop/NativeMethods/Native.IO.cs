@@ -38,13 +38,13 @@ internal static unsafe partial class Native
     internal static partial void faiss_CustomIOReader_free(IntPtr obj);
 
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
-    internal static partial int faiss_write_index_binary_fname(FaissIndexBinaryHandle idx, string fname);
+    internal static partial int faiss_write_index_binary_fname(FaissBinaryIndexHandle idx, string fname);
 
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial int faiss_read_index_binary_fname(string fname, int io_flags, out IntPtr p_out);
 
     [LibraryImport(LibraryName)]
-    internal static partial int faiss_write_index_binary_custom(FaissIndexBinaryHandle idx, IntPtr io_writer);
+    internal static partial int faiss_write_index_binary_custom(FaissBinaryIndexHandle idx, IntPtr io_writer);
 
     [LibraryImport(LibraryName)]
     internal static partial int faiss_read_index_binary_custom(IntPtr io_reader, int io_flags, out IntPtr p_out);
