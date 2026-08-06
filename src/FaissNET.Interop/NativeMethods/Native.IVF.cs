@@ -58,6 +58,12 @@ internal static unsafe partial class Native
     internal static partial void faiss_IndexIVFScalarQuantizer_set_own_fields(FaissIndexHandle index, [MarshalAs(UnmanagedType.Bool)] bool ownFields);
     
     [LibraryImport(LibraryName)]
+    internal static partial IntPtr faiss_IndexIVFScalarQuantizer_sq(FaissIndexHandle index);
+    
+    [LibraryImport(LibraryName)]
+    internal static partial void faiss_IndexIVFScalarQuantizer_free(IntPtr ptr);
+    
+    [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexIVFFlat_new(out IntPtr pIndex);
     
     [LibraryImport(LibraryName)]
@@ -65,6 +71,9 @@ internal static unsafe partial class Native
     
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexIVFFlat_new_with_metric(out IntPtr pIndex, FaissIndexHandle quantizer, UIntPtr d, UIntPtr nlist, MetricType metric);
+    
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_IndexIVFFlat_free(IntPtr p_index);
     
     [LibraryImport(LibraryName)]
     internal static partial nuint faiss_IndexIVFFlat_nlist(FaissIndexHandle index);
@@ -80,6 +89,9 @@ internal static unsafe partial class Native
     
     [LibraryImport(LibraryName)]
     internal static partial sbyte faiss_IndexIVFFlat_quantizer_trains_alone(FaissIndexHandle index);
+    
+    [LibraryImport(LibraryName)]
+    internal static partial sbyte faiss_IndexIVFFlat_add_core(FaissIndexHandle index, long n, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids, ReadOnlySpan<long> precomputed_idx);
     
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexIVFFlat_own_fields(FaissIndexHandle index);
