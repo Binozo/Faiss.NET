@@ -7,11 +7,16 @@ using Faiss.Models;
 
 namespace Faiss.Cpu.Indexes.Flat;
 
+internal readonly struct IndexScalarQuantizerRelease : IFaissRelease
+{
+    public static void Release(IntPtr handle) => Native.faiss_IndexScalarQuantizer_free(handle);
+}
+
 /// <summary>
 /// Flat (exhaustive) index that compresses each vector component independently with a scalar quantizer.
 /// </summary>
 /// <inheritdoc cref="CpuFlatFloatIndex{T}" />
-public sealed class IndexScalarQuantizer : CpuFlatFloatIndex<IndexScalarQuantizer>, IFromNativeIndexHandle<IndexScalarQuantizer>, IGpuClonableIndex<IndexScalarQuantizer, GpuIndexFlat>, ITrainableFloatIndex
+public sealed class IndexScalarQuantizer : CpuFlatFloatIndex<IndexScalarQuantizer>, IFromNativeIndexHandle<IndexScalarQuantizer>, IGpuClonableIndex<IndexScalarQuantizer, GpuIndexFlat>, ITrainableFloatIndex, IFlatIndex
 {
     public readonly ScalarQuantizer ScalarQuantizer;
 
@@ -36,7 +41,7 @@ public sealed class IndexScalarQuantizer : CpuFlatFloatIndex<IndexScalarQuantize
         }
 
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexScalarQuantizer_new_with(out IntPtr handle, dimensions, qt, metric));
-        return new FaissIndexHandle(handle);
+        return new FaissIndexHandle<IndexScalarQuantizerRelease>(handle);
     }
 
     static IndexScalarQuantizer IFromNativeIndexHandle<IndexScalarQuantizer>.FromHandle(FaissIndexHandle handle) => new(handle);
@@ -78,7 +83,7 @@ public class ScalarQuantizer
 
     internal void Dispose()
     {
-        _handle.Dispose();
+        _handle.SetHandleAsInvalid();
     }
 
     public QuantizerType QuantizerType => Native.faiss_ScalarQuantizer_qtype(_handle);
