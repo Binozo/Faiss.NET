@@ -17,7 +17,7 @@ internal readonly struct IndexFlat1DRelease : IFaissRelease
 /// <inheritdoc cref="CpuFlatFloatIndex{T}" />
 public sealed class IndexFlat1D : CpuFlatFloatIndex<IndexFlat1D>, IFromNativeIndexHandle<IndexFlat1D>, IGpuClonableIndex<IndexFlat1D, GpuIndexFlat1D>
 {
-    public IndexFlat1D(bool continuousUpdate = true) : base(CreateHandle(continuousUpdate))
+    public IndexFlat1D(bool continuousUpdate = true) : this(CreateHandle(continuousUpdate))
     {
     }
 
