@@ -8,21 +8,30 @@ internal static unsafe partial class Native
 {
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexFlat_new(out IntPtr p_index);
+
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexFlat_new_with(out IntPtr p_index, long d, MetricType metric);
 
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexFlat1D_new(out IntPtr pIndex);
+
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexFlat1D_new_with(out IntPtr pIndex, [MarshalAs(UnmanagedType.Bool)] bool continuousUpdate);
+
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexFlat1D_update_permutation(FaissIndexHandle index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_IndexFlat1D_free(IntPtr p_index);
     
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexFlatL2_new(out IntPtr p_index);
 
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexFlatL2_new_with(out IntPtr p_index, long d);
+
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_IndexFlatL2_free(IntPtr p_index);
 
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexFlatIP_new(out IntPtr p_index);
@@ -35,4 +44,34 @@ internal static unsafe partial class Native
     
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexScalarQuantizer_new_with(out IntPtr pIndex, long d, QuantizerType qt, MetricType metric);
+
+    [LibraryImport(LibraryName)]
+    internal static partial IntPtr faiss_IndexScalarQuantizer_free(IntPtr p_index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial IntPtr faiss_IndexScalarQuantizer_sq(FaissIndexHandle index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial QuantizerType faiss_ScalarQuantizer_qtype(FaissScalarQuantizerHandle index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial nuint faiss_ScalarQuantizer_bits(FaissScalarQuantizerHandle index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial nuint faiss_ScalarQuantizer_d(FaissScalarQuantizerHandle index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial nuint faiss_ScalarQuantizer_code_size(FaissScalarQuantizerHandle index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial RangeStat faiss_ScalarQuantizer_rangestat(FaissScalarQuantizerHandle index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial float faiss_ScalarQuantizer_rangestat_arg(FaissScalarQuantizerHandle index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial nuint faiss_ScalarQuantizer_trained_size(FaissScalarQuantizerHandle index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial nuint faiss_ScalarQuantizer_trained(FaissScalarQuantizerHandle index, Span<float> x);
 }
