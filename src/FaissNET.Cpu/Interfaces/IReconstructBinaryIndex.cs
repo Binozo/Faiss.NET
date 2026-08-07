@@ -3,23 +3,23 @@ using Faiss.Interop.NativeMethods;
 
 namespace Faiss.Cpu.Interfaces;
 
-public interface IReconstructFloatIndex : INativeIndex, IFloatIndex
+public interface IReconstructBinaryIndex : INativeBinaryIndex, IBinaryIndex
 {
     /// <summary>
     /// Reconstructs the original vector for a given ID.
     /// </summary>
     /// <param name="key">The ID of the vector to reconstruct.</param>
     /// <returns>The reconstructed vector.</returns>
-    public float[] Reconstruct(long key)
+    public byte[] Reconstruct(long key)
     {
-        float[] vector = new float[Dimensions];
+        byte[] vector = new byte[Dimensions];
 
         unsafe
         {
-            fixed (float* pVector = vector)
+            fixed (byte* pVector = vector)
             {
                 FaissErrorHandler.ThrowIfError(
-                    Native.faiss_Index_reconstruct(Handle, key, pVector)
+                    Native.faiss_IndexBinary_reconstruct(Handle, key, pVector)
                 );
             }
         }
@@ -33,16 +33,16 @@ public interface IReconstructFloatIndex : INativeIndex, IFloatIndex
     /// <param name="startKey">The starting ID of the batch.</param>
     /// <param name="count">The number of vectors to reconstruct.</param>
     /// <returns>The reconstructed vectors.</returns>
-    public float[] Reconstruct(long startKey, long count)
+    public byte[] Reconstruct(long startKey, long count)
     {
-        float[] vectors = new float[count * Dimensions];
+        byte[] vectors = new byte[count * Dimensions];
 
         unsafe
         {
-            fixed (float* pVectors = vectors)
+            fixed (byte* pVectors = vectors)
             {
                 FaissErrorHandler.ThrowIfError(
-                    Native.faiss_Index_reconstruct_n(Handle, startKey, count, pVectors)
+                    Native.faiss_IndexBinary_reconstruct_n(Handle, startKey, count, pVectors)
                 );
             }
         }
