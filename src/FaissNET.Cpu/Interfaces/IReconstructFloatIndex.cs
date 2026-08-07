@@ -3,7 +3,7 @@ using Faiss.Interop.NativeMethods;
 
 namespace Faiss.Cpu.Interfaces;
 
-public interface IReconstructableFloatIndex : INativeIndex, IFloatIndex
+public interface IReconstructFloatIndex : INativeIndex, IFloatIndex
 {
     /// <summary>
     /// Reconstructs the original vector for a given ID.
@@ -33,7 +33,7 @@ public interface IReconstructableFloatIndex : INativeIndex, IFloatIndex
     /// <param name="startKey">The starting ID of the batch.</param>
     /// <param name="count">The number of vectors to reconstruct.</param>
     /// <returns>The reconstructed vectors.</returns>
-    public float[] ReconstructBatch(long startKey, long count)
+    public float[] Reconstruct(long startKey, long count)
     {
         float[] vectors = new float[count * Dimensions];
 
