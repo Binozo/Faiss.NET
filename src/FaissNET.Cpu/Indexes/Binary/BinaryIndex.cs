@@ -1,6 +1,4 @@
-using Faiss.Cpu.Exceptions;
 using Faiss.Cpu.Interfaces;
-using Faiss.Interfaces;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
@@ -8,41 +6,24 @@ using Faiss.Models;
 
 namespace Faiss.Cpu.Indexes.Binary;
 
-public abstract class BinaryIndex<T> : INativeBinaryIndex<T>, ITrainableBinaryIndex where T : BinaryIndex<T>
+/// <inheritdoc cref="IBinaryIndex" />
+public abstract class BinaryIndex : IBinaryIndex, INativeBinaryIndex
 {
-    FaissIndexBinaryHandle INativeBinaryIndex.Handle => SafeHandle;
+    private readonly FaissBinaryIndexHandle _handle;
 
-    private protected FaissIndexBinaryHandle SafeHandle { get; init; }
+    protected BinaryIndex(FaissBinaryIndexHandle handle) => _handle = handle ?? throw new ArgumentNullException(nameof(handle));
 
-    private protected BinaryIndex()
-    {
-    }
+    protected internal FaissBinaryIndexHandle NativeHandle => _handle;
 
-    private protected BinaryIndex(IntPtr handle)
-    {
-        SafeHandle = new FaissIndexBinaryHandle(handle);
-    }
+    FaissBinaryIndexHandle INativeBinaryIndex.Handle => _handle;
 
-    public int Dimensions => Native.faiss_IndexBinary_d(SafeHandle);
+    public int Dimensions => Native.faiss_IndexBinary_d(NativeHandle);
 
-    public long TotalCount => Native.faiss_IndexBinary_ntotal(SafeHandle);
+    public long TotalCount => Native.faiss_IndexBinary_ntotal(NativeHandle);
 
-    public bool IsTrained => Native.faiss_IndexBinary_is_trained(SafeHandle) != 0;
+    public bool IsTrained => Native.faiss_IndexBinary_is_trained(NativeHandle) != 0;
 
-    public MetricType Metric => Native.faiss_IndexBinary_metric_type(SafeHandle);
-
-    public unsafe void Add(long count, ReadOnlySpan<byte> vectors)
-    {
-        if (!IsTrained)
-        {
-            throw new FaissUntrainedException();
-        }
-
-        fixed (byte* pVectors = vectors)
-        {
-            FaissErrorHandler.ThrowIfError(Native.faiss_IndexBinary_add(SafeHandle, count, pVectors));
-        }
-    }
+    public MetricType Metric => Native.faiss_IndexBinary_metric_type(NativeHandle);
 
     public unsafe void Search(long count, ReadOnlySpan<byte> queryVectors, int k, Span<int> distances, Span<long> labels)
     {
@@ -51,7 +32,7 @@ public abstract class BinaryIndex<T> : INativeBinaryIndex<T>, ITrainableBinaryIn
         fixed (long* pLabels = labels)
         {
             FaissErrorHandler.ThrowIfError(
-                Native.faiss_IndexBinary_search(SafeHandle, count, pQuery, k, pDistances, pLabels)
+                Native.faiss_IndexBinary_search(NativeHandle, count, pQuery, k, pDistances, pLabels)
             );
         }
     }
@@ -62,54 +43,16 @@ public abstract class BinaryIndex<T> : INativeBinaryIndex<T>, ITrainableBinaryIn
         fixed (long* pLabels = labels)
         {
             FaissErrorHandler.ThrowIfError(
-                Native.faiss_IndexBinary_assign(SafeHandle, count, pQuery, pLabels, k)
+                Native.faiss_IndexBinary_assign(NativeHandle, count, pQuery, pLabels, k)
             );
         }
     }
 
-    public unsafe void SearchWithParams(
-        long count,
-        ReadOnlySpan<byte> queryVectors,
-        int k,
-        ISearchParameters parameters,
-        Span<int> distances,
-        Span<long> labels)
-    {
-        fixed (byte* pQuery = queryVectors)
-        fixed (int* pDistances = distances)
-        fixed (long* pLabels = labels)
-        {
-            FaissErrorHandler.ThrowIfError(
-                Native.faiss_IndexBinary_search_with_params(
-                    SafeHandle, count, pQuery, k, ((INativeSearchParameters)parameters).DangerousGetHandle(), pDistances, pLabels)
-            );
-        }
-    }
-    
-    public Task TrainAsync(long count, ReadOnlyMemory<byte> vectors)
-    {
-        return Task.Run(() =>
-        {
-            unsafe
-            {
-                using var handle = vectors.Pin();
-                byte* pVectors = (byte*)handle.Pointer;
-
-                FaissErrorHandler.ThrowIfError(
-                    Native.faiss_IndexBinary_train(SafeHandle, count, pVectors)
-                );
-            }
-        });
-    }
-
-    public void Reset()
-    {
-        FaissErrorHandler.ThrowIfError(Native.faiss_IndexBinary_reset(SafeHandle));
-    }
+    public void Reset() => FaissErrorHandler.ThrowIfError(Native.faiss_IndexBinary_reset(NativeHandle));
 
     public virtual void Dispose()
     {
-        SafeHandle.Dispose();
+        _handle.Dispose();
         GC.SuppressFinalize(this);
     }
 }
