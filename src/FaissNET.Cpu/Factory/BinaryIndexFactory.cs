@@ -12,12 +12,12 @@ public static class BinaryIndexFactory
     /// <param name="description">Factory string (e.g., "BFlat", "BIVF256", "BHNSW32", "BHash16").</param>
     /// <param name="dimensions">Vector dimensionality in bits.</param>
     public static T Create<T>(string description, int dimensions)
-        where T : INativeBinaryIndex<T>, IFromNativeBinaryHandle<T>
+        where T : INativeBinaryIndex, IFromNativeBinaryIndexHandle<T>
     {
         FaissErrorHandler.ThrowIfError(
             Native.faiss_index_binary_factory(out IntPtr ptr, dimensions, description)
         );
 
-        return T.FromHandle(ptr);
+        return T.FromPointer(ptr);
     }
 }
