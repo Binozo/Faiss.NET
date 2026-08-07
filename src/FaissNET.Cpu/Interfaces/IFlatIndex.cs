@@ -1,6 +1,6 @@
 namespace Faiss.Cpu.Interfaces;
 
-public interface IFlatIndex
+public interface IFlatIndex : INativeIndex
 {
     
 }
