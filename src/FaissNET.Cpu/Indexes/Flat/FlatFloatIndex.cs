@@ -1,5 +1,6 @@
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Range;
+using Faiss.Interfaces;
 using Faiss.Interop.SafeHandles;
 using Faiss.Search;
 
@@ -22,11 +23,11 @@ public abstract class FlatFloatIndex<T> : FloatIndex, IFlatIndex, IRangeSearchFl
 }
 
 /// <inheritdoc cref="CpuFlatFloatIndex{T}" />
-public abstract class CpuFlatFloatIndex<T> : FlatFloatIndex<T>, IRangeSearchFloatIndex, IIDRemovableFloatIndex, ICodeFloatIndex, IClonableFloatIndex<T>, ICpuFloatIndex, IIDSequentialIndex where T : FloatIndex, INativeIndex, IFromNativeIndexHandle<T>
+public abstract class CpuFlatFloatIndex<T> : FlatFloatIndex<T>, IRangeSearchFloatIndex, IIDRemovableFloatIndex, ICodeFloatIndex, IClonableFloatIndex<T>, ICpuFloatIndex, IIDSequentialFloatIndex where T : FloatIndex, INativeIndex, IFromNativeIndexHandle<T>
 {
     protected CpuFlatFloatIndex(FaissIndexHandle handle) : base(handle) { }
 
-    public virtual void Add(long count, ReadOnlySpan<float> vectors) => ((IIDSequentialIndex)this).Add(count, vectors);
+    public virtual void Add(long count, ReadOnlySpan<float> vectors) => ((IIDSequentialFloatIndex)this).Add(count, vectors);
 
     public void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result) => ((IRangeSearchFloatIndex)this).RangeSearch(count, queryVectors, radius, result);
     
