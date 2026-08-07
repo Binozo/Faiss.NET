@@ -1,5 +1,6 @@
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Range;
+using Faiss.Interfaces;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
@@ -10,7 +11,7 @@ namespace Faiss.Cpu.Indexes.Binary;
 /// <summary>
 /// Exact binary flat index. Performs exhaustive Hamming search on packed binary vectors.
 /// </summary>
-public sealed class IndexBinaryFlat : BinaryIndex, IFromNativeBinaryIndexHandle<IndexBinaryFlat>, IRangeSearchBinaryIndex, IIDRemovableBinaryIndex, IReconstructBinaryIndex, IClonableBinaryIndex<IndexBinaryFlat>
+public sealed class IndexBinaryFlat : BinaryIndex, IFromNativeBinaryIndexHandle<IndexBinaryFlat>, IRangeSearchBinaryIndex, IParamsBinarySearchIndex, IIDRemovableBinaryIndex, IReconstructBinaryIndex, IClonableBinaryIndex<IndexBinaryFlat>
 {
     /// <summary>
     /// Creates an exact binary flat index.
@@ -38,6 +39,8 @@ public sealed class IndexBinaryFlat : BinaryIndex, IFromNativeBinaryIndexHandle<
     static IndexBinaryFlat IFromNativeBinaryIndexHandle<IndexBinaryFlat>.FromHandle(FaissBinaryIndexHandle handle) => new(handle);
 
     public void RangeSearch(long count, ReadOnlySpan<byte> queryVectors, byte radius, RangeSearchResult result) => ((IRangeSearchBinaryIndex)this).RangeSearch(count, queryVectors, radius, result);
+
+    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, ISearchParameters parameters, Span<int> distances, Span<long> labels) => ((IParamsBinarySearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
 
     public long RemoveIds(IIDSelector selector) => ((IIDRemovableBinaryIndex)this).RemoveIds(selector);
     
