@@ -20,7 +20,7 @@ public sealed class IndexFlat : CpuFlatFloatIndex<IndexFlat>, IFromNativeIndexHa
     {
     }
 
-    private IndexFlat(FaissIndexHandle handle) : base(handle)
+    internal IndexFlat(FaissIndexHandle handle) : base(handle)
     {
     }
 
