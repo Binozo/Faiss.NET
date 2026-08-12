@@ -13,13 +13,14 @@ public static class IndexFactory
     /// <param name="description">Factory string (e.g., "Flat", "IVF256,Flat", "HNSW32", "IVF256,PQ16").</param>
     /// <param name="dimensions">Vector dimensionality.</param>
     /// <param name="metric">Distance metric.</param>
-    public static T Create<T>(string description, int dimensions, MetricType metric = MetricType.L2)
+    /// <param name="ownsHandle">If the created index should own its handle.</param>
+    public static T Create<T>(string description, int dimensions, MetricType metric = MetricType.L2, bool ownsHandle = true)
         where T : INativeIndex, IFromNativeIndexHandle<T>
     {
         FaissErrorHandler.ThrowIfError(
             Native.faiss_index_factory(out IntPtr ptr, dimensions, description, metric)
         );
 
-        return T.FromPointer(ptr);
+        return T.FromPointer(ptr, ownsHandle);
     }
 }
