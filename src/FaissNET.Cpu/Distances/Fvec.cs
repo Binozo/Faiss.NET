@@ -22,7 +22,7 @@ public static class Fvec
             throw new ArgumentOutOfRangeException(nameof(queryVector), queryVector.Length, "array length must be dimension");
 
         if (vectors.Length % dimension != 0)
-            throw new ArgumentOutOfRangeException(nameof(vectors), vectors.Length, "array length must be dividable by dimension");
+            throw new ArgumentOutOfRangeException(nameof(vectors), vectors.Length, "array length must be divisible by dimension");
         
         Native.faiss_fvec_inner_products_ny(innerProducts, queryVector, vectors, (nuint)dimension, (nuint)count);
     }
@@ -45,7 +45,7 @@ public static class Fvec
             throw new ArgumentOutOfRangeException(nameof(queryVector), queryVector.Length, "array length must be dimension");
 
         if (vectors.Length % dimension != 0)
-            throw new ArgumentOutOfRangeException(nameof(vectors), vectors.Length, "array length must be dividable by dimension");
+            throw new ArgumentOutOfRangeException(nameof(vectors), vectors.Length, "array length must be divisible by dimension");
         
         Native.faiss_fvec_L2sqr_ny(squaredDistances, queryVector, vectors, (nuint)dimension, (nuint)count);
     }
