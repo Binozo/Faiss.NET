@@ -13,16 +13,21 @@ Faiss.NET gives you near-native performance with clean, idiomatic C# wrappers wh
 - .NET 9.0
 
 > [!IMPORTANT]
-> This library is under active development. Core indexes and functionality are usable, but the API may still evolve and not every feature is complete yet.
+> This library is under active development. Core indexes and functionality are usable, but the API may still evolve. Alpha stage soon.
 
 ## Development Roadmap
-About ~90% is done. I am reworking the class hierarchy to make the api as elegant as possible. This includes preventing most of the footguns there are with faiss, including making the compiler enforce all the rules.
+About ~90% is done. 
+~~I am reworking the class hierarchy to make the api as elegant as possible. This includes preventing most of the footguns there are with faiss, including making the compiler enforce all the rules.~~
+
+12.08.2026: The groundwork is almost finished. I still need to polish some rough edges like the `IDSelector` (internal stuff) but most of this library is basically complete, stable and usable.
+As soon as the PRs noted below get merged and I fix some minor stuff I will publish preview release 6. I am really happy with the progress and looking forward.
 
 - [x] Adding bindings for `distances_c.h`
-- [ ] Improving class hierarchy and generic constraints design to further prevent footguns (~ September 2026)
-- [ ] Adding more tests (~ Oktober 2026)
-- [ ] Adding examples (~ Oktober 2026)
-- [ ] v1.0 Release 🚀 (~ November 2026)
+- [x] Improving class hierarchy and generic constraints design to further prevent footguns (~ September 2026)
+- [ ] Adding remaining functionality to IndexShards, IndexReplicas, IndexRefineFlat and GPU indexes (Waiting for faiss PRs to merge: [#5516](https://github.com/facebookresearch/faiss/pull/5516), [#5514](https://github.com/facebookresearch/faiss/pull/5514), [#5513](https://github.com/facebookresearch/faiss/pull/5513), [#5512](https://github.com/facebookresearch/faiss/pull/5512), [#5511](https://github.com/facebookresearch/faiss/pull/5511)) (~ September 2026)
+- [ ] Adding more tests      (~ Oktober 2026)
+- [ ] Adding example project (~ Oktober 2026)
+- [ ] v1.0 Release 🚀        (~ November 2026)
 
 ## Features
 - Thin, "bare-metal" bindings with minimal overhead
@@ -89,6 +94,7 @@ All examples assume `using Faiss.Cpu.Extensions;` plus the relevant type namespa
 ### Quick start
 
 ```csharp
+using Faiss.Cpu.Extensions;
 using Faiss.Cpu.Indexes.Flat;
 
 using var index = new IndexFlatL2(dimensions: 4);
@@ -112,7 +118,7 @@ using Faiss.Cpu.Search.Parameters;
 using Faiss.Cpu.Selectors;
 using Faiss.Models;
 
-var index = new IndexHNSW(dimensions: 4, metricType: MetricType.InnerProduct); // We don't need using here because takeOwnership below
+var index = new IndexHNSW(dimensions: 4, metricType: MetricType.InnerProduct); // We don't need `using` here because takeOwnership below
 using var mappedIndex = new IndexIDMap<IndexHNSW>(index, takeOwnership: true); // disposes index as soon as mappedIndex is disposed
 
 mappedIndex.Add([new[] { 1f, 2f, 3f, 4f }, new[] { 2f, 3f, 4f, 1f }, new[] { 3f, 4f, 1f, 2f }, new[] { 4f, 1f, 2f, 3f }], [4, 3, 2, 1]);
@@ -136,66 +142,54 @@ for (int i = 0; i < searchResult.K; i++)
 
 ```csharp
 using Faiss.Cpu.Extensions;
-using Faiss.Cpu.Indexes.Approximate;
-using Faiss.Cpu.Indexes.Mapped;
-using Faiss.Cpu.Search;
-using Faiss.Cpu.Search.Parameters;
-using Faiss.Cpu.Selectors;
-using Faiss.Models;
+using Faiss.Cpu.Indexes.Binary;
+using Faiss.Cpu.Serializer;
 
-var index = new IndexHNSW(dimensions: 4, metricType: MetricType.InnerProduct); // We don't need using here because takeOwnership below
-using var mappedIndex = new IndexIDMap<IndexHNSW>(index, takeOwnership: true); // disposes index as soon as mappedIndex is disposed
+using var index = new IndexBinaryFlat(4);
+index.Add([1, 2, 3, 4]);
 
-mappedIndex.Add([new[] { 1f, 2f, 3f, 4f }, new[] { 2f, 3f, 4f, 1f }, new[] { 3f, 4f, 1f, 2f }, new[] { 4f, 1f, 2f, 3f }], [4, 3, 2, 1]);
+BinaryIndexSerializer.Write(index, "my_index.faiss");
 
-var queryNeighborsCount = 2; // K
-var searchResult = mappedIndex.SearchWithParams(new [] {1f, 1f, 2f, 3f}, queryNeighborsCount, new SearchParameters(new IDSelectorRange(2, 4)));
-QueryResults queryResult = searchResult.GetQueryResults(0);
-
-for (int i = 0; i < searchResult.K; i++)
-{
-    float distance = queryResult.Distances[i];
-    long label     = queryResult.Labels[i];
-
-    Console.WriteLine($"Rank {i}: label={label}, dist={distance}");
-}
+using var readIndex = BinaryIndexDeserializer.Read<IndexBinaryFlat>( "my_index.faiss");
+var reconstructed = readIndex.Reconstruct(0); // [1, 2, 3, 4]
 ```
 </details>
 
-
-
-### Factory — approximate indexes
+### Factory - approximate indexes
 
 The factory string mirrors the upstream Faiss API: `HNSW32`, `IVF256,Flat`, `PQ8x12`, and so on.
 
 ```csharp
+using Faiss.Cpu.Extensions;
 using Faiss.Cpu.Factory;
-using Faiss.Cpu.Indexes;
-using Faiss.Models;
+using Faiss.Cpu.Indexes.Factory;
 
-using var index = IndexFactory.Create<GenericIndex>("HNSW32", dimensions: 128, MetricType.L2);
-index.Add(vectors);
+using var index = IndexFactory.Create<GenericFloatIndex>("HNSW32", dimensions: 128);
+index.Add([1f, 2f, 3f, 4f]);
 
-using var result = index.Search(query, k: 5);
+using var result = index.Search([1f, 2f, 3f, 4f], k: 1);
 ```
-
-> Need custom IDs instead of sequential `0..N`? Wrap any index with `IndexIDMap<T>` and pass your own IDs to `Add`.
 
 ### GPU acceleration
 
 ```csharp
+using Faiss.Cpu.Extensions;
+using Faiss.Cpu.Indexes.Flat;
 using Faiss.Gpu;
 using Faiss.Gpu.Resources;
 
-using var gpu = new GpuResourcesProvider();
-using var gpuIndex = GpuIndexProvider.TransferToGpu(gpu, cpuIndex, deviceId: 0);
+using var cpuIndex = new IndexFlatIP(dimensions: 4);
+cpuIndex.Add([1f, 2f, 3f, 4f]);
 
-gpuIndex.Search(query, k: 10);
+using var gpuResources = new GpuResourcesProvider();
+using var gpuIndex = GpuIndexProvider.TransferToGpu(gpuResources, cpuIndex, deviceId: 0); // GpuIndexFlatIP
 
-using var backOnCpu = GpuIndexProvider.TransferToCpu(gpuIndex);
+using var searchResult = gpuIndex.Search([1f, 2f, 3f, 4f], k: 1);
+var results = searchResult.Length; // 1
+
+using var transferredCpuIndex = GpuIndexProvider.TransferToCpu(gpuIndex); // IndexFlatIP
+results = searchResult.Length; // 1
 ```
-
-See [`FaissNET.Examples`](src/FaissNET.Examples/Examples/) for serialization, scalar quantization, IVF tuning, and more.
 
 ## Supported Platforms
 
@@ -234,6 +228,21 @@ See [`FaissNET.Examples`](src/FaissNET.Examples/Examples/) for serialization, sc
 | gfx1100 / 1101 / 1102 | RDNA3        | Radeon RX 7700–7900 series               |
 | gfx1200 / 1201        | RDNA4        | Radeon RX 9060 series and RX 9070 series |
 
+
+<details>
+<summary>
+
+## Background
+
+</summary>
+
+I was unhappy with the existing .NET bindings for faiss out there including crashes in prod caused by those which took a while to find out what the cause was (segmentation fault by bad pointer usage through the .NET faiss library).
+Seeing other bindings being completely out-of-date and way too old I decided to do it myself.
+My goal is to have **amazing** DX including guardrails that make it really hard to do something wrong, all enforced by the compiler.
+
+Made with ♥️
+
+</details>
 
 ## License
 See the [LICENSE](LICENSE) file for details.
