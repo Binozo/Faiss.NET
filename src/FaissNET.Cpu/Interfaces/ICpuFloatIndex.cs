@@ -1,7 +1,6 @@
 namespace Faiss.Cpu.Interfaces;
 
-/// <inheritdoc />
-public interface ICpuIndex : INativeIndex
+/// <inheritdoc cref="IFloatIndex" />
+public interface ICpuFloatIndex : INativeIndex, IFloatIndex
 {
-    
 }
