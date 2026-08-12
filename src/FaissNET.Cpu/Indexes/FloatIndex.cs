@@ -1,5 +1,4 @@
 using Faiss.Cpu.Interfaces;
-using Faiss.Interfaces;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
@@ -42,21 +41,6 @@ public abstract class FloatIndex : IFloatIndex, INativeIndex
             {
                 FaissErrorHandler.ThrowIfError(
                     Native.faiss_Index_assign(NativeHandle, count, pQuery, pLabels, k)
-                );
-            }
-        }
-    }
-
-    public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, ISearchParameters parameters, Span<float> distances, Span<long> labels)
-    {
-        unsafe
-        {
-            fixed (float* pQuery = queryVectors)
-            fixed (float* pDistances = distances)
-            fixed (long* pLabels = labels)
-            {
-                FaissErrorHandler.ThrowIfError( // TODO: Improve this INativeSearchParameters handling
-                    Native.faiss_Index_search_with_params(NativeHandle, count, pQuery, k, ((INativeSearchParameters)parameters).Handle, pDistances, pLabels)
                 );
             }
         }
