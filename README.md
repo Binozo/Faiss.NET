@@ -238,6 +238,7 @@ results = searchResult.Length; // 1
 
 I was unhappy with the existing .NET bindings for faiss out there including crashes in prod caused by those which took a while to find out what the cause was (segmentation fault by bad pointer usage through the .NET faiss library).
 Seeing other bindings being completely out-of-date and way too old I decided to do it myself.
+
 My goal is to have **amazing** DX including guardrails that make it really hard to do something wrong, all enforced by the compiler.
 
 Made with ♥️
