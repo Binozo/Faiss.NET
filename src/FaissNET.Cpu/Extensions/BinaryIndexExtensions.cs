@@ -1,7 +1,6 @@
 using System.Buffers;
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search;
-using Faiss.Interfaces;
 
 namespace Faiss.Cpu.Extensions;
 
@@ -12,7 +11,7 @@ public static class BinaryIndexExtensions
     /// </summary>
     /// <param name="index">The target index.</param>
     /// <param name="vectors">A flat span of vectors (size: count * Dimensions).</param>
-    public static void Add(this INativeBinaryIndex index, ReadOnlySpan<byte> vectors)
+    public static void Add(this IIDSequentialBinaryIndex index, ReadOnlySpan<byte> vectors)
     {
         if (vectors.Length == 0 || vectors.Length % index.Dimensions != 0)
         {
@@ -27,7 +26,7 @@ public static class BinaryIndexExtensions
     /// </summary>
     /// <param name="index">The target index.</param>
     /// <param name="vectors">A list of vectors.</param>
-    public static void Add(this INativeBinaryIndex index, IList<ReadOnlyMemory<byte>> vectors)
+    public static void Add(this IIDSequentialBinaryIndex index, IList<ReadOnlyMemory<byte>> vectors)
     {
         if (vectors.Count == 0) return;
 
@@ -57,11 +56,11 @@ public static class BinaryIndexExtensions
             ArrayPool<byte>.Shared.Return(buffer);
         }
     }
-    
+
     /// <summary>
     /// Gets the nearest labels without distance.
     /// </summary>
-    public static AssignResultSpan Assign(this INativeBinaryIndex index, ReadOnlySpan<byte> queryVectors, int k)
+    public static AssignResultSpan Assign(this IBinaryIndex index, ReadOnlySpan<byte> queryVectors, int k)
     {
         if (queryVectors.Length == 0 || queryVectors.Length % index.Dimensions != 0)
         {
@@ -88,7 +87,7 @@ public static class BinaryIndexExtensions
     /// <summary>
     /// Gets the nearest labels without distance. Caller provides the stackalloc buffer.
     /// </summary>
-    public static void Assign(this INativeBinaryIndex index, ReadOnlySpan<byte> queryVector, int k, Span<long> labels)
+    public static void Assign(this IBinaryIndex index, ReadOnlySpan<byte> queryVector, int k, Span<long> labels)
     {
         if (queryVector.Length != index.Dimensions)
             throw new ArgumentException($"Query has {queryVector.Length} dimensions, expected {index.Dimensions}");
