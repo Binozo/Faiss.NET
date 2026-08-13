@@ -4,7 +4,7 @@ using Faiss.Search;
 
 namespace Faiss.Cpu.Interfaces;
 
-public interface IIDRemovableFloatIndex : INativeIndex, IFloatIndex
+public interface IIDRemovableBinaryIndex : INativeBinaryIndex, IBinaryIndex
 {
     /// <summary>
     /// Removes vectors from the index based on the provided selector.
@@ -16,7 +16,7 @@ public interface IIDRemovableFloatIndex : INativeIndex, IFloatIndex
         ArgumentNullException.ThrowIfNull(selector);
 
         FaissErrorHandler.ThrowIfError(
-            Native.faiss_Index_remove_ids(Handle, selector.ToNative(), out nuint removedCount)
+            Native.faiss_IndexBinary_remove_ids(Handle, selector.ToNative(), out nuint removedCount)
         );
 
         return (long)removedCount;
