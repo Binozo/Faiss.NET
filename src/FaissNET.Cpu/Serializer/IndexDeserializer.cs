@@ -8,13 +8,13 @@ namespace Faiss.Cpu.Serializer;
 
 public static class IndexDeserializer
 {
-    public static T Read<T>(string filePath, IoFlags flags = IoFlags.None) where T : INativeIndex, IFromNativeIndexHandle<T>, ICpuFloatIndex
+    public static T Read<T>(string filePath, IoFlags flags = IoFlags.None) where T : INativeIndex, IFromNativeIndexHandle<T>, ICpuFloatIndex, ISerializableFloatIndex
     {
         FaissErrorHandler.ThrowIfError(Native.faiss_read_index_fname(filePath, (int)flags, out IntPtr indexPtr));
         return T.FromPointer(indexPtr);
     }
     
-    public static T Read<T>(Stream stream, IoFlags flags = IoFlags.None) where T : INativeIndex, IFromNativeIndexHandle<T>
+    public static T Read<T>(Stream stream, IoFlags flags = IoFlags.None) where T : INativeIndex, IFromNativeIndexHandle<T>, ICpuFloatIndex, ISerializableFloatIndex
     {
         Native.CustomIoReaderCallback readerCallback = (ptr, size, nitems) =>
         {
