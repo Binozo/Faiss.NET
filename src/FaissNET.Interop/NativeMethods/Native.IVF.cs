@@ -19,6 +19,27 @@ internal static unsafe partial class Native
     internal static partial nuint faiss_IndexIVF_get_list_size(FaissIndexHandle index, nuint listNo);
     
     [LibraryImport(LibraryName)]
+    internal static partial nuint faiss_IndexIVF_nlist(FaissIndexHandle index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_IndexIVF_own_fields(FaissIndexHandle index);
+    
+    [LibraryImport(LibraryName)]
+    internal static partial void faiss_IndexIVF_set_own_fields(FaissIndexHandle index, [MarshalAs(UnmanagedType.Bool)] bool ownFields);
+    
+    [LibraryImport(LibraryName)]
+    internal static partial IntPtr faiss_IndexIVF_quantizer(FaissIndexHandle index);
+    
+    [LibraryImport(LibraryName)]
+    internal static partial sbyte faiss_IndexIVF_quantizer_trains_alone(FaissIndexHandle index);
+    
+    [LibraryImport(LibraryName)]
+    internal static partial nuint faiss_IndexIVF_nprobe(FaissIndexHandle index);
+    
+    [LibraryImport(LibraryName)]
+    internal static partial void faiss_IndexIVF_set_nprobe(FaissIndexHandle index, nuint nprobe);
+    
+    [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexIVF_make_direct_map(FaissIndexHandle index, [MarshalAs(UnmanagedType.Bool)] bool maintainDirectMap);
     
     [LibraryImport(LibraryName)]
@@ -32,6 +53,9 @@ internal static unsafe partial class Native
     
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexIVF_train_encoder(FaissIndexHandle index, long n, IntPtr x, IntPtr assign);
+    
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_IndexIVF_free(IntPtr p_index);
     
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexIVFScalarQuantizer_new_with(out IntPtr pIndex, FaissIndexHandle quantizer, long d, nuint nlist, QuantizerType qt);
