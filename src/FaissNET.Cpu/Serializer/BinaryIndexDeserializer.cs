@@ -8,14 +8,14 @@ namespace Faiss.Cpu.Serializer;
 
 public static class BinaryIndexDeserializer
 {
-    public static T Read<T>(string filePath, IoFlags flags = IoFlags.None) where T : INativeBinaryIndex, IFromNativeBinaryIndexHandle<T>
+    public static T Read<T>(string filePath, IoFlags flags = IoFlags.None) where T : INativeBinaryIndex, IFromNativeBinaryIndexHandle<T>, ICpuBinaryIndex, ISerializableBinaryIndex
     {
         FaissErrorHandler.ThrowIfError(Native.faiss_read_index_binary_fname(filePath, (int)flags, out IntPtr ptr));
 
         return T.FromPointer(ptr);
     }
 
-    public static T Read<T>(Stream stream, IoFlags flags = IoFlags.None) where T : INativeBinaryIndex, IFromNativeBinaryIndexHandle<T>
+    public static T Read<T>(Stream stream, IoFlags flags = IoFlags.None) where T : INativeBinaryIndex, IFromNativeBinaryIndexHandle<T>, ICpuBinaryIndex, ISerializableBinaryIndex
     {
         Native.CustomIoReaderCallback readerCallback = (ptr, size, nitems) =>
         {

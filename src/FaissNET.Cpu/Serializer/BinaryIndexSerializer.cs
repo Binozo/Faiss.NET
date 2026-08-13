@@ -7,14 +7,14 @@ namespace Faiss.Cpu.Serializer;
 
 public static class BinaryIndexSerializer
 {
-    public static void Write(INativeBinaryIndex index, string filePath)
+    public static void Write(ISerializableBinaryIndex index, string filePath)
     {
         FaissErrorHandler.ThrowIfError(
             Native.faiss_write_index_binary_fname(index.Handle, filePath)
         );
     }
 
-    public static void Write(INativeBinaryIndex index, Stream stream)
+    public static void Write(ISerializableBinaryIndex index, Stream stream)
     {
         Native.CustomIoWriterCallback writerCallback = (ptr, size, nitems) =>
         {
