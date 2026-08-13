@@ -31,4 +31,7 @@ internal static unsafe partial class Native
 
     [LibraryImport(LibraryName)]
     internal static partial void faiss_IndexShards_set_successive_ids(FaissIndexHandle index, [MarshalAs(UnmanagedType.Bool)] bool successiveIds);
+
+    [LibraryImport(LibraryName)]
+    internal static partial void faiss_IndexShards_free(IntPtr index);
 }
