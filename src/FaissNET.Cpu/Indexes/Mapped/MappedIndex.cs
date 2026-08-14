@@ -7,7 +7,7 @@ using Faiss.Search;
 namespace Faiss.Cpu.Indexes.Mapped;
 
 /// <inheritdoc cref="MappedIndex{T, TIndex}"/>
-public abstract class MappedIndex<T, TIndex> : FloatIndex, IRangeSearchFloatIndex, IIDRemovableFloatIndex, IIDMappedFloatIndex, ITrainableFloatIndex, ICodeFloatIndex, ICpuFloatIndex, IParamsFloatSearchIndex, IClonableFloatIndex<T> where T : MappedIndex<T, TIndex>, IFromNativeIndexHandle<T> where TIndex : IIDSequentialFloatIndex, IFloatIndex, IFromNativeIndexHandle<TIndex>
+public abstract class MappedIndex<T, TIndex> : FloatIndex, IRangeSearchFloatIndex, IIDRemovableFloatIndex, IIDMappedFloatIndex, ITrainableFloatIndex, ICodeFloatIndex, ICpuFloatIndex, IParamsFloatSearchIndex, ISerializableFloatIndex, IClonableFloatIndex<T> where T : MappedIndex<T, TIndex>, IFromNativeIndexHandle<T> where TIndex : IIDSequentialFloatIndex, IFloatIndex, IFromNativeIndexHandle<TIndex>
 {
     protected MappedIndex(FaissIndexHandle handle) : base(handle) { }
 
