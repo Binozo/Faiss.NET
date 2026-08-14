@@ -6,7 +6,7 @@ using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
 using Faiss.Search;
 
-namespace Faiss.Cpu.Indexes.Binary;
+namespace Faiss.Cpu.Indexes;
 
 internal readonly struct IndexLSHRelease : IFaissRelease
 {
@@ -17,7 +17,7 @@ internal readonly struct IndexLSHRelease : IFaissRelease
 /// Locality-Sensitive Hashing index.
 /// Hashes vectors into compact binary signatures for fast approximate search.
 /// </summary>
-public sealed class IndexLSH : FloatIndex, IFromNativeIndexHandle<IndexLSH>, IIDSequentialFloatIndex, IIDMappedFloatIndex, ITrainableFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IRangeSearchFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex
+public sealed class IndexLSH : FloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, ITrainableFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IRangeSearchFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ISerializableFloatIndex, IClonableFloatIndex<IndexLSH>, IFromNativeIndexHandle<IndexLSH>
 {
     public IndexLSH(int dimensions, int nbits, bool rotateData = true, bool trainThresholds = false) : this(CreateHandle(dimensions, nbits, rotateData, trainThresholds))
     {
@@ -27,20 +27,6 @@ public sealed class IndexLSH : FloatIndex, IFromNativeIndexHandle<IndexLSH>, IID
     {
         
     }
-    
-    private static FaissIndexHandle CreateHandle(int dimensions, int nbits, bool rotateData = true, bool trainThresholds = false)
-    {
-        FaissErrorHandler.ThrowIfError(Native.faiss_IndexLSH_new_with_options(out IntPtr ptr, dimensions, nbits, rotateData, trainThresholds));
-        return new FaissIndexHandle<IndexLSHRelease>(ptr);
-    }
-
-    private static FaissIndexHandle Wrap(IntPtr handle, bool ownsHandle = true)
-        => new FaissIndexHandle<IndexLSHRelease>(handle, ownsHandle);
-
-    static IndexLSH IFromNativeIndexHandle<IndexLSH>.FromPointer(IntPtr handle, bool ownsHandle)
-        => new(Wrap(handle, ownsHandle));
-
-    static IndexLSH IFromNativeIndexHandle<IndexLSH>.FromHandle(FaissIndexHandle handle) => new(handle);
 
     /// <inheritdoc />
     public bool IsTrained => ((ITrainableIndex)this).IsTrained;
@@ -97,4 +83,20 @@ public sealed class IndexLSH : FloatIndex, IFromNativeIndexHandle<IndexLSH>, IID
     
     /// <summary>Whether thresholds are trained from data.</summary>
     public bool TrainThresholds => Native.faiss_IndexLSH_train_thresholds(NativeHandle) != 0;
+    
+    private static FaissIndexHandle CreateHandle(int dimensions, int nbits, bool rotateData = true, bool trainThresholds = false)
+    {
+        FaissErrorHandler.ThrowIfError(Native.faiss_IndexLSH_new_with_options(out IntPtr ptr, dimensions, nbits, rotateData, trainThresholds));
+        return new FaissIndexHandle<IndexLSHRelease>(ptr);
+    }
+
+    private static FaissIndexHandle Wrap(IntPtr handle, bool ownsHandle = true)
+        => new FaissIndexHandle<IndexLSHRelease>(handle, ownsHandle);
+
+    static IndexLSH IFromNativeIndexHandle<IndexLSH>.FromPointer(IntPtr handle, bool ownsHandle)
+        => new(Wrap(handle, ownsHandle));
+
+    static IndexLSH IFromNativeIndexHandle<IndexLSH>.FromHandle(FaissIndexHandle handle) => new(handle);
+
+    public IndexLSH Clone() => ((IClonableFloatIndex<IndexLSH>)this).Clone();
 }
