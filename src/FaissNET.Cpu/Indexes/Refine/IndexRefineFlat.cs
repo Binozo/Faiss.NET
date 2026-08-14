@@ -16,7 +16,7 @@ internal readonly struct IndexRefineFlatRelease : IFaissRelease
 /// <summary>
 /// Wraps a fast approximate index and re-ranks results using an exact flat index.
 /// </summary>
-public sealed class IndexRefineFlat<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IRangeSearchFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ICpuFloatIndex, IFromNativeIndexHandle<IndexRefineFlat<T>>, IClonableFloatIndex<IndexRefineFlat<T>> where T : FloatIndex, IIDSequentialFloatIndex, IFromNativeIndexHandle<T>
+public sealed class IndexRefineFlat<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IRangeSearchFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IFromNativeIndexHandle<IndexRefineFlat<T>>, IClonableFloatIndex<IndexRefineFlat<T>> where T : FloatIndex, IIDSequentialFloatIndex, IFromNativeIndexHandle<T>
 {
     public readonly T BaseIndex;
 
