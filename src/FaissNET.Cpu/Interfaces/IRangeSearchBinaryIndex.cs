@@ -4,14 +4,14 @@ using Faiss.Interop.NativeMethods;
 
 namespace Faiss.Cpu.Interfaces;
 
-public interface IRangeSearchFloatIndex : INativeIndex, IFloatIndex
+public interface IRangeSearchBinaryIndex : INativeBinaryIndex, IBinaryIndex
 {
-    public unsafe void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result)
+    public unsafe void RangeSearch(long count, ReadOnlySpan<byte> queryVectors, byte radius, RangeSearchResult result)
     {
-        fixed (float* pQuery = queryVectors)
+        fixed (byte* pQuery = queryVectors)
         {
             FaissErrorHandler.ThrowIfError(
-                Native.faiss_Index_range_search(Handle, count, pQuery, radius, result.SafeHandle)
+                Native.faiss_IndexBinary_range_search(Handle, count, pQuery, radius, result.SafeHandle) // TODO: Verify result
             );
         }
     }

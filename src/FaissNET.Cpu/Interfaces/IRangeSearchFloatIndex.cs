@@ -4,7 +4,7 @@ using Faiss.Interop.NativeMethods;
 
 namespace Faiss.Cpu.Interfaces;
 
-public interface IRangeSearchFlatIndex : INativeIndex
+public interface IRangeSearchFloatIndex : INativeIndex, IFloatIndex
 {
     public unsafe void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result)
     {
