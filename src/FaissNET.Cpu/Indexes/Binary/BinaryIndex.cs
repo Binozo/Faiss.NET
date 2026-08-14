@@ -21,8 +21,6 @@ public abstract class BinaryIndex : IBinaryIndex, INativeBinaryIndex
 
     public long TotalCount => Native.faiss_IndexBinary_ntotal(NativeHandle);
 
-    public bool IsTrained => Native.faiss_IndexBinary_is_trained(NativeHandle) != 0;
-
     public MetricType Metric => Native.faiss_IndexBinary_metric_type(NativeHandle);
 
     public unsafe void Search(long count, ReadOnlySpan<byte> queryVectors, int k, Span<int> distances, Span<long> labels)
