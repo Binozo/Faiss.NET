@@ -18,7 +18,7 @@ internal readonly struct IndexPreTransformRelease : IFaissRelease
 /// <summary>
 /// Wraps an index and applies a chain of vector transforms before adding or searching vectors.
 /// </summary>
-public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IRangeSearchFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ICpuFloatIndex, IFromNativeIndexHandle<IndexPreTransform<T>>, IClonableFloatIndex<IndexPreTransform<T>> where T : FloatIndex, INativeIndex, IFromNativeIndexHandle<T>
+public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IRangeSearchFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IFromNativeIndexHandle<IndexPreTransform<T>>, IClonableFloatIndex<IndexPreTransform<T>> where T : FloatIndex, INativeIndex, IFromNativeIndexHandle<T>
 {
     public readonly T Index;
     private readonly List<VectorTransform> _chain = new();
