@@ -11,7 +11,7 @@ namespace Faiss.Cpu.Indexes.Binary;
 /// <summary>
 /// Exact binary flat index. Performs exhaustive Hamming search on packed binary vectors.
 /// </summary>
-public sealed class IndexBinaryFlat : BinaryIndex, IFromNativeBinaryIndexHandle<IndexBinaryFlat>, IRangeSearchBinaryIndex, IParamsBinarySearchIndex, IIDRemovableBinaryIndex, IReconstructBinaryIndex, IClonableBinaryIndex<IndexBinaryFlat>
+public sealed class IndexBinaryFlat : BinaryIndex, IIDSequentialBinaryIndex, IRangeSearchBinaryIndex, IParamsBinarySearchIndex, IIDRemovableBinaryIndex, IReconstructBinaryIndex, ICpuBinaryIndex, ISerializableBinaryIndex, IClonableBinaryIndex<IndexBinaryFlat>, IFromNativeBinaryIndexHandle<IndexBinaryFlat>
 {
     /// <summary>
     /// Creates an exact binary flat index.
@@ -25,6 +25,18 @@ public sealed class IndexBinaryFlat : BinaryIndex, IFromNativeBinaryIndexHandle<
     {
     }
 
+    public void Add(long count, ReadOnlySpan<byte> vectors) => ((IIDSequentialBinaryIndex)this).Add(count, vectors);
+
+    public void RangeSearch(long count, ReadOnlySpan<byte> queryVectors, byte radius, RangeSearchResult result) => ((IRangeSearchBinaryIndex)this).RangeSearch(count, queryVectors, radius, result);
+
+    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, ISearchParameters parameters, Span<int> distances, Span<long> labels) => ((IParamsBinarySearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
+
+    public long RemoveIds(IIDSelector selector) => ((IIDRemovableBinaryIndex)this).RemoveIds(selector);
+    
+    public byte[] Reconstruct(long key) =>  ((IReconstructBinaryIndex)this).Reconstruct(key);
+
+    public byte[] Reconstruct(long startKey, long count)  => ((IReconstructBinaryIndex)this).Reconstruct(startKey, count);
+
     private static FaissBinaryIndexHandle CreateHandle(int dimensions)
     {
         if (dimensions <= 0 || dimensions % 8 != 0)
@@ -37,16 +49,6 @@ public sealed class IndexBinaryFlat : BinaryIndex, IFromNativeBinaryIndexHandle<
     }
 
     static IndexBinaryFlat IFromNativeBinaryIndexHandle<IndexBinaryFlat>.FromHandle(FaissBinaryIndexHandle handle) => new(handle);
-
-    public void RangeSearch(long count, ReadOnlySpan<byte> queryVectors, byte radius, RangeSearchResult result) => ((IRangeSearchBinaryIndex)this).RangeSearch(count, queryVectors, radius, result);
-
-    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, ISearchParameters parameters, Span<int> distances, Span<long> labels) => ((IParamsBinarySearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
-
-    public long RemoveIds(IIDSelector selector) => ((IIDRemovableBinaryIndex)this).RemoveIds(selector);
-    
-    public byte[] Reconstruct(long key) =>  ((IReconstructBinaryIndex)this).Reconstruct(key);
-
-    public byte[] Reconstruct(long startKey, long count)  => ((IReconstructBinaryIndex)this).Reconstruct(startKey, count);
 
     public IndexBinaryFlat Clone() => ((IClonableBinaryIndex<IndexBinaryFlat>)this).Clone();
 }
