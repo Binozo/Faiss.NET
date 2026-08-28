@@ -17,7 +17,7 @@ internal readonly struct IndexFlatL2Release : IFaissRelease
 /// The most basic and accurate Faiss index.
 /// </summary>
 /// <inheritdoc cref="CpuFlatFloatIndex{T}" />
-public sealed class IndexFlatL2 : CpuFlatFloatIndex<IndexFlatL2>, IFromNativeIndexHandle<IndexFlatL2>, IGpuClonableIndex<IndexFlatL2, GpuIndexFlatL2>
+public sealed class IndexFlatL2 : CpuFlatFloatIndex<IndexFlatL2>, IFromNativeIndexHandle<IndexFlatL2>, ISerializableFloatIndex, IGpuClonableIndex<IndexFlatL2, GpuIndexFlatL2>
 {
     /// <param name="dimensions">The number of dimensions for vectors in this index.</param>
     /// <exception cref="FaissException">Thrown when the index creation fails.</exception>
