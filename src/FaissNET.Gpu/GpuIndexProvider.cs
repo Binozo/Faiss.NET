@@ -1,14 +1,12 @@
 using Faiss.Cpu.Indexes;
 using Faiss.Exceptions;
 using Faiss.Gpu.Cloning;
-using Faiss.Gpu.Indexes;
 using Faiss.Gpu.Interop.NativeMethods;
 using Faiss.Gpu.Resources;
 
 namespace Faiss.Gpu;
 
 using Faiss.Cpu.Interfaces;
-using Interfaces;
 using Faiss.Interop.Errors;
 
 /// <summary>
@@ -19,7 +17,8 @@ public static class GpuIndexProvider
     /// <summary>
     /// Transfers a CPU index to the specified GPU device.
     /// </summary>
-    /// <typeparam name="T">The type of the CPU index.</typeparam>
+    /// <typeparam name="TCpu">The type of the CPU index.</typeparam>
+    /// <typeparam name="TGpu">The type of the GPU index.</typeparam>
     /// <param name="context">The GPU resource provider that manages memory and streams.</param>
     /// <param name="cpuIndex">The CPU index to transfer.</param>
     /// <param name="deviceId">The target GPU device ID. Defaults to <c>0</c>.</param>
@@ -28,26 +27,36 @@ public static class GpuIndexProvider
     /// Thrown when <paramref name="context"/> or <paramref name="cpuIndex"/> is <c>null</c>.
     /// </exception>
     /// <exception cref="FaissException">
+    /// <exception cref="FaissGpuCloningUnsupported">
     /// Thrown when the native transfer operation fails.
     /// </exception>
-    public static INativeGpuIndex<T> TransferToGpu<T>(GpuResourcesProvider context, T cpuIndex, int deviceId = 0) where T : CpuIndex<T>, IFromNativeHandle<T>, IGpuClonableIndex
+    public static TGpu TransferToGpu<TCpu, TGpu>(GpuResourcesProvider context, IGpuClonableIndex<TCpu, TGpu> cpuIndex, int deviceId = 0)
+        where TCpu : INativeIndex, IFromNativeIndexHandle<TCpu> where TGpu : FloatIndex, INativeIndex, IFromNativeIndexHandle<TGpu>//, IGpuIndex<TCpu>
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(cpuIndex);
 
+        if (!cpuIndex.IsGpuClonable())
+        {
+            throw new FaissGpuCloningUnsupported();
+        }
+
         FaissErrorHandler.ThrowIfError(GpuNative.faiss_index_cpu_to_gpu(
             context.Handle,
             deviceId,
-            cpuIndex.SafeHandle,
+            cpuIndex.Handle,
             out IntPtr gpuHandle));
 
-        return new GpuIndex<T>(gpuHandle, deviceId);
+        // Currently there is no way of calling the c api to know on which device the index is on
+        // It is only available in C++ and not wrapped in C, the user will have to keep track himself
+        return TGpu.FromPointer(gpuHandle);
     }
 
     /// <summary>
     /// Transfers a CPU index to the specified GPU device using advanced cloning options.
     /// </summary>
-    /// <typeparam name="T">The type of the CPU index.</typeparam>
+    /// <typeparam name="TCpu">The type of the CPU index.</typeparam>
+    /// <typeparam name="TGpu">The type of the GPU index.</typeparam>
     /// <param name="context">The GPU resource provider that manages memory and streams.</param>
     /// <param name="cpuIndex">The CPU index to transfer.</param>
     /// <param name="options">Options that control how the index is cloned onto the GPU.</param>
@@ -59,20 +68,26 @@ public static class GpuIndexProvider
     /// <exception cref="FaissException">
     /// Thrown when the native transfer operation fails.
     /// </exception>
-    public static INativeGpuIndex<T> TransferToGpu<T>(GpuResourcesProvider context, T cpuIndex, GpuClonerOptions options, int deviceId = 0) where T : CpuIndex<T>, IFromNativeHandle<T>
+    public static TGpu TransferToGpu<TCpu, TGpu>(GpuResourcesProvider context, IGpuClonableIndex<TCpu, TGpu> cpuIndex, GpuClonerOptions options, int deviceId = 0)
+        where TCpu : INativeIndex, IFromNativeIndexHandle<TCpu> where TGpu : FloatIndex, INativeIndex, IFromNativeIndexHandle<TGpu>//, IGpuIndex<TCpu>
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(cpuIndex);
         ArgumentNullException.ThrowIfNull(options);
 
+        if (!cpuIndex.IsGpuClonable())
+        {
+            throw new FaissGpuCloningUnsupported();
+        }
+
         FaissErrorHandler.ThrowIfError(GpuNative.faiss_index_cpu_to_gpu_with_options(
             context.Handle,
             deviceId,
-            cpuIndex.SafeHandle,
+            cpuIndex.Handle,
             options.NativeHandle,
             out IntPtr gpuHandle));
 
-        return new GpuIndex<T>(gpuHandle, deviceId);
+        return TGpu.FromPointer(gpuHandle);
     }
 
     /// <summary>
@@ -105,7 +120,8 @@ public static class GpuIndexProvider
     /// <exception cref="FaissException">
     /// Thrown when the native transfer operation fails.
     /// </exception>
-    public static GpuShardedIndex<T> TransferToGpuMultiple<T>(GpuResourcesProvider[] contexts, int[] deviceIds, T cpuIndex, GpuMultipleClonerOptions options) where T : Index<T>, IFromNativeHandle<T>
+    public static TGpu TransferToGpuMultiple<TCpu, TGpu>(GpuResourcesProvider[] contexts, int[] deviceIds, IMultiGpuClonableIndex<TCpu, TGpu> cpuIndex, GpuMultipleClonerOptions options)
+        where TCpu : INativeIndex, IFromNativeIndexHandle<TCpu> where TGpu : FloatIndex, INativeIndex, IFromNativeIndexHandle<TGpu>//, IGpuIndex<TCpu>
     {
         ArgumentNullException.ThrowIfNull(contexts);
         ArgumentNullException.ThrowIfNull(deviceIds);
@@ -117,6 +133,11 @@ public static class GpuIndexProvider
             throw new ArgumentException(
                 "The contexts and deviceIds arrays must be non-empty and of equal length.",
                 nameof(contexts));
+        }
+
+        if (!cpuIndex.IsMultiGpuClonable())
+        {
+            throw new FaissGpuCloningUnsupported();
         }
 
         int count = contexts.Length;
@@ -138,12 +159,12 @@ public static class GpuIndexProvider
                         (nuint)count,
                         pDevices,
                         (nuint)count,
-                        cpuIndex.SafeHandle,
+                        cpuIndex.Handle,
                         options.NativeHandle,
                         out IntPtr gpuHandle)
                 );
 
-                return new GpuShardedIndex<T>(gpuHandle, deviceIds);
+                return TGpu.FromPointer(gpuHandle);
             }
         }
     }
@@ -175,7 +196,8 @@ public static class GpuIndexProvider
     /// <exception cref="FaissException">
     /// Thrown when the native transfer operation fails.
     /// </exception>
-    public static GpuShardedIndex<T> TransferToGpuMultiple<T>(GpuResourcesProvider[] contexts, int[] deviceIds, T cpuIndex) where T : Index<T>, IFromNativeHandle<T>
+    public static TGpu TransferToGpuMultiple<TCpu, TGpu>(GpuResourcesProvider[] contexts, int[] deviceIds, IMultiGpuClonableIndex<TCpu, TGpu> cpuIndex)
+        where TCpu : INativeIndex, IFromNativeIndexHandle<TCpu> where TGpu : FloatIndex, INativeIndex, IFromNativeIndexHandle<TGpu>//, IGpuIndex<TCpu>
     {
         ArgumentNullException.ThrowIfNull(contexts);
         ArgumentNullException.ThrowIfNull(deviceIds);
@@ -206,11 +228,11 @@ public static class GpuIndexProvider
                         pProviders,
                         pDevices,
                         (nuint)count,
-                        cpuIndex.SafeHandle,
+                        cpuIndex.Handle,
                         out IntPtr gpuHandle)
                 );
 
-                return new GpuShardedIndex<T>(gpuHandle, deviceIds);
+                return TGpu.FromPointer(gpuHandle);
             }
         }
     }
@@ -227,14 +249,14 @@ public static class GpuIndexProvider
     /// <exception cref="FaissException">
     /// Thrown when the native transfer operation fails.
     /// </exception>
-    public static T TransferToCpu<T>(INativeGpuIndex<T> gpuIndex) where T : CpuIndex<T>, IFromNativeHandle<T>
+    public static T TransferToCpu<T>(IGpuIndex<T> gpuIndex) where T : INativeIndex, IFromNativeIndexHandle<T>
     {
         ArgumentNullException.ThrowIfNull(gpuIndex);
 
         FaissErrorHandler.ThrowIfError(GpuNative.faiss_index_gpu_to_cpu(
             gpuIndex.Handle,
-            out IntPtr cpuHandle));
+            out IntPtr ptr));
 
-        return T.FromHandle(cpuHandle);
+        return T.FromPointer(ptr);
     }
 }
