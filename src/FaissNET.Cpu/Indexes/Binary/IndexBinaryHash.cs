@@ -1,13 +1,12 @@
+using Faiss.Cpu.Factory;
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Range;
 using Faiss.Interfaces;
-using Faiss.Interop.Errors;
-using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Indexes.Binary;
 
-public sealed class IndexBinaryHash : BinaryIndex, IIDSequentialBinaryIndex, IIDMappedBinaryIndex, IParamsBinarySearchIndex, IRangeSearchBinaryIndex, IClonableBinaryIndex<IndexBinaryHash>, IFromNativeBinaryIndexHandle<IndexBinaryHash>
+public sealed class IndexBinaryHash : BinaryIndex, IIDSequentialBinaryIndex, IIDMappedBinaryIndex, IParamsBinarySearchIndex, IRangeSearchBinaryIndex, ISerializableBinaryIndex, IClonableBinaryIndex<IndexBinaryHash>, IFromNativeBinaryIndexHandle<IndexBinaryHash>
 {
     public IndexBinaryHash(int dimensions, int leadingBits) : this(CreateHandle(dimensions, leadingBits))
     {
@@ -24,8 +23,7 @@ public sealed class IndexBinaryHash : BinaryIndex, IIDSequentialBinaryIndex, IID
             throw new ArgumentException("Dimensions must be divisible by 8", nameof(dimensions));
         }
 
-        FaissErrorHandler.ThrowIfError(Native.faiss_index_binary_factory(out IntPtr ptr, dimensions, $"BHash{leadingBits}"));
-        return new FaissBinaryIndexHandle(ptr);
+        return BinaryIndexFactory.Create<IndexBinaryHash>($"BHash{leadingBits}", dimensions).NativeHandle;
     }
 
     static IndexBinaryHash IFromNativeBinaryIndexHandle<IndexBinaryHash>.FromHandle(FaissBinaryIndexHandle handle) => new(handle);
