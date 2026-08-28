@@ -11,10 +11,10 @@ public sealed class RangeSearchResult : IDisposable
 {
     internal FaissRangeSearchResultHandle SafeHandle { get; }
     
-    internal RangeSearchResult(long nq)
+    public RangeSearchResult(long queriesCount)
     {
         FaissErrorHandler.ThrowIfError(
-            Native.faiss_RangeSearchResult_new(out IntPtr ptr, nq)
+            Native.faiss_RangeSearchResult_new(out IntPtr ptr, queriesCount)
         );
     
         SafeHandle = new FaissRangeSearchResultHandle(ptr);
