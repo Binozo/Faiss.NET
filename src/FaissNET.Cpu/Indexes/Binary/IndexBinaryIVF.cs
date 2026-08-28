@@ -18,7 +18,7 @@ internal readonly struct IndexBinaryIVFRelease : IFaissRelease
 /// <summary>
 /// Binary inverted file index with coarse quantization and binary flat lists.
 /// </summary>
-public sealed class IndexBinaryIVF : BinaryIndex, IFromNativeBinaryIndexHandle<IndexBinaryIVF>, ITrainableBinaryIndex, IIDSequentialBinaryIndex, IIDMappedBinaryIndex, IParamsBinarySearchIndex, IRangeSearchBinaryIndex, IIDRemovableBinaryIndex, IReconstructBinaryIndex
+public sealed class IndexBinaryIVF : BinaryIndex, ITrainableBinaryIndex, IIDSequentialBinaryIndex, IIDMappedBinaryIndex, IParamsBinarySearchIndex, IRangeSearchBinaryIndex, IIDRemovableBinaryIndex, IReconstructBinaryIndex, ISerializableBinaryIndex, IClonableBinaryIndex<IndexBinaryIVF>, IFromNativeBinaryIndexHandle<IndexBinaryIVF>
 {
     /// <summary>
     /// Creates a binary IVF index.
@@ -59,7 +59,7 @@ public sealed class IndexBinaryIVF : BinaryIndex, IFromNativeBinaryIndexHandle<I
     static IndexBinaryIVF IFromNativeBinaryIndexHandle<IndexBinaryIVF>.FromHandle(FaissBinaryIndexHandle handle) => new(handle);
 
     /// <inheritdoc/>
-    public new bool IsTrained => ((ITrainableBinaryIndex)this).IsTrained;
+    public bool IsTrained => ((ITrainableBinaryIndex)this).IsTrained;
     
     /// <inheritdoc/>
     public Task TrainAsync(long count, ReadOnlyMemory<byte> vectors) => ((ITrainableBinaryIndex)this).TrainAsync(count, vectors);
@@ -130,4 +130,6 @@ public sealed class IndexBinaryIVF : BinaryIndex, IFromNativeBinaryIndexHandle<I
         Native.faiss_IndexBinaryIVF_imbalance_factor(NativeHandle);
 
     public void MakeDirectMap(bool maintainDirectMap) => FaissErrorHandler.ThrowIfError(Native.faiss_IndexBinaryIVF_make_direct_map(NativeHandle, maintainDirectMap));
+
+    public IndexBinaryIVF Clone() => ((IClonableBinaryIndex<IndexBinaryIVF>)this).Clone();
 }
