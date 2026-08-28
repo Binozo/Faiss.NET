@@ -17,7 +17,7 @@ internal readonly struct IndexFlatIPRelease : IFaissRelease
 /// Ideal for NLP and embedding-based search.
 /// </summary>
 /// <inheritdoc cref="CpuFlatFloatIndex{T}" />
-public class IndexFlatIP : CpuFlatFloatIndex<IndexFlatIP>, IFromNativeIndexHandle<IndexFlatIP>, IGpuClonableIndex<IndexFlatIP, GpuIndexFlatIP>
+public class IndexFlatIP : CpuFlatFloatIndex<IndexFlatIP>, IFromNativeIndexHandle<IndexFlatIP>, ISerializableFloatIndex, IGpuClonableIndex<IndexFlatIP, GpuIndexFlatIP>
 {
     /// <param name="dimensions">The number of dimensions for vectors in this index.</param>
     /// <exception cref="FaissException">Thrown when the index creation fails.</exception>
