@@ -10,7 +10,7 @@ namespace Faiss.Cpu.Indexes.Flat;
 /// Base flat index.
 /// </summary>
 /// <inheritdoc cref="CpuFlatFloatIndex{T}" />
-public sealed class IndexFlat : CpuFlatFloatIndex<IndexFlat>, IFromNativeIndexHandle<IndexFlat>, IGpuClonableIndex<IndexFlat, GpuIndexFlat>
+public sealed class IndexFlat : CpuFlatFloatIndex<IndexFlat>, IFromNativeIndexHandle<IndexFlat>, ISerializableFloatIndex, IGpuClonableIndex<IndexFlat, GpuIndexFlat>
 {
     public IndexFlat() : base(CreateHandle())
     {
