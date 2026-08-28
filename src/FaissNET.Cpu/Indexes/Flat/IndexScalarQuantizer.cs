@@ -16,7 +16,7 @@ internal readonly struct IndexScalarQuantizerRelease : IFaissRelease
 /// Flat (exhaustive) index that compresses each vector component independently with a scalar quantizer.
 /// </summary>
 /// <inheritdoc cref="CpuFlatFloatIndex{T}" />
-public sealed class IndexScalarQuantizer : CpuFlatFloatIndex<IndexScalarQuantizer>, IFromNativeIndexHandle<IndexScalarQuantizer>, IGpuClonableIndex<IndexScalarQuantizer, GpuIndexFlat>, ITrainableFloatIndex, IFlatIndex
+public sealed class IndexScalarQuantizer : CpuFlatFloatIndex<IndexScalarQuantizer>, IFromNativeIndexHandle<IndexScalarQuantizer>, IGpuClonableIndex<IndexScalarQuantizer, GpuIndexFlat>, ITrainableFloatIndex, ISerializableFloatIndex
 {
     public readonly ScalarQuantizer ScalarQuantizer;
 
