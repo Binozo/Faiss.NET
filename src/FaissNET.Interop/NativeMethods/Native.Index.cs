@@ -51,7 +51,7 @@ internal static unsafe partial class Native
     internal static unsafe partial int faiss_Index_reconstruct(FaissIndexHandle index, long key, float* recons);
 
     [LibraryImport(LibraryName)]
-    internal static partial int faiss_Index_remove_ids(FaissIndexHandle index, IntPtr sel, out nuint n_removed);
+    internal static partial int faiss_Index_remove_ids(FaissIndexHandle index, FaissIDSelectorHandle sel, out nuint n_removed);
 
     [LibraryImport(LibraryName)]
     internal static unsafe partial int faiss_Index_add_with_ids(FaissIndexHandle index, long n, float* x, long* xids);
