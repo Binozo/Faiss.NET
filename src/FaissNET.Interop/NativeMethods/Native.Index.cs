@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Faiss.Interop.SafeHandles;
 using Faiss.Cpu.Search;
+using Faiss.Cpu.Selectors;
 using Faiss.Models;
 
 namespace Faiss.Interop.NativeMethods;
@@ -40,6 +41,12 @@ internal static unsafe partial class Native
 
     [LibraryImport(LibraryName)]
     internal static partial int faiss_Index_reset(FaissIndexHandle index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_Index_verbose(FaissIndexHandle index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial void faiss_Index_set_verbose(FaissIndexHandle index, [MarshalAs(UnmanagedType.Bool)] bool verbose);
 
     [LibraryImport(LibraryName)]
     internal static partial void faiss_Index_free(IntPtr obj);
