@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Faiss.Cpu.Search;
+using Faiss.Cpu.Selectors;
 using Faiss.Interop.SafeHandles;
 using Faiss.Models;
 
@@ -74,7 +75,7 @@ internal static unsafe partial class Native
     internal static partial int faiss_IndexBinary_reset(FaissBinaryIndexHandle index);
 
     [LibraryImport(LibraryName)]
-    internal static partial int faiss_IndexBinary_remove_ids(FaissBinaryIndexHandle index, IntPtr sel, out nuint nRemoved);
+    internal static partial int faiss_IndexBinary_remove_ids(FaissBinaryIndexHandle index, FaissIDSelectorHandle sel, out nuint nRemoved);
 
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexBinary_reconstruct(FaissBinaryIndexHandle index, long key, byte* recons);
