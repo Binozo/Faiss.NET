@@ -5,7 +5,11 @@ namespace Faiss.Cpu.Selectors;
 
 public sealed class IDSelectorBatch : IDSelector
 {
-    public unsafe IDSelectorBatch(ReadOnlySpan<long> indices) : base(CreateHandle(indices)) { }
+    public IDSelectorBatch(ReadOnlySpan<long> indices) : base(CreateHandle(indices)) { }
+    
+    public int Nbits => Native.faiss_IDSelectorBatch_nbits(SafeHandle);
+
+    public long Mask => Native.faiss_IDSelectorBatch_mask(SafeHandle);
     
     private static unsafe IntPtr CreateHandle(ReadOnlySpan<long> indices)
     {
@@ -18,7 +22,4 @@ public sealed class IDSelectorBatch : IDSelector
             return ptr;
         }
     }
-    
-    public int Nbits => Native.faiss_IDSelectorBatch_nbits(SafeHandle);
-    public long Mask => Native.faiss_IDSelectorBatch_mask(SafeHandle);
 }
