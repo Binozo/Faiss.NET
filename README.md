@@ -25,8 +25,8 @@ As soon as the PRs noted below get merged and I fix some minor stuff I will publ
 - [x] Adding bindings for `distances_c.h`
 - [x] Improving class hierarchy and generic constraints design to further prevent footguns (~ September 2026)
 - [ ] Adding remaining functionality to IndexShards, IndexReplicas, IndexRefineFlat and GPU indexes (Waiting for faiss PRs to merge: [#5516](https://github.com/facebookresearch/faiss/pull/5516), [#5514](https://github.com/facebookresearch/faiss/pull/5514), [#5513](https://github.com/facebookresearch/faiss/pull/5513), [#5512](https://github.com/facebookresearch/faiss/pull/5512), [#5511](https://github.com/facebookresearch/faiss/pull/5511)) (~ September 2026)
-- [ ] Adding more tests      (~ Oktober 2026)
-- [ ] Adding example project (~ Oktober 2026)
+- [ ] Adding more tests      (~ October 2026)
+- [ ] Adding example project (~ October 2026)
 - [ ] v1.0 Release 🚀        (~ November 2026)
 
 ## Features
