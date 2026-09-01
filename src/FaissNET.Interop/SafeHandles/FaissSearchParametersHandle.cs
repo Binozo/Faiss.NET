@@ -1,29 +1,42 @@
 using Faiss.Interop.NativeMethods;
-using Microsoft.Win32.SafeHandles;
+using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Search;
 
-internal sealed class FaissSearchParametersHandle : SafeHandleZeroOrMinusOneIsInvalid
+public readonly struct SearchParametersRelease : IFaissRelease
+{
+    public static void Release(IntPtr handle) => Native.faiss_SearchParameters_free(handle);
+}
+
+internal class FaissSearchParametersHandle : FaissHandle 
 {
     public FaissSearchParametersHandle() : base(true)
     {
-        
     }
-    
-    internal FaissSearchParametersHandle(IntPtr preexistingHandle) : base(true)
+
+    internal FaissSearchParametersHandle(IntPtr preexistingHandle, bool ownsHandle = true)
+        : base(preexistingHandle, ownsHandle)
     {
-        SetHandle(preexistingHandle);
     }
     
     protected override bool ReleaseHandle()
     {
-        if (handle != IntPtr.Zero)
-        {
-            Native.faiss_SearchParameters_free(handle);
-            handle = IntPtr.Zero;
-            
-        }
+        SearchParametersRelease.Release(handle);
         return true;
     }
+}
 
+internal class FaissSearchParametersHandle<T> : FaissSearchParametersHandle where T : struct, IFaissRelease
+{
+    public FaissSearchParametersHandle()
+    { }
+
+    internal FaissSearchParametersHandle(IntPtr preexistingHandle, bool ownsHandle = true)
+        : base(preexistingHandle, ownsHandle) { }
+
+    protected override bool ReleaseHandle()
+    {
+        T.Release(handle);
+        return true;
+    }
 }
