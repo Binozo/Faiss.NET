@@ -1,23 +1,40 @@
 using Faiss.Cpu.Selectors;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
+using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Search.Parameters;
 
+internal readonly struct SearchParametersIVFRelease : IFaissRelease
+{
+    public static void Release(IntPtr handle) => Native.faiss_SearchParametersIVF_free(handle);
+}
+
 public sealed class SearchParametersIVF : SearchParameters
 {
+    /// <summary>Per-query IVF search parameters.</summary>
+    /// <param name="nprobe">Lists to probe. Default-constructed native IVF params use 1, not the index's nprobe.</param>
+    /// <param name="maxCodes">Max codes to scan; 0 is unlimited.</param>
+    /// <param name="selector">
+    /// Ids to consider during search, or <see langword="null"/> for no filter.
+    /// Must remain undisposed for the lifetime of this instance.
+    /// </param>
+    /// <remarks>
+    /// This object borrows <paramref name="selector"/>. Do not dispose the selector while these parameters are in use.
+    /// A base <see cref="SearchParameters"/> is not valid for IVF search; use this type.
+    /// </remarks>
     public SearchParametersIVF(int nprobe, int maxCodes = 0, IDSelector? selector = null) 
-        : base(CreateHandle(nprobe, maxCodes, selector))
+        : base(CreateHandle(nprobe, maxCodes, selector), selector)
     {
     }
     
-    private static IntPtr CreateHandle(int nprobe, int maxCodes, IDSelector? selector = null)
+    private static FaissSearchParametersHandle CreateHandle(int nprobe, int maxCodes, IDSelector? selector = null)
     {
         FaissErrorHandler.ThrowIfError(
-            Native.faiss_SearchParametersIVF_new_with(out IntPtr ptr, selector?.SafeHandle.DangerousGetHandle() ?? IntPtr.Zero, (UIntPtr)nprobe, (UIntPtr)maxCodes)
+            Native.faiss_SearchParametersIVF_new_with(out IntPtr ptr, selector?.SafeHandle, (UIntPtr)nprobe, (UIntPtr)maxCodes)
         );
     
-        return ptr;
+        return new FaissSearchParametersHandle<SearchParametersIVFRelease>(ptr);
     }
     
     public int Nprobe
