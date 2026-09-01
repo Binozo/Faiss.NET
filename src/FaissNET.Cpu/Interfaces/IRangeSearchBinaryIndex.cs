@@ -16,3 +16,16 @@ public interface IRangeSearchBinaryIndex : INativeBinaryIndex, IBinaryIndex
         }
     }
 }
+
+internal static class RangeSearchBinaryIndexImpl
+{
+    public static unsafe void RangeSearch(INativeBinaryIndex index, long count, ReadOnlySpan<byte> queryVectors, byte radius, RangeSearchResult result)
+    {
+        fixed (byte* pQuery = queryVectors)
+        {
+            FaissErrorHandler.ThrowIfError(
+                Native.faiss_IndexBinary_range_search(index.Handle, count, pQuery, radius, result.SafeHandle)
+            );
+        }
+    }
+}
