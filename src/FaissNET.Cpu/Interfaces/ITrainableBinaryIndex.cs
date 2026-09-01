@@ -7,28 +7,28 @@ namespace Faiss.Cpu.Interfaces;
 public interface ITrainableBinaryIndex : IBinaryIndex, ITrainableIndex, INativeBinaryIndex
 {
     /// <summary>
-    /// Value indicating whether the index requires training or is already trained.
-    /// </summary>
-    public new bool IsTrained => Native.faiss_IndexBinary_is_trained(Handle) != 0;
-
-    /// <summary>
     /// Trains the index using a representative sample of your dataset which can take a while.
     /// </summary>
     /// <param name="count">Number of training vectors (should be at least 10x the number of centroids).</param>
     /// <param name="vectors">The sample vectors to learn from.</param>
-    public Task TrainAsync(long count, ReadOnlyMemory<byte> vectors)
-    {
-        return Task.Run(() =>
-        {
-            unsafe
-            {
-                using var handle = vectors.Pin();
-                byte* pVectors = (byte*)handle.Pointer;
+    public Task TrainAsync(long count, ReadOnlyMemory<byte> vectors);
+}
 
-                FaissErrorHandler.ThrowIfError(
-                    Native.faiss_IndexBinary_train(Handle, count, pVectors)
-                );
-            }
-        });
-    }
+internal static class TrainableBinaryIndexImpl
+{
+    public static bool IsTrained(INativeBinaryIndex index) => Native.faiss_IndexBinary_is_trained(index.Handle) != 0;
+
+    public static Task TrainAsync(INativeBinaryIndex index, long count, ReadOnlyMemory<byte> vectors) => Task.Run(() =>
+    {
+        unsafe
+        {
+            using var handle = vectors.Pin();
+            byte* pVectors = (byte*)handle.Pointer;
+
+            FaissErrorHandler.ThrowIfError(
+                Native.faiss_IndexBinary_train(index.Handle, count, pVectors)
+            );
+        }
+    });
+
 }
