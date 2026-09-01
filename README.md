@@ -19,8 +19,10 @@ Faiss.NET gives you near-native performance with clean, idiomatic C# wrappers wh
 About ~90% is done. 
 ~~I am reworking the class hierarchy to make the api as elegant as possible. This includes preventing most of the footguns there are with faiss, including making the compiler enforce all the rules.~~
 
-12.08.2026: The groundwork is almost finished. I still need to polish some rough edges like the `IDSelector` (internal stuff) but most of this library is basically complete, stable and usable.
-As soon as the PRs noted below get merged and I fix some minor stuff I will publish preview release 6. I am really happy with the progress and looking forward.
+~~12.08.2026: The groundwork is almost finished. I still need to polish some rough edges like the `IDSelector` (internal stuff) but most of this library is basically complete, stable and usable.
+As soon as the PRs noted below get merged and I fix some minor stuff I will publish preview release 6. I am really happy with the progress and looking forward.~~
+
+01.09.2026: Feature set is basically complete (except the remaining features which are based on faiss PRs below). I am reworking the test suite.
 
 - [x] Adding bindings for `distances_c.h`
 - [x] Improving class hierarchy and generic constraints design to further prevent footguns (~ September 2026)
