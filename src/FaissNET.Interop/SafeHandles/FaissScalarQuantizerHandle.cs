@@ -1,6 +1,6 @@
 namespace Faiss.Interop.SafeHandles;
 
-public class FaissScalarQuantizerHandle : FaissHandle
+internal class FaissScalarQuantizerHandle : FaissHandle
 {
     public FaissScalarQuantizerHandle(bool ownsHandle) : base(ownsHandle)
     {
