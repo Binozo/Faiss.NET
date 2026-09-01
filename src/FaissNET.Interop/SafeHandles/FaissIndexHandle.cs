@@ -4,6 +4,11 @@ using Microsoft.Win32.SafeHandles;
 
 using NativeMethods;
 
+internal interface IFaissRelease
+{
+    static abstract void Release(IntPtr handle);
+}
+
 public abstract class FaissHandle : SafeHandleZeroOrMinusOneIsInvalid
 {
     protected FaissHandle(bool ownsHandle) : base(ownsHandle) { }
@@ -12,47 +17,30 @@ public abstract class FaissHandle : SafeHandleZeroOrMinusOneIsInvalid
         => SetHandle(preexistingHandle);
 }
 
+internal readonly struct IndexRelease : IFaissRelease
+{
+    public static void Release(IntPtr handle) => Native.faiss_Index_free(handle);
+}
+
 public class FaissIndexHandle : FaissHandle
 {
-    public FaissIndexHandle() : base(true) { }
+    public FaissIndexHandle() : base(true)
+    { }
 
     internal FaissIndexHandle(IntPtr preexistingHandle, bool ownsHandle = true)
         : base(preexistingHandle, ownsHandle) { }
 
     protected override bool ReleaseHandle()
     {
-        Native.faiss_Index_free(handle);
+        IndexRelease.Release(handle);
         return true;
     }
 }
 
-public class FaissBinaryIndexHandle : FaissHandle
+internal sealed class FaissIndexHandle<T> : FaissIndexHandle where T : struct, IFaissRelease
 {
-    public FaissBinaryIndexHandle() : base(true) { }
-
-    internal FaissBinaryIndexHandle(IntPtr preexistingHandle, bool ownsHandle = true)
-        : base(preexistingHandle, ownsHandle) { }
-
-    protected override bool ReleaseHandle()
-    {
-        Native.faiss_IndexBinary_free(handle);
-        return true;
-    }
-}
-
-public interface IFaissRelease
-{
-    static abstract void Release(IntPtr handle);
-}
-
-public readonly struct IndexRelease : IFaissRelease
-{
-    public static void Release(IntPtr handle) => Native.faiss_Index_free(handle);
-}
-
-public sealed class FaissIndexHandle<T> : FaissIndexHandle where T : struct, IFaissRelease
-{
-    public FaissIndexHandle() { }
+    public FaissIndexHandle()
+    { }
 
     internal FaissIndexHandle(IntPtr preexistingHandle, bool ownsHandle = true)
         : base(preexistingHandle, ownsHandle) { }
@@ -64,9 +52,30 @@ public sealed class FaissIndexHandle<T> : FaissIndexHandle where T : struct, IFa
     }
 }
 
-public sealed class FaissBinaryIndexHandle<T> : FaissBinaryIndexHandle where T : struct, IFaissRelease
+internal readonly struct BinaryIndexRelease : IFaissRelease
 {
-    public FaissBinaryIndexHandle() { }
+    public static void Release(IntPtr handle) => Native.faiss_IndexBinary_free(handle);
+}
+
+public class FaissBinaryIndexHandle : FaissHandle
+{
+    public FaissBinaryIndexHandle() :  base(true)
+    { }
+
+    internal FaissBinaryIndexHandle(IntPtr preexistingHandle, bool ownsHandle = true)
+        : base(preexistingHandle, ownsHandle) { }
+
+    protected override bool ReleaseHandle()
+    {
+        BinaryIndexRelease.Release(handle);
+        return true;
+    }
+}
+
+internal class FaissBinaryIndexHandle<T> : FaissBinaryIndexHandle where T : struct, IFaissRelease
+{
+    public FaissBinaryIndexHandle()
+    { }
 
     internal FaissBinaryIndexHandle(IntPtr preexistingHandle, bool ownsHandle = true)
         : base(preexistingHandle, ownsHandle) { }
