@@ -7,6 +7,10 @@ public sealed class IDSelectorRange : IDSelector
 {
     public IDSelectorRange(long imin, long imax) : base(CreateHandle(imin, imax)) { }
     
+    public long Imin => Native.faiss_IDSelectorRange_imin(SafeHandle);
+
+    public long Imax => Native.faiss_IDSelectorRange_imax(SafeHandle);
+    
     private static IntPtr CreateHandle(long imin, long imax)
     {
         FaissErrorHandler.ThrowIfError(
@@ -15,7 +19,4 @@ public sealed class IDSelectorRange : IDSelector
         
         return ptr;
     }
-    
-    public long Imin => Native.faiss_IDSelectorRange_imin(SafeHandle);
-    public long Imax => Native.faiss_IDSelectorRange_imax(SafeHandle);
 }
