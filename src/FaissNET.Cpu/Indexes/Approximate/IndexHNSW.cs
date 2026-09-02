@@ -11,7 +11,7 @@ namespace Faiss.Cpu.Indexes.Approximate;
 /// Hierarchical Navigable Small World index.
 /// Industry-standard graph-based approximate nearest neighbor search.
 /// </summary>
-public class IndexHNSW : FloatIndex, IFlatIndex, IRangeSearchFloatIndex, IIDSequentialFloatIndex, IParamsFloatSearchIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICpuFloatIndex, IClonableFloatIndex<IndexHNSW>, IFromNativeIndexHandle<IndexHNSW>
+public class IndexHNSW : FloatIndex, IFlatIndex, IRangeSearchFloatIndex, IIDSequentialFloatIndex, IParamsFloatSearchIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IClonableFloatIndex<IndexHNSW>, IFromNativeIndexHandle<IndexHNSW>
 {
     /// <summary>
     /// Creates an HNSW index with flat (exact) storage.
@@ -32,27 +32,27 @@ public class IndexHNSW : FloatIndex, IFlatIndex, IRangeSearchFloatIndex, IIDSequ
     {
     }
 
-    static IndexHNSW IFromNativeIndexHandle<IndexHNSW>.FromHandle(FaissIndexHandle handle) => new(handle);
-    
-    private static FaissIndexHandle CreateHandle(string description, int dimensions, MetricType metricType)
-    {
-        return IndexFactory.Create<IndexHNSW>(description, dimensions, metricType).NativeHandle;
-    }
-
-    public virtual void Add(long count, ReadOnlySpan<float> vectors) => ((IIDSequentialFloatIndex)this).Add(count, vectors);
+    public virtual void Add(long count, ReadOnlySpan<float> vectors) => IDSequentialFloatIndexImpl.Add(this, count, vectors);
 
     public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, SearchParametersHNSW parameters, Span<float> distances, Span<long> labels) =>
-        ((IParamsFloatSearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
+        SearchWithParams(count, queryVectors, k, (SearchParameters)parameters, distances, labels);
 
-    public void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result) => ((IRangeSearchFloatIndex)this).RangeSearch(count, queryVectors, radius, result);
+    public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, SearchParameters parameters, Span<float> distances, Span<long> labels) =>
+        ParamsFloatSearchIndexImpl.SearchWithParams(this, count, queryVectors, k, parameters, distances, labels);
+
+    public void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result) => RangeSearchFloatIndexImpl.RangeSearch(this, count, queryVectors, radius, result);
     
-    public float[] Reconstruct(long key) =>  ((IReconstructFloatIndex)this).Reconstruct(key);
+    public float[] Reconstruct(long key) =>  ReconstructFloatIndexImpl.Reconstruct(this, key);
 
-    public float[] Reconstruct(long startKey, long count)  => ((IReconstructFloatIndex)this).Reconstruct(startKey, count);
+    public float[] Reconstruct(long startKey, long count)  => ReconstructFloatIndexImpl.Reconstruct(this, startKey, count);
 
-    public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVector, residualVector, key);
+    public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVector, residualVector, key);
     
-    public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVectors, residualVectors, keys);
+    public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVectors, residualVectors, keys);
+    
+    private static FaissIndexHandle CreateHandle(string description, int dimensions, MetricType metricType) => IndexFactory.Create<IndexHNSW>(description, dimensions, metricType).NativeHandle;
 
-    public virtual IndexHNSW Clone() => ((IClonableFloatIndex<IndexHNSW>)this).Clone();
+    static IndexHNSW IFromNativeIndexHandle<IndexHNSW>.FromHandle(FaissIndexHandle handle) => new(handle);
+
+    public virtual IndexHNSW Clone() => ClonableFloatIndexImpl<IndexHNSW>.Clone(this);
 }
