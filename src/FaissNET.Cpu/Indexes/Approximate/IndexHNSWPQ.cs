@@ -23,9 +23,9 @@ public sealed class IndexHNSWPQ : IndexHNSW, ITrainableFloatIndex, IClonableFloa
     {
     }
 
-    public bool IsTrained => ((ITrainableFloatIndex)this).IsTrained;
+    public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
-    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => ((ITrainableFloatIndex)this).TrainAsync(count, vectors);
+    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
     public override void Add(long count, ReadOnlySpan<float> vectors)
     {
@@ -39,10 +39,7 @@ public sealed class IndexHNSWPQ : IndexHNSW, ITrainableFloatIndex, IClonableFloa
 
     static IndexHNSWPQ IFromNativeIndexHandle<IndexHNSWPQ>.FromHandle(FaissIndexHandle handle) => new(handle);
 
-    private static FaissIndexHandle CreateHandle(string description, int dimensions, MetricType metricType)
-    {
-        return IndexFactory.Create<IndexHNSWPQ>(description, dimensions, metricType).NativeHandle;
-    }
+    private static FaissIndexHandle CreateHandle(string description, int dimensions, MetricType metricType) => IndexFactory.Create<IndexHNSWPQ>(description, dimensions, metricType).NativeHandle;
 
-    public override IndexHNSWPQ Clone() => ((IClonableFloatIndex<IndexHNSWPQ>)this).Clone();
+    public override IndexHNSWPQ Clone() => ClonableFloatIndexImpl<IndexHNSWPQ>.Clone(this);
 }
