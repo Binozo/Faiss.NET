@@ -8,9 +8,14 @@ public interface IClonableBinaryIndex<T> : INativeBinaryIndex, IBinaryIndex wher
     /// <summary>
     /// Creates a copy of the index.
     /// </summary>
-    public T Clone()
+    public T Clone();
+}
+
+internal static class ClonableBinaryIndexImpl<T> where T : IBinaryIndex, INativeBinaryIndex, IFromNativeBinaryIndexHandle<T>
+{
+    public static T Clone(INativeBinaryIndex index)
     {
-        FaissErrorHandler.ThrowIfError(Native.faiss_clone_index_binary(Handle, out IntPtr ptr));
+        FaissErrorHandler.ThrowIfError(Native.faiss_clone_index_binary(index.Handle, out IntPtr ptr));
         return T.FromPointer(ptr);
     }
 }
