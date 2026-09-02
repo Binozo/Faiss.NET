@@ -14,8 +14,12 @@ public interface IIDMappedBinaryIndex : INativeBinaryIndex
     /// <param name="count">The number of vectors to add.</param>
     /// <param name="vectors">The vectors to add.</param>
     /// <param name="xids">The IDs to assign to the vectors.</param>
-    public unsafe void Add(long count, ReadOnlySpan<byte> vectors, ReadOnlySpan<long> xids)
-    {
+    public void Add(long count, ReadOnlySpan<byte> vectors, ReadOnlySpan<long> xids);
+}
+
+internal static class IDMappedBinaryIndexImpl
+{
+    public static unsafe void Add(INativeBinaryIndex index, long count, ReadOnlySpan<byte> vectors, ReadOnlySpan<long> xids){
         if (xids.Length < count)
         {
             throw new ArgumentException("Not enough custom IDs for the vectors.", nameof(xids));
@@ -25,7 +29,7 @@ public interface IIDMappedBinaryIndex : INativeBinaryIndex
         fixed (long* pXids = xids)
         {
             FaissErrorHandler.ThrowIfError(
-                Native.faiss_IndexBinary_add_with_ids(Handle, count, pVectors, pXids)
+                Native.faiss_IndexBinary_add_with_ids(index.Handle, count, pVectors, pXids)
             );
         }
     }

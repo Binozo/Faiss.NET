@@ -14,7 +14,12 @@ public interface IIDMappedFloatIndex : INativeIndex
     /// <param name="count">The number of vectors to add.</param>
     /// <param name="vectors">The vectors to add.</param>
     /// <param name="xids">The IDs to assign to the vectors.</param>
-    public unsafe void Add(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids)
+    public void Add(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids);
+}
+
+internal static class IDMappedFloatIndexImpl
+{
+    public static unsafe void Add(INativeIndex index, long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids)
     {
         if (xids.Length < count)
         {
@@ -25,7 +30,7 @@ public interface IIDMappedFloatIndex : INativeIndex
         fixed (long* pXids = xids)
         {
             FaissErrorHandler.ThrowIfError(
-                Native.faiss_Index_add_with_ids(Handle, count, pVectors, pXids)
+                Native.faiss_Index_add_with_ids(index.Handle, count, pVectors, pXids)
             );
         }
     }
