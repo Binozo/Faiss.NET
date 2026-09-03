@@ -25,7 +25,7 @@ internal static class ReconstructBinaryIndexImpl
 {
     public static byte[] Reconstruct(INativeBinaryIndex index, long key)
     {
-        byte[] vector = new byte[index.Dimensions];
+        byte[] vector = new byte[index.Dimensions / 8];
 
         unsafe
         {
@@ -42,7 +42,7 @@ internal static class ReconstructBinaryIndexImpl
     
     public static byte[] Reconstruct(INativeBinaryIndex index, long startKey, long count)
     {
-        byte[] vectors = new byte[count * index.Dimensions];
+        byte[] vectors = new byte[count * index.Dimensions / 8];
 
         unsafe
         {
