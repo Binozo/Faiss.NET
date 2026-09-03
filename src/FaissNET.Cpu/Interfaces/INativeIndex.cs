@@ -3,9 +3,11 @@ using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Interfaces;
 
+// TODO: Can things be made internal?
+
 public interface INativeObject
 {
-    protected internal FaissHandle Handle { get; }
+    internal FaissHandle Handle { get; }
 }
 
 public interface INativeObject<out T> : INativeObject where T : FaissHandle
@@ -18,7 +20,7 @@ public interface INativeObject<out T> : INativeObject where T : FaissHandle
 /// <inheritdoc cref="IIndex" />
 public interface INativeIndex : IIndex, INativeObject<FaissIndexHandle>
 {
-    protected internal new FaissIndexHandle Handle { get; }
+    internal new FaissIndexHandle Handle { get; }
 
     FaissIndexHandle INativeObject<FaissIndexHandle>.Handle => Handle;
 }
@@ -26,14 +28,14 @@ public interface INativeIndex : IIndex, INativeObject<FaissIndexHandle>
 /// <inheritdoc cref="IIndex" />
 public interface INativeBinaryIndex : IIndex, INativeObject<FaissBinaryIndexHandle>
 {
-    protected internal new FaissBinaryIndexHandle Handle { get; }
+    internal new FaissBinaryIndexHandle Handle { get; }
 
     FaissBinaryIndexHandle INativeObject<FaissBinaryIndexHandle>.Handle => Handle;
 }
 
 public interface IFromNativeIndexHandle<T> where T : IFromNativeIndexHandle<T>
 {
-    [Obsolete("Use FromPointer instead")]
+    [Obsolete("Use FromPointer instead")] // TODO
     internal static abstract T FromHandle(FaissIndexHandle handle);
 
     internal static virtual T FromPointer(IntPtr ptr, bool ownsHandle = true)
@@ -42,7 +44,7 @@ public interface IFromNativeIndexHandle<T> where T : IFromNativeIndexHandle<T>
 
 public interface IFromNativeBinaryIndexHandle<T> where T : IFromNativeBinaryIndexHandle<T>
 {
-    [Obsolete("Use FromPointer instead")]
+    [Obsolete("Use FromPointer instead")] // TODO
     internal static abstract T FromHandle(FaissBinaryIndexHandle handle);
 
     internal static virtual T FromPointer(IntPtr handle, bool ownsHandle = true)
