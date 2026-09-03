@@ -14,11 +14,16 @@ public interface IIDSequentialFloatIndex : INativeIndex
     /// <param name="vectors">A flat span of vectors (size: count * Dimensions).</param>
     /// <exception cref="FaissUntrainedException">Thrown when the index has not been trained yet incase it requires training.</exception>
     /// <exception cref="FaissException">Thrown when the add operation fails.</exception>
-    public unsafe void Add(long count, ReadOnlySpan<float> vectors)
+    public void Add(long count, ReadOnlySpan<float> vectors);
+}
+
+internal static class IDSequentialFloatIndexImpl
+{
+    public static unsafe void Add(INativeIndex index, long count, ReadOnlySpan<float> vectors)
     {
         fixed (float* pVectors = vectors)
         {
-            FaissErrorHandler.ThrowIfError(Native.faiss_Index_add(Handle, count, pVectors));
+            FaissErrorHandler.ThrowIfError(Native.faiss_Index_add(index.Handle, count, pVectors));
         }
     }
 }
