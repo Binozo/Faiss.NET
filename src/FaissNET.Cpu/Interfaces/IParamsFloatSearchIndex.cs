@@ -1,4 +1,4 @@
-using Faiss.Interfaces;
+using Faiss.Cpu.Search.Parameters;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 
@@ -15,7 +15,12 @@ public interface IParamsFloatSearchIndex : IFloatIndex, INativeIndex
     /// <param name="parameters">Search options</param>
     /// <param name="distances">Out: count * k floats, needs to be allocated by user</param>
     /// <param name="labels">Out: count * k floats, needs to be allocated by user</param>
-    public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, ISearchParameters parameters, Span<float> distances, Span<long> labels)
+    public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, SearchParameters parameters, Span<float> distances, Span<long> labels);
+}
+
+internal static class ParamsFloatSearchIndexImpl
+{
+    public static void SearchWithParams(INativeIndex index, long count, ReadOnlySpan<float> queryVectors, int k, SearchParameters parameters, Span<float> distances, Span<long> labels)
     {
         unsafe
         {
@@ -23,8 +28,8 @@ public interface IParamsFloatSearchIndex : IFloatIndex, INativeIndex
             fixed (float* pDistances = distances)
             fixed (long* pLabels = labels)
             {
-                FaissErrorHandler.ThrowIfError( // TODO: Improve this INativeSearchParameters handling
-                    Native.faiss_Index_search_with_params(Handle, count, pQuery, k, ((INativeSearchParameters)parameters).Handle, pDistances, pLabels)
+                FaissErrorHandler.ThrowIfError(
+                    Native.faiss_Index_search_with_params(index.Handle, count, pQuery, k, parameters.SafeHandle, pDistances, pLabels)
                 );
             }
         }

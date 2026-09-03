@@ -1,4 +1,4 @@
-using Faiss.Interfaces;
+using Faiss.Cpu.Search.Parameters;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 
@@ -15,7 +15,12 @@ public interface IParamsBinarySearchIndex : IBinaryIndex, INativeBinaryIndex
     /// <param name="parameters">Search options</param>
     /// <param name="distances">Out: count * k floats, needs to be allocated by user</param>
     /// <param name="labels">Out: count * k floats, needs to be allocated by user</param>
-    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, ISearchParameters parameters, Span<int> distances, Span<long> labels)
+    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, SearchParameters parameters, Span<int> distances, Span<long> labels);
+}
+
+internal static class ParamsBinarySearchIndexImpl
+{
+    public static void SearchWithParams(INativeBinaryIndex index, long count, ReadOnlySpan<byte> queryVectors, int k, SearchParameters parameters, Span<int> distances, Span<long> labels)
     {
         unsafe
         {
@@ -23,8 +28,8 @@ public interface IParamsBinarySearchIndex : IBinaryIndex, INativeBinaryIndex
             fixed (int* pDistances = distances)
             fixed (long* pLabels = labels)
             {
-                FaissErrorHandler.ThrowIfError( // TODO: Improve this INativeSearchParameters handling
-                    Native.faiss_IndexBinary_search_with_params(Handle, count, pQuery, k, ((INativeSearchParameters)parameters).Handle, pDistances, pLabels)
+                FaissErrorHandler.ThrowIfError(
+                    Native.faiss_IndexBinary_search_with_params(index.Handle, count, pQuery, k, parameters.SafeHandle, pDistances, pLabels)
                 );
             }
         }
