@@ -13,13 +13,8 @@ public interface ICodeFloatIndex : INativeIndex, IFloatIndex
     /// <exception cref="ArgumentNullException">
     /// </exception>
     /// <exception cref="FaissException">Thrown when the native call returns an error.</exception>
-    public long GetStandaloneCodeSize()
-    {
-        FaissErrorHandler.ThrowIfError(Native.faiss_Index_sa_code_size(Handle, out nuint size));
+    public long GetStandaloneCodeSize();
 
-        return (long)size;
-    }
-    
     /// <summary>
     /// Encodes vectors into raw bytes using the index's standalone codec.
     /// </summary>
@@ -37,37 +32,8 @@ public interface ICodeFloatIndex : INativeIndex, IFloatIndex
     /// Thrown when <paramref name="vectors"/> or <paramref name="outputBytes"/> are too small.
     /// </exception>
     /// <exception cref="FaissException">Thrown when the native encoding operation fails.</exception>
-    public void Encode(long count, ReadOnlySpan<float> vectors, Span<byte> outputBytes)
-    {
-        if (count < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(count), "Count cannot be negative.");
-        }
+    public void Encode(long count, ReadOnlySpan<float> vectors, Span<byte> outputBytes);
 
-        long codeSize = GetStandaloneCodeSize();
-        long expectedByteLength = count * codeSize;
-        long expectedVectorLength = count * Dimensions;
-
-        if (vectors.Length < expectedVectorLength)
-        {
-            throw new ArgumentException($"Input vector span too small. Expected {expectedVectorLength}, got {vectors.Length}.", nameof(vectors));
-        }
-
-        if (outputBytes.Length < expectedByteLength)
-        {
-            throw new ArgumentException($"Output byte span too small. Expected {expectedByteLength}, got {outputBytes.Length}.", nameof(outputBytes));
-        }
-
-        unsafe
-        {
-            fixed (float* pVectors = vectors)
-            fixed (byte* pBytes = outputBytes)
-            {
-                FaissErrorHandler.ThrowIfError(Native.faiss_Index_sa_encode(Handle, count, pVectors, pBytes));
-            }
-        }
-    }
-    
     /// <summary>
     /// Decodes raw bytes back into vectors using the index's standalone codec.
     /// </summary>
@@ -85,16 +51,59 @@ public interface ICodeFloatIndex : INativeIndex, IFloatIndex
     /// Thrown when <paramref name="inputBytes"/> or <paramref name="outputVectors"/> are too small.
     /// </exception>
     /// <exception cref="FaissException">Thrown when the native decoding operation fails.</exception>
-    public void Decode(long count, ReadOnlySpan<byte> inputBytes, Span<float> outputVectors)
+    public void Decode(long count, ReadOnlySpan<byte> inputBytes, Span<float> outputVectors);
+}
+
+internal static class CodeFloatIndexImpl
+{
+    public static long GetStandaloneCodeSize(INativeIndex index)
+    {
+        FaissErrorHandler.ThrowIfError(Native.faiss_Index_sa_code_size(index.Handle, out nuint size));
+
+        return (long)size;
+    }
+
+    public static void Encode(ICodeFloatIndex index, long count, ReadOnlySpan<float> vectors, Span<byte> outputBytes)
     {
         if (count < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(count), "Count cannot be negative.");
         }
 
-        long codeSize = GetStandaloneCodeSize();
+        long codeSize = index.GetStandaloneCodeSize();
         long expectedByteLength = count * codeSize;
-        long expectedVectorLength = count * Dimensions;
+        long expectedVectorLength = count * index.Dimensions;
+
+        if (vectors.Length < expectedVectorLength)
+        {
+            throw new ArgumentException($"Input vector span too small. Expected {expectedVectorLength}, got {vectors.Length}.", nameof(vectors));
+        }
+
+        if (outputBytes.Length < expectedByteLength)
+        {
+            throw new ArgumentException($"Output byte span too small. Expected {expectedByteLength}, got {outputBytes.Length}.", nameof(outputBytes));
+        }
+
+        unsafe
+        {
+            fixed (float* pVectors = vectors)
+            fixed (byte* pBytes = outputBytes)
+            {
+                FaissErrorHandler.ThrowIfError(Native.faiss_Index_sa_encode(index.Handle, count, pVectors, pBytes));
+            }
+        }
+    }
+
+    public static void Decode(ICodeFloatIndex index, long count, ReadOnlySpan<byte> inputBytes, Span<float> outputVectors)
+    {
+        if (count < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(count), "Count cannot be negative.");
+        }
+
+        long codeSize = index.GetStandaloneCodeSize();
+        long expectedByteLength = count * codeSize;
+        long expectedVectorLength = count * index.Dimensions;
 
         if (inputBytes.Length < expectedByteLength)
         {
@@ -111,7 +120,7 @@ public interface ICodeFloatIndex : INativeIndex, IFloatIndex
             fixed (byte* pBytes = inputBytes)
             fixed (float* pVectors = outputVectors)
             {
-                FaissErrorHandler.ThrowIfError(Native.faiss_Index_sa_decode(Handle, count, pBytes, pVectors));
+                FaissErrorHandler.ThrowIfError(Native.faiss_Index_sa_decode(index.Handle, count, pBytes, pVectors));
             }
         }
     }
