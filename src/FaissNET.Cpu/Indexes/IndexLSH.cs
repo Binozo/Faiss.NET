@@ -1,10 +1,10 @@
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Range;
+using Faiss.Cpu.Selectors;
 using Faiss.Exceptions;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
-using Faiss.Search;
 
 namespace Faiss.Cpu.Indexes;
 
@@ -17,7 +17,7 @@ internal readonly struct IndexLSHRelease : IFaissRelease
 /// Locality-Sensitive Hashing index.
 /// Hashes vectors into compact binary signatures for fast approximate search.
 /// </summary>
-public sealed class IndexLSH : FloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, ITrainableFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IRangeSearchFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ISerializableFloatIndex, IClonableFloatIndex<IndexLSH>, IFromNativeIndexHandle<IndexLSH>
+public sealed class IndexLSH : FloatIndex, IIDSequentialFloatIndex, ITrainableFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IRangeSearchFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ISerializableFloatIndex, IClonableFloatIndex<IndexLSH>, IFromNativeIndexHandle<IndexLSH>
 {
     public IndexLSH(int dimensions, int nbits, bool rotateData = true, bool trainThresholds = false) : this(CreateHandle(dimensions, nbits, rotateData, trainThresholds))
     {
@@ -25,16 +25,12 @@ public sealed class IndexLSH : FloatIndex, IIDSequentialFloatIndex, IIDMappedFlo
 
     private IndexLSH(FaissIndexHandle handle) : base(handle)
     {
-        
     }
 
-    /// <inheritdoc />
-    public bool IsTrained => ((ITrainableIndex)this).IsTrained;
+    public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
-    /// <inheritdoc />
-    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => ((ITrainableFloatIndex)this).TrainAsync(count, vectors);
+    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
-    /// <inheritdoc />
     public void Add(long count, ReadOnlySpan<float> vectors)
     {
         if (!IsTrained)
@@ -42,35 +38,27 @@ public sealed class IndexLSH : FloatIndex, IIDSequentialFloatIndex, IIDMappedFlo
             throw new FaissUntrainedException();
         }
 
-        ((IIDSequentialFloatIndex)this).Add(count, vectors);
+        IDSequentialFloatIndexImpl.Add(this, count, vectors);
     }
     
-    /// <inheritdoc />
-    public void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result) => ((IRangeSearchFloatIndex)this).RangeSearch(count, queryVectors, radius, result);
+    public void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result) => RangeSearchFloatIndexImpl.RangeSearch(this, count, queryVectors, radius, result);
     
-    /// <inheritdoc />
-    public long RemoveIds(IIDSelector selector) => ((IIDRemovableFloatIndex)this).RemoveIds(selector);
+    public long RemoveIds(IDSelector selector) => IDRemovableFloatIndexImpl.RemoveIds(this, selector);
     
-    /// <inheritdoc />
-    public float[] Reconstruct(long key) => ((IReconstructFloatIndex)this).Reconstruct(key);
+    public float[] Reconstruct(long key) => ReconstructFloatIndexImpl.Reconstruct(this, key);
 
-    /// <inheritdoc />
-    public float[] Reconstruct(long startKey, long count) => ((IReconstructFloatIndex)this).Reconstruct(startKey, count);
+    public float[] Reconstruct(long startKey, long count) => ReconstructFloatIndexImpl.Reconstruct(this, startKey, count);
+    
+    public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVector, residualVector, key);
+    
+    public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVectors, residualVectors, keys);
+    
+    public long GetStandaloneCodeSize() => CodeFloatIndexImpl.GetStandaloneCodeSize(this);
+    
+    public void Encode(long count, ReadOnlySpan<float> vectors, Span<byte> outputBytes) => CodeFloatIndexImpl.Encode(this, count, vectors, outputBytes);
     
     /// <inheritdoc />
-    public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVector, residualVector, key);
-    
-    /// <inheritdoc />
-    public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVectors, residualVectors, keys);
-    
-    /// <inheritdoc />
-    public long GetStandaloneCodeSize() => ((ICodeFloatIndex)this).GetStandaloneCodeSize();
-    
-    /// <inheritdoc />
-    public void Encode(long count, ReadOnlySpan<float> vectors, Span<byte> outputBytes) => ((ICodeFloatIndex)this).Encode(count, vectors, outputBytes);
-    
-    /// <inheritdoc />
-    public void Decode(long count, ReadOnlySpan<byte> inputBytes, Span<float> outputVectors) => ((ICodeFloatIndex)this).Decode(count, inputBytes, outputVectors);
+    public void Decode(long count, ReadOnlySpan<byte> inputBytes, Span<float> outputVectors) => CodeFloatIndexImpl.Decode(this, count, inputBytes, outputVectors);
 
     /// <summary>Number of bits per binary signature.</summary>
     public int Nbits => Native.faiss_IndexLSH_nbits(NativeHandle);
@@ -98,5 +86,5 @@ public sealed class IndexLSH : FloatIndex, IIDSequentialFloatIndex, IIDMappedFlo
 
     static IndexLSH IFromNativeIndexHandle<IndexLSH>.FromHandle(FaissIndexHandle handle) => new(handle);
 
-    public IndexLSH Clone() => ((IClonableFloatIndex<IndexLSH>)this).Clone();
+    public IndexLSH Clone() => ClonableFloatIndexImpl<IndexLSH>.Clone(this);
 }
