@@ -6,13 +6,13 @@ namespace Faiss.Interop.NativeMethods;
 internal static unsafe partial class Native
 {
     [LibraryImport(LibraryName)]
-    internal static partial int faiss_IDSelectorBatch_new(out IntPtr pSel, UIntPtr n, long* indices);
-    
-    [LibraryImport(LibraryName)]
     internal static partial int faiss_IDSelector_is_member(FaissIDSelectorHandle sel, long id);
     
     [LibraryImport(LibraryName)]
     internal static partial void faiss_IDSelector_free(IntPtr sel);
+
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_IDSelectorBatch_new(out IntPtr pSel, UIntPtr n, long* indices);
 
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IDSelectorRange_new(out IntPtr pSel, long imin, long imax);

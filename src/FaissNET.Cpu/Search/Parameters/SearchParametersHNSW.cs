@@ -30,7 +30,7 @@ public sealed class SearchParametersHNSW : SearchParameters
     private static FaissSearchParametersHandle CreateHandle(int efSearch, IDSelector? selector = null)
     {
         FaissErrorHandler.ThrowIfError(
-            Native.faiss_SearchParametersHNSW_new_with(out IntPtr ptr, selector?.SafeHandle, efSearch)
+            Native.faiss_SearchParametersHNSW_new_with(out IntPtr ptr, selector?.SafeHandle.DangerousGetHandle() ?? IntPtr.Zero, efSearch)
         );
 
         return new FaissSearchParametersHandle<SearchParametersHNSWRelease>(ptr);

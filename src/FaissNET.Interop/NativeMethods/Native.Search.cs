@@ -50,7 +50,7 @@ internal static unsafe partial class Native
     internal static partial void faiss_SearchParametersIVF_set_max_empty_result_buckets(FaissSearchParametersHandle sp, UIntPtr maxEmptyResultBuckets);
 
     [LibraryImport(LibraryName)]
-    internal static partial int faiss_SearchParametersHNSW_new_with(out IntPtr pSp, FaissIDSelectorHandle? sel, int efSearch);
+    internal static partial int faiss_SearchParametersHNSW_new_with(out IntPtr pSp, IntPtr sel, int efSearch);
 
     [LibraryImport(LibraryName)]
     internal static partial void faiss_SearchParametersHNSW_free(IntPtr sp);
