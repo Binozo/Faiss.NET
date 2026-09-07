@@ -1,17 +1,17 @@
 using Faiss.Cpu.Factory;
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Range;
+using Faiss.Cpu.Selectors;
 using Faiss.Exceptions;
 using Faiss.Interop.SafeHandles;
 using Faiss.Models;
-using Faiss.Search;
 
 namespace Faiss.Cpu.Indexes.Approximate;
 
 /// <summary>
 /// Product Quantization flat index.
 /// </summary>
-public sealed class IndexPQ : FloatIndex, IFlatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IRangeSearchFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ICpuFloatIndex, IClonableFloatIndex<IndexPQ>, IFromNativeIndexHandle<IndexPQ>
+public sealed class IndexPQ : FloatIndex, IFlatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IRangeSearchFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IClonableFloatIndex<IndexPQ>, IFromNativeIndexHandle<IndexPQ>
 {
     public IndexPQ(int dimensions, int m = 16, MetricType metricType = MetricType.L2, int? nbits = null, bool polysemousTraining = true) : this($"PQ{m}{(nbits != null ? $"x{nbits}" : string.Empty)}{(polysemousTraining ? string.Empty : "np")}", dimensions, metricType)
     {
@@ -25,9 +25,9 @@ public sealed class IndexPQ : FloatIndex, IFlatIndex, ITrainableFloatIndex, IIDS
     {
     }
 
-    public bool IsTrained => ((ITrainableFloatIndex)this).IsTrained;
+    public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
-    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => ((ITrainableFloatIndex)this).TrainAsync(count, vectors);
+    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
     public void Add(long count, ReadOnlySpan<float> vectors)
     {
@@ -36,33 +36,30 @@ public sealed class IndexPQ : FloatIndex, IFlatIndex, ITrainableFloatIndex, IIDS
             throw new FaissUntrainedException();
         }
         
-        ((IIDSequentialFloatIndex)this).Add(count, vectors);
+        IDSequentialFloatIndexImpl.Add(this, count, vectors);
     }
 
-    public void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result) => ((IRangeSearchFloatIndex)this).RangeSearch(count, queryVectors, radius, result);
+    public void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result) => RangeSearchFloatIndexImpl.RangeSearch(this, count, queryVectors, radius, result);
 
-    public long RemoveIds(IIDSelector selector) => ((IIDRemovableFloatIndex)this).RemoveIds(selector);
+    public long RemoveIds(IDSelector selector) => IDRemovableFloatIndexImpl.RemoveIds(this, selector);
 
-    public float[] Reconstruct(long key) => ((IReconstructFloatIndex)this).Reconstruct(key);
+    public float[] Reconstruct(long key) => ReconstructFloatIndexImpl.Reconstruct(this, key);
 
-    public float[] Reconstruct(long startKey, long count) => ((IReconstructFloatIndex)this).Reconstruct(startKey, count);
+    public float[] Reconstruct(long startKey, long count) => ReconstructFloatIndexImpl.Reconstruct(this, startKey, count);
 
-    public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVector, residualVector, key);
+    public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVector, residualVector, key);
 
-    public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVectors, residualVectors, keys);
+    public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVectors, residualVectors, keys);
 
-    public long GetStandaloneCodeSize() => ((ICodeFloatIndex)this).GetStandaloneCodeSize();
+    public long GetStandaloneCodeSize() => CodeFloatIndexImpl.GetStandaloneCodeSize(this);
 
-    public void Encode(long count, ReadOnlySpan<float> vectors, Span<byte> outputBytes) => ((ICodeFloatIndex)this).Encode(count, vectors, outputBytes);
+    public void Encode(long count, ReadOnlySpan<float> vectors, Span<byte> outputBytes) => CodeFloatIndexImpl.Encode(this, count, vectors, outputBytes);
 
-    public void Decode(long count, ReadOnlySpan<byte> inputBytes, Span<float> outputVectors) => ((ICodeFloatIndex)this).Decode(count, inputBytes, outputVectors);
+    public void Decode(long count, ReadOnlySpan<byte> inputBytes, Span<float> outputVectors) => CodeFloatIndexImpl.Decode(this, count, inputBytes, outputVectors);
 
     static IndexPQ IFromNativeIndexHandle<IndexPQ>.FromHandle(FaissIndexHandle handle) => new(handle);
 
-    private static FaissIndexHandle CreateHandle(string description, int dimensions, MetricType metricType)
-    {
-        return IndexFactory.Create<IndexPQ>(description, dimensions, metricType).NativeHandle;
-    }
+    private static FaissIndexHandle CreateHandle(string description, int dimensions, MetricType metricType) => IndexFactory.Create<IndexPQ>(description, dimensions, metricType).NativeHandle;
 
-    public IndexPQ Clone() => ((IClonableFloatIndex<IndexPQ>)this).Clone();
+    public IndexPQ Clone() => ClonableFloatIndexImpl<IndexPQ>.Clone(this);
 }
