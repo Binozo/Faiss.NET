@@ -1,4 +1,3 @@
-using Faiss.Cpu.Factory;
 using Faiss.Cpu.Interfaces;
 using Faiss.Exceptions;
 using Faiss.Interop.SafeHandles;
@@ -8,17 +7,18 @@ namespace Faiss.Cpu.Indexes.Approximate;
 
 public sealed class IndexNSGPQ : IndexNSG, ITrainableFloatIndex, IClonableFloatIndex<IndexNSGPQ>, IFromNativeIndexHandle<IndexNSGPQ>
 {
-    public IndexNSGPQ(int dimensions, int r = 32, int productQuantization = 16, int? subQuantizer = null, bool polysemy = false, MetricType metricType = MetricType.L2) : base(dimensions, $"PQ{productQuantization}{(subQuantizer != null ? $"x{subQuantizer}" : string.Empty)}{(polysemy ? string.Empty : "np")}", r, metricType)
+    public IndexNSGPQ(int dimensions, int r = 32, int productQuantization = 16, int? subQuantizer = null, bool polysemy = false, MetricType metricType = MetricType.L2) : base(dimensions,
+        $"PQ{productQuantization}{(subQuantizer != null ? $"x{subQuantizer}" : string.Empty)}{(polysemy ? string.Empty : "np")}", r, metricType)
     {
     }
 
     internal IndexNSGPQ(FaissIndexHandle handle) : base(handle)
     {
     }
-    
-    public bool IsTrained => ((ITrainableFloatIndex)this).IsTrained;
 
-    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => ((ITrainableFloatIndex)this).TrainAsync(count, vectors);
+    public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
+
+    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
     public override void Add(long count, ReadOnlySpan<float> vectors)
     {
@@ -31,11 +31,6 @@ public sealed class IndexNSGPQ : IndexNSG, ITrainableFloatIndex, IClonableFloatI
     }
 
     static IndexNSGPQ IFromNativeIndexHandle<IndexNSGPQ>.FromHandle(FaissIndexHandle handle) => new(handle);
-    
-    private static FaissIndexHandle CreateHandle(string description, int dimensions, MetricType metricType)
-    {
-        return IndexFactory.Create<IndexNSGPQ>(description, dimensions, metricType).NativeHandle;
-    }
 
-    public override IndexNSGPQ Clone() => ((IClonableFloatIndex<IndexNSGPQ>)this).Clone();
+    public override IndexNSGPQ Clone() => ClonableFloatIndexImpl<IndexNSGPQ>.Clone(this);
 }
