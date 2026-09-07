@@ -11,9 +11,9 @@ public abstract class FloatIndex : IFloatIndex, INativeIndex
 {
     private readonly FaissIndexHandle _handle;
     
-    protected FloatIndex(FaissIndexHandle handle) => _handle = handle ?? throw new ArgumentNullException(nameof(handle));
+    internal FloatIndex(FaissIndexHandle handle) => _handle = handle ?? throw new ArgumentNullException(nameof(handle));
 
-    protected internal FaissIndexHandle NativeHandle => _handle;
+    internal FaissIndexHandle NativeHandle => _handle;
 
     FaissIndexHandle INativeIndex.Handle => _handle;
 
@@ -47,6 +47,12 @@ public abstract class FloatIndex : IFloatIndex, INativeIndex
     }
 
     public void Reset() => FaissErrorHandler.ThrowIfError(Native.faiss_Index_reset(NativeHandle));
+    
+    public bool Verbose
+    {
+        get => Native.faiss_Index_verbose(NativeHandle) != 0;
+        set => Native.faiss_Index_set_verbose(NativeHandle, value);
+    }
 
 
     public virtual void Dispose()
