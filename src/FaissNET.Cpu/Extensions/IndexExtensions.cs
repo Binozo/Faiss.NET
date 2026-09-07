@@ -194,9 +194,9 @@ public static class IndexExtensions
         }
     }
 
-    public static SearchResults SearchWithParams(this IParamsFloatSearchIndex index, ReadOnlyMemory<float> queryVectors, int k, ISearchParameters parameters) => index.SearchWithParams([queryVectors], k, parameters);
+    public static SearchResults SearchWithParams(this IParamsFloatSearchIndex index, ReadOnlyMemory<float> queryVectors, int k, SearchParameters parameters) => index.SearchWithParams([queryVectors], k, parameters);
 
-    public static SearchResults SearchWithParams(this IParamsFloatSearchIndex index, IReadOnlyList<ReadOnlyMemory<float>> queryVectors, int k, ISearchParameters parameters)
+    public static SearchResults SearchWithParams(this IParamsFloatSearchIndex index, IReadOnlyList<ReadOnlyMemory<float>> queryVectors, int k, SearchParameters parameters)
     {
         int count = queryVectors.Count;
 
