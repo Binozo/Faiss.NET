@@ -21,10 +21,7 @@ public sealed class IndexHNSWFlatPanorama : IndexHNSWFlat, IClonableFloatIndex<I
 
     static IndexHNSWFlatPanorama IFromNativeIndexHandle<IndexHNSWFlatPanorama>.FromHandle(FaissIndexHandle handle) => new(handle);
     
-    private static FaissIndexHandle CreateHandle(string description, int dimensions, MetricType metricType)
-    {
-        return IndexFactory.Create<IndexHNSWFlatPanorama>(description, dimensions, metricType).NativeHandle;
-    }
+    private static FaissIndexHandle CreateHandle(string description, int dimensions, MetricType metricType) => IndexFactory.Create<IndexHNSWFlatPanorama>(description, dimensions, metricType).NativeHandle;
 
-    public override IndexHNSWFlatPanorama Clone() => ((IClonableFloatIndex<IndexHNSWFlatPanorama>)this).Clone();
+    public override IndexHNSWFlatPanorama Clone() => ClonableFloatIndexImpl<IndexHNSWFlatPanorama>.Clone(this);
 }
