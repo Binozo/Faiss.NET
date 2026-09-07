@@ -18,7 +18,7 @@ public class IndexNSG : FloatIndex, IIDSequentialFloatIndex, IReconstructFloatIn
     {
     }
 
-    protected IndexNSG(FaissIndexHandle handle) : base(handle)
+    internal IndexNSG(FaissIndexHandle handle) : base(handle)
     {
     }
 
@@ -32,22 +32,19 @@ public class IndexNSG : FloatIndex, IIDSequentialFloatIndex, IReconstructFloatIn
         return metricType;
     }
 
-    public virtual void Add(long count, ReadOnlySpan<float> vectors) => ((IIDSequentialFloatIndex)this).Add(count, vectors);
+    public virtual void Add(long count, ReadOnlySpan<float> vectors) => IDSequentialFloatIndexImpl.Add(this, count, vectors);
 
-    public float[] Reconstruct(long key) => ((IReconstructFloatIndex)this).Reconstruct(key);
+    public float[] Reconstruct(long key) => ReconstructFloatIndexImpl.Reconstruct(this, key);
 
-    public float[] Reconstruct(long startKey, long count) => ((IReconstructFloatIndex)this).Reconstruct(startKey, count);
+    public float[] Reconstruct(long startKey, long count) => ReconstructFloatIndexImpl.Reconstruct(this, startKey, count);
 
-    public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVector, residualVector, key);
+    public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVector, residualVector, key);
 
-    public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVectors, residualVectors, keys);
+    public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVectors, residualVectors, keys);
+    
+    private static FaissIndexHandle CreateHandle(string description, int dimensions, MetricType metricType) => IndexFactory.Create<IndexNSG>(description, dimensions, metricType).NativeHandle;
 
     static IndexNSG IFromNativeIndexHandle<IndexNSG>.FromHandle(FaissIndexHandle handle) => new(handle);
-    
-    private static FaissIndexHandle CreateHandle(string description, int dimensions, MetricType metricType)
-    {
-        return IndexFactory.Create<IndexNSG>(description, dimensions, metricType).NativeHandle;
-    }
 
-    public virtual IndexNSG Clone() => ((IClonableFloatIndex<IndexNSG>)this).Clone();
+    public virtual IndexNSG Clone() => ClonableFloatIndexImpl<IndexNSG>.Clone(this);
 }
