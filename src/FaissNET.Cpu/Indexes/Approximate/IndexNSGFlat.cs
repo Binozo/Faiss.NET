@@ -1,4 +1,3 @@
-using Faiss.Cpu.Factory;
 using Faiss.Cpu.Interfaces;
 using Faiss.Interop.SafeHandles;
 using Faiss.Models;
@@ -16,11 +15,6 @@ public sealed class IndexNSGFlat : IndexNSG, IClonableFloatIndex<IndexNSGFlat>, 
     }
 
     static IndexNSGFlat IFromNativeIndexHandle<IndexNSGFlat>.FromHandle(FaissIndexHandle handle) => new(handle);
-    
-    private static FaissIndexHandle CreateHandle(string description, int dimensions, MetricType metricType)
-    {
-        return IndexFactory.Create<IndexNSGFlat>(description, dimensions, metricType).NativeHandle;
-    }
 
-    public override IndexNSGFlat Clone() => ((IClonableFloatIndex<IndexNSGFlat>)this).Clone();
+    public override IndexNSGFlat Clone() => ClonableFloatIndexImpl<IndexNSGFlat>.Clone(this);
 }
