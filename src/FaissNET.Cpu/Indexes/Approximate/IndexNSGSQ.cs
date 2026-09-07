@@ -1,4 +1,3 @@
-using Faiss.Cpu.Factory;
 using Faiss.Cpu.Interfaces;
 using Faiss.Exceptions;
 using Faiss.Interop.SafeHandles;
@@ -41,9 +40,9 @@ public sealed class IndexNSGSQ : IndexNSG, ITrainableFloatIndex, IClonableFloatI
         };
     }
     
-    public bool IsTrained => ((ITrainableFloatIndex)this).IsTrained;
+    public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
-    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => ((ITrainableFloatIndex)this).TrainAsync(count, vectors);
+    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
     public override void Add(long count, ReadOnlySpan<float> vectors)
     {
@@ -56,11 +55,6 @@ public sealed class IndexNSGSQ : IndexNSG, ITrainableFloatIndex, IClonableFloatI
     }
 
     static IndexNSGSQ IFromNativeIndexHandle<IndexNSGSQ>.FromHandle(FaissIndexHandle handle) => new(handle);
-    
-    private static FaissIndexHandle CreateHandle(string description, int dimensions, MetricType metricType)
-    {
-        return IndexFactory.Create<IndexNSGSQ>(description, dimensions, metricType).NativeHandle;
-    }
 
-    public override IndexNSGSQ Clone() => ((IClonableFloatIndex<IndexNSGSQ>)this).Clone();
+    public override IndexNSGSQ Clone() => ClonableFloatIndexImpl<IndexNSGSQ>.Clone(this);
 }
