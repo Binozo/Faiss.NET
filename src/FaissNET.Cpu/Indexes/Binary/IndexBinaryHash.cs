@@ -1,7 +1,7 @@
 using Faiss.Cpu.Factory;
 using Faiss.Cpu.Interfaces;
+using Faiss.Cpu.Search.Parameters;
 using Faiss.Cpu.Search.Range;
-using Faiss.Interfaces;
 using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Indexes.Binary;
@@ -16,6 +16,14 @@ public sealed class IndexBinaryHash : BinaryIndex, IIDSequentialBinaryIndex, IID
     {
     }
 
+    public void Add(long count, ReadOnlySpan<byte> vectors) => IDSequentialBinaryIndexImpl.Add(this, count, vectors);
+
+    public void Add(long count, ReadOnlySpan<byte> vectors, ReadOnlySpan<long> xids) => IDMappedBinaryIndexImpl.Add(this, count, vectors, xids);
+
+    public void RangeSearch(long count, ReadOnlySpan<byte> queryVectors, byte radius, RangeSearchResult result) => RangeSearchBinaryIndexImpl.RangeSearch(this, count, queryVectors, radius, result);
+
+    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, SearchParameters parameters, Span<int> distances, Span<long> labels) => ParamsBinarySearchIndexImpl.SearchWithParams(this, count, queryVectors, k, parameters, distances, labels);
+
     private static FaissBinaryIndexHandle CreateHandle(int dimensions, int leadingBits)
     {
         if (dimensions <= 0 || dimensions % 8 != 0)
@@ -28,13 +36,5 @@ public sealed class IndexBinaryHash : BinaryIndex, IIDSequentialBinaryIndex, IID
 
     static IndexBinaryHash IFromNativeBinaryIndexHandle<IndexBinaryHash>.FromHandle(FaissBinaryIndexHandle handle) => new(handle);
 
-    public void Add(long count, ReadOnlySpan<byte> vectors) => ((IIDSequentialBinaryIndex)this).Add(count, vectors);
-
-    public void Add(long count, ReadOnlySpan<byte> vectors, ReadOnlySpan<long> xids) => ((IIDMappedBinaryIndex)this).Add(count, vectors, xids);
-
-    public void RangeSearch(long count, ReadOnlySpan<byte> queryVectors, byte radius, RangeSearchResult result) => ((IRangeSearchBinaryIndex)this).RangeSearch(count, queryVectors, radius, result);
-
-    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, ISearchParameters parameters, Span<int> distances, Span<long> labels) => ((IParamsBinarySearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
-
-    public IndexBinaryHash Clone() => ((IClonableBinaryIndex<IndexBinaryHash>)this).Clone();
+    public IndexBinaryHash Clone() => ClonableBinaryIndexImpl<IndexBinaryHash>.Clone(this);
 }
