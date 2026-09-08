@@ -2,11 +2,10 @@ using Faiss.Cpu.Factory;
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Parameters;
 using Faiss.Cpu.Search.Range;
+using Faiss.Cpu.Selectors;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
-using Faiss.Search;
-using ITrainableBinaryIndex = Faiss.Cpu.Interfaces.ITrainableBinaryIndex;
 
 namespace Faiss.Cpu.Indexes.Binary;
 
@@ -18,7 +17,8 @@ internal readonly struct IndexBinaryIVFRelease : IFaissRelease
 /// <summary>
 /// Binary inverted file index with coarse quantization and binary flat lists.
 /// </summary>
-public sealed class IndexBinaryIVF : BinaryIndex, ITrainableBinaryIndex, IIDSequentialBinaryIndex, IIDMappedBinaryIndex, IParamsBinarySearchIndex, IRangeSearchBinaryIndex, IIDRemovableBinaryIndex, IReconstructBinaryIndex, ISerializableBinaryIndex, IClonableBinaryIndex<IndexBinaryIVF>, IFromNativeBinaryIndexHandle<IndexBinaryIVF>
+public sealed class IndexBinaryIVF : BinaryIndex, ITrainableBinaryIndex, IIDSequentialBinaryIndex, IIDMappedBinaryIndex, IParamsBinarySearchIndex, IRangeSearchBinaryIndex, IIDRemovableBinaryIndex, IReconstructBinaryIndex,
+    ISerializableBinaryIndex, IClonableBinaryIndex<IndexBinaryIVF>, IFromNativeBinaryIndexHandle<IndexBinaryIVF>
 {
     /// <summary>
     /// Creates a binary IVF index.
@@ -34,64 +34,35 @@ public sealed class IndexBinaryIVF : BinaryIndex, ITrainableBinaryIndex, IIDSequ
     {
     }
 
-    private static FaissBinaryIndexHandle CreateHandle(int dimensions, int nlist, int? hnswM)
-    {
-        if (dimensions == 0 || dimensions % 8 != 0)
-        {
-            throw new ArgumentException("Dimensions must be divisible by 8", nameof(dimensions));
-        }
-        
-        string description = $"BIVF{nlist}";
-        if (hnswM.HasValue)
-        {
-            description = $"{description}_HNSW{hnswM.Value}";
-        }
-        
-        return BinaryIndexFactory.Create<IndexBinaryIVF>(description, dimensions).NativeHandle;
-    }
+    public bool IsTrained => TrainableBinaryIndexImpl.IsTrained(this);
+
+    public Task TrainAsync(long count, ReadOnlyMemory<byte> vectors) => TrainableBinaryIndexImpl.TrainAsync(this, count, vectors);
+
+    public void Add(long count, ReadOnlySpan<byte> vectors) => IDSequentialBinaryIndexImpl.Add(this, count, vectors);
     
-    private static FaissBinaryIndexHandle Wrap(IntPtr handle, bool ownsHandle = true)
-     => new FaissBinaryIndexHandle<IndexBinaryIVFRelease>(handle, ownsHandle);
+    public void Add(long count, ReadOnlySpan<byte> vectors, ReadOnlySpan<long> xids) => IDMappedBinaryIndexImpl.Add(this, count, vectors, xids);
 
-    static IndexBinaryIVF IFromNativeBinaryIndexHandle<IndexBinaryIVF>.FromPointer(IntPtr handle, bool ownsHandle)
-        => new(Wrap(handle, ownsHandle));
-
-    static IndexBinaryIVF IFromNativeBinaryIndexHandle<IndexBinaryIVF>.FromHandle(FaissBinaryIndexHandle handle) => new(handle);
-
-    /// <inheritdoc/>
-    public bool IsTrained => ((ITrainableBinaryIndex)this).IsTrained;
+    public void RangeSearch(long count, ReadOnlySpan<byte> queryVectors, byte radius, RangeSearchResult result) => RangeSearchBinaryIndexImpl.RangeSearch(this, count, queryVectors, radius, result);
     
-    /// <inheritdoc/>
-    public Task TrainAsync(long count, ReadOnlyMemory<byte> vectors) => ((ITrainableBinaryIndex)this).TrainAsync(count, vectors);
+    public long RemoveIds(IDSelector selector) => IDRemovableBinaryIndexImpl.RemoveIds(this, selector);
 
-    /// <inheritdoc/>
-    public void Add(long count, ReadOnlySpan<byte> vectors) => ((IIDSequentialBinaryIndex)this).Add(count, vectors);
-
-    /// <inheritdoc/>
-    public void Add(long count, ReadOnlySpan<byte> vectors, ReadOnlySpan<long> xids) => ((IIDMappedBinaryIndex)this).Add(count, vectors, xids);
+    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, SearchParameters parameters, Span<int> distances, Span<long> labels) =>
+        ParamsBinarySearchIndexImpl.SearchWithParams(this, count, queryVectors, k, parameters, distances, labels);
 
     /// <inheritdoc cref="IParamsBinarySearchIndex" />
     public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, SearchParametersIVF parameters, Span<int> distances, Span<long> labels) =>
-        ((IParamsBinarySearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
-    
-    /// <inheritdoc/>
-    public void RangeSearch(long count, ReadOnlySpan<byte> queryVectors, byte radius, RangeSearchResult result) => ((IRangeSearchBinaryIndex)this).RangeSearch(count, queryVectors, radius, result);
+        SearchWithParams(count, queryVectors, k, (SearchParameters)parameters, distances, labels);
 
-    /// <inheritdoc/>
-    public long RemoveIds(IIDSelector selector) => ((IIDRemovableBinaryIndex)this).RemoveIds(selector);
-
-    /// <inheritdoc/>
     public byte[] Reconstruct(long key)
     {
         MakeDirectMap(true);
-        return ((IReconstructBinaryIndex)this).Reconstruct(key);
+        return ReconstructBinaryIndexImpl.Reconstruct(this, key);
     }
 
-    /// <inheritdoc/>
     public byte[] Reconstruct(long startKey, long count)
     {
         MakeDirectMap(true);
-        return ((IReconstructBinaryIndex)this).Reconstruct(startKey, count);
+        return ReconstructBinaryIndexImpl.Reconstruct(this, startKey, count);
     }
 
     public int Nlist => (int)Native.faiss_IndexBinaryIVF_nlist(NativeHandle);
@@ -126,10 +97,33 @@ public sealed class IndexBinaryIVF : BinaryIndex, ITrainableBinaryIndex, IIDSequ
         set => Native.faiss_IndexBinaryIVF_set_per_invlist_search(NativeHandle, value);
     }
 
-    public double ImbalanceFactor =>
-        Native.faiss_IndexBinaryIVF_imbalance_factor(NativeHandle);
+    public double ImbalanceFactor => Native.faiss_IndexBinaryIVF_imbalance_factor(NativeHandle);
 
     public void MakeDirectMap(bool maintainDirectMap) => FaissErrorHandler.ThrowIfError(Native.faiss_IndexBinaryIVF_make_direct_map(NativeHandle, maintainDirectMap));
 
-    public IndexBinaryIVF Clone() => ((IClonableBinaryIndex<IndexBinaryIVF>)this).Clone();
+    private static FaissBinaryIndexHandle CreateHandle(int dimensions, int nlist, int? hnswM)
+    {
+        if (dimensions == 0 || dimensions % 8 != 0)
+        {
+            throw new ArgumentException("Dimensions must be divisible by 8", nameof(dimensions));
+        }
+
+        string description = $"BIVF{nlist}";
+        if (hnswM.HasValue)
+        {
+            description = $"{description}_HNSW{hnswM.Value}";
+        }
+
+        return BinaryIndexFactory.Create<IndexBinaryIVF>(description, dimensions).NativeHandle;
+    }
+
+    static IndexBinaryIVF IFromNativeBinaryIndexHandle<IndexBinaryIVF>.FromHandle(FaissBinaryIndexHandle handle) => new(handle);
+
+    private static FaissBinaryIndexHandle Wrap(IntPtr handle, bool ownsHandle = true)
+        => new FaissBinaryIndexHandle<IndexBinaryIVFRelease>(handle, ownsHandle);
+
+    static IndexBinaryIVF IFromNativeBinaryIndexHandle<IndexBinaryIVF>.FromPointer(IntPtr handle, bool ownsHandle)
+        => new(Wrap(handle, ownsHandle));
+
+    public IndexBinaryIVF Clone() => ClonableBinaryIndexImpl<IndexBinaryIVF>.Clone(this);
 }
