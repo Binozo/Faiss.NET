@@ -11,9 +11,9 @@ public abstract class BinaryIndex : IBinaryIndex, INativeBinaryIndex
 {
     private readonly FaissBinaryIndexHandle _handle;
 
-    protected BinaryIndex(FaissBinaryIndexHandle handle) => _handle = handle ?? throw new ArgumentNullException(nameof(handle));
+    internal BinaryIndex(FaissBinaryIndexHandle handle) => _handle = handle ?? throw new ArgumentNullException(nameof(handle));
 
-    protected internal FaissBinaryIndexHandle NativeHandle => _handle;
+    internal FaissBinaryIndexHandle NativeHandle => _handle;
 
     FaissBinaryIndexHandle INativeBinaryIndex.Handle => _handle;
 
@@ -47,6 +47,12 @@ public abstract class BinaryIndex : IBinaryIndex, INativeBinaryIndex
     }
 
     public void Reset() => FaissErrorHandler.ThrowIfError(Native.faiss_IndexBinary_reset(NativeHandle));
+    
+    public bool Verbose
+    {
+        get => Native.faiss_IndexBinary_verbose(NativeHandle) != 0;
+        set => Native.faiss_IndexBinary_set_verbose(NativeHandle, value);
+    }
 
     public virtual void Dispose()
     {
