@@ -1,5 +1,5 @@
 using Faiss.Cpu.Interfaces;
-using Faiss.Interfaces;
+using Faiss.Cpu.Search.Parameters;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
@@ -15,6 +15,14 @@ public sealed class IndexBinaryHNSW : BinaryIndex, IIDSequentialBinaryIndex, IPa
     private IndexBinaryHNSW(FaissBinaryIndexHandle handle) : base(handle)
     {
     }
+
+    public void Add(long count, ReadOnlySpan<byte> vectors) => IDSequentialBinaryIndexImpl.Add(this, count, vectors);
+
+    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, SearchParameters parameters, Span<int> distances, Span<long> labels) => ParamsBinarySearchIndexImpl.SearchWithParams(this, count, queryVectors, k, parameters, distances, labels);
+
+    public byte[] Reconstruct(long key) => ReconstructBinaryIndexImpl.Reconstruct(this, key);
+
+    public byte[] Reconstruct(long startKey, long count) => ReconstructBinaryIndexImpl.Reconstruct(this, startKey, count);
     
     private static FaissBinaryIndexHandle CreateHandle(int dimensions, int m)
     {
@@ -27,15 +35,7 @@ public sealed class IndexBinaryHNSW : BinaryIndex, IIDSequentialBinaryIndex, IPa
         return new FaissBinaryIndexHandle(ptr);
     }
 
-    public void Add(long count, ReadOnlySpan<byte> vectors) => ((IIDSequentialBinaryIndex)this).Add(count, vectors);
-
-    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, ISearchParameters parameters, Span<int> distances, Span<long> labels) => ((IParamsBinarySearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
-
-    public byte[] Reconstruct(long key) => ((IReconstructBinaryIndex)this).Reconstruct(key);
-
-    public byte[] Reconstruct(long startKey, long count) => ((IReconstructBinaryIndex)this).Reconstruct(startKey, count);
-
     static IndexBinaryHNSW IFromNativeBinaryIndexHandle<IndexBinaryHNSW>.FromHandle(FaissBinaryIndexHandle handle) => new(handle);
     
-    public IndexBinaryHNSW Clone() => ((IClonableBinaryIndex<IndexBinaryHNSW>)this).Clone();
+    public IndexBinaryHNSW Clone() => ClonableBinaryIndexImpl<IndexBinaryHNSW>.Clone(this);
 }
