@@ -14,11 +14,11 @@ public sealed class IndexBinaryIDMap2<T> : MappedBinaryIndex<IndexBinaryIDMap2<T
     {
     }
 
+    public byte[] Reconstruct(long key) =>  ReconstructBinaryIndexImpl.Reconstruct(this, key);
+
+    public byte[] Reconstruct(long startKey, long count)  => ReconstructBinaryIndexImpl.Reconstruct(this, startKey, count);
+
     private static FaissBinaryIndexHandle CreateHandle(string description, int dimension) => BinaryIndexFactory.Create<IndexBinaryIDMap2<T>>(description, dimension).NativeHandle;
 
     static IndexBinaryIDMap2<T> IFromNativeBinaryIndexHandle<IndexBinaryIDMap2<T>>.FromHandle(FaissBinaryIndexHandle handle) => new(handle);
-
-    public byte[] Reconstruct(long key) =>  ((IReconstructBinaryIndex)this).Reconstruct(key);
-
-    public byte[] Reconstruct(long startKey, long count)  => ((IReconstructBinaryIndex)this).Reconstruct(startKey, count);
 }
