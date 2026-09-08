@@ -1,28 +1,27 @@
 using Faiss.Cpu.Interfaces;
+using Faiss.Cpu.Search.Parameters;
 using Faiss.Cpu.Search.Range;
-using Faiss.Interfaces;
+using Faiss.Cpu.Selectors;
 using Faiss.Interop.SafeHandles;
-using Faiss.Search;
-using ITrainableBinaryIndex = Faiss.Cpu.Interfaces.ITrainableBinaryIndex;
 
 namespace Faiss.Cpu.Indexes.Binary;
 
 /// <inheritdoc cref="MappedBinaryIndex{T, TIndex}"/>
 public class MappedBinaryIndex<T, TIndex> : BinaryIndex, IRangeSearchBinaryIndex, IIDRemovableBinaryIndex, IIDMappedBinaryIndex, ITrainableBinaryIndex, ICpuBinaryIndex, IParamsBinarySearchIndex, ISerializableBinaryIndex, IClonableBinaryIndex<T> where T : MappedBinaryIndex<T, TIndex>, IFromNativeBinaryIndexHandle<T> where TIndex : IIDSequentialBinaryIndex, IBinaryIndex, IFromNativeBinaryIndexHandle<TIndex>
 {
-    protected MappedBinaryIndex(FaissBinaryIndexHandle handle) : base(handle) {}
+    internal MappedBinaryIndex(FaissBinaryIndexHandle handle) : base(handle) {}
 
-    public bool IsTrained => ((ITrainableBinaryIndex)this).IsTrained;
+    public bool IsTrained => TrainableBinaryIndexImpl.IsTrained(this);
 
-    public Task TrainAsync(long count, ReadOnlyMemory<byte> vectors) =>  ((ITrainableBinaryIndex)this).TrainAsync(count, vectors);
+    public Task TrainAsync(long count, ReadOnlyMemory<byte> vectors) =>  TrainableBinaryIndexImpl.TrainAsync(this, count, vectors);
     
-    public void Add(long count, ReadOnlySpan<byte> vectors, ReadOnlySpan<long> xids) => ((IIDMappedBinaryIndex)this).Add(count, vectors, xids);
+    public void Add(long count, ReadOnlySpan<byte> vectors, ReadOnlySpan<long> xids) => IDMappedBinaryIndexImpl.Add(this, count, vectors, xids);
 
-    public void RangeSearch(long count, ReadOnlySpan<byte> queryVectors, byte radius, RangeSearchResult result) => ((IRangeSearchBinaryIndex)this).RangeSearch(count, queryVectors, radius, result);
+    public void RangeSearch(long count, ReadOnlySpan<byte> queryVectors, byte radius, RangeSearchResult result) => RangeSearchBinaryIndexImpl.RangeSearch(this, count, queryVectors, radius, result);
 
-    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, ISearchParameters parameters, Span<int> distances, Span<long> labels) => ((IParamsBinarySearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
+    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, SearchParameters parameters, Span<int> distances, Span<long> labels) => ParamsBinarySearchIndexImpl.SearchWithParams(this, count, queryVectors, k, parameters, distances, labels);
 
-    public long RemoveIds(IIDSelector selector) => ((IIDRemovableBinaryIndex)this).RemoveIds(selector);
+    public long RemoveIds(IDSelector selector) => IDRemovableBinaryIndexImpl.RemoveIds(this, selector);
 
-    public T Clone() => ((IClonableBinaryIndex<T>)this).Clone();
+    public T Clone() => ClonableBinaryIndexImpl<T>.Clone(this);
 }
