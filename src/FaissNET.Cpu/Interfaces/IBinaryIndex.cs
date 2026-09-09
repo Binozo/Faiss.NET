@@ -20,4 +20,9 @@ public interface IBinaryIndex : IIndex
     /// Assigns query vectors to nearest centroids without returning distances.
     /// </summary>
     void Assign(long count, ReadOnlySpan<byte> queryVectors, long k, Span<long> labels);
+
+    /// <summary>
+    /// Bytes per packed vector. <see cref="IIndex.Dimensions"/> counts bits.
+    /// </summary>
+    public int CodeSize { get; }
 }

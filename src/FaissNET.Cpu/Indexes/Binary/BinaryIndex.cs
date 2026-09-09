@@ -23,6 +23,8 @@ public abstract class BinaryIndex : IBinaryIndex, INativeBinaryIndex
 
     public MetricType Metric => Native.faiss_IndexBinary_metric_type(NativeHandle);
 
+    public int CodeSize => Dimensions / 8;
+
     public unsafe void Search(long count, ReadOnlySpan<byte> queryVectors, int k, Span<int> distances, Span<long> labels)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
