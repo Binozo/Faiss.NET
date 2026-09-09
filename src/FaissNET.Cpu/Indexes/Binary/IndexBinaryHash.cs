@@ -6,7 +6,7 @@ using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Indexes.Binary;
 
-public sealed class IndexBinaryHash : BinaryIndex, IIDSequentialBinaryIndex, IIDMappedBinaryIndex, IParamsBinarySearchIndex, IRangeSearchBinaryIndex, ISerializableBinaryIndex, IClonableBinaryIndex<IndexBinaryHash>, IFromNativeBinaryIndexHandle<IndexBinaryHash>
+public sealed class IndexBinaryHash : BinaryIndex, IIDSequentialBinaryIndex, IIDMappedBinaryIndex, IParamsBinarySearchIndex, IRangeSearchBinaryIndex, ICpuBinaryIndex, ISerializableBinaryIndex, IClonableBinaryIndex<IndexBinaryHash>, IFromNativeBinaryIndexHandle<IndexBinaryHash>
 {
     public IndexBinaryHash(int dimensions, int leadingBits) : this(CreateHandle(dimensions, leadingBits))
     {
