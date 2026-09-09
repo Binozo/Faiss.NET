@@ -16,18 +16,20 @@ namespace Faiss.Cpu.Indexes.Mapped;
 /// Use this wrapper with indexes that do not natively support custom IDs
 /// (e.g. <see cref="IndexFlatL2"/>, <see cref="IndexHNSW"/>, <see cref="IndexPQ"/>).
 /// </remarks>
-public sealed class IndexIDMap<T> : MappedIndex<IndexIDMap<T>, T>, IFromNativeIndexHandle<IndexIDMap<T>> where T : IIDSequentialFloatIndex, IFloatIndex, IFromNativeIndexHandle<T>
+public sealed class IndexIDMap<T> : MappedIndex<IndexIDMap<T>, T>, IFromNativeIndexHandle<IndexIDMap<T>> where T : class, IIDSequentialFloatIndex, IFloatIndex, IFromNativeIndexHandle<T>
 {
     private readonly T _subIndex;
+    private readonly bool _takeOwnership;
 
-    public IndexIDMap(T index, bool takeOwnership = false) : this(index.Handle, takeOwnership)
+    public IndexIDMap(T index, bool takeOwnership = false) : this(index.Handle, index, takeOwnership)
     {
     }
 
-    private IndexIDMap(FaissIndexHandle subIndexHandle, bool takeOwnership = false) : base(CreateHandle(subIndexHandle))
+    private IndexIDMap(FaissIndexHandle subIndexHandle, T? subIndex = null, bool takeOwnership = false) : base(CreateHandle(subIndexHandle))
     {
-        _subIndex = T.FromPointer(Native.faiss_IndexIDMap_sub_index(subIndexHandle));
+        _subIndex = subIndex ?? T.FromPointer(Native.faiss_IndexIDMap_sub_index(subIndexHandle));
         OwnsSubIndex = takeOwnership;
+        _takeOwnership = takeOwnership;
     }
 
     public bool OwnsSubIndex
@@ -42,11 +44,11 @@ public sealed class IndexIDMap<T> : MappedIndex<IndexIDMap<T>, T>, IFromNativeIn
         return new FaissIndexHandle(ptr);
     }
 
-    static IndexIDMap<T> IFromNativeIndexHandle<IndexIDMap<T>>.FromHandle(FaissIndexHandle handle) => new(handle, true);
+    static IndexIDMap<T> IFromNativeIndexHandle<IndexIDMap<T>>.FromHandle(FaissIndexHandle handle) => new(handle, takeOwnership: true);
 
     public override void Dispose()
     {
-        if (OwnsSubIndex)
+        if (_takeOwnership)
         {
             _subIndex.Handle.SetHandleAsInvalid();
         }
