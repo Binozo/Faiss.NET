@@ -36,7 +36,7 @@ public static class Blas
     /// </summary>
     public static int DistanceComputeMinKReservoir
     {
-        get => Native.faiss_get_distance_compute_blas_database_bs();
-        set => Native.faiss_set_distance_compute_blas_database_bs(value);
+        get => Native.faiss_get_distance_compute_min_k_reservoir();
+        set => Native.faiss_set_distance_compute_min_k_reservoir(value);
     }
 }
