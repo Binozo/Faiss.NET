@@ -33,24 +33,10 @@ public sealed class IndexScalarQuantizer : CpuFlatFloatIndex<IndexScalarQuantize
         ScalarQuantizer = new ScalarQuantizer(scalarQuantizerHandle);
     }
 
-    private static FaissIndexHandle CreateHandle(int dimensions, QuantizerType qt = QuantizerType.QT_8bit, MetricType metric = MetricType.L2)
-    {
-        if (metric != MetricType.L2 && metric != MetricType.InnerProduct)
-        {
-            throw new ArgumentOutOfRangeException(nameof(metric), "Metric must be L2 or InnerProduct");
-        }
-
-        FaissErrorHandler.ThrowIfError(Native.faiss_IndexScalarQuantizer_new_with(out IntPtr handle, dimensions, qt, metric));
-        return new FaissIndexHandle<IndexScalarQuantizerRelease>(handle);
-    }
-
-    static IndexScalarQuantizer IFromNativeIndexHandle<IndexScalarQuantizer>.FromHandle(FaissIndexHandle handle) => new(handle);
+    public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
     /// <inheritdoc />
-    public bool IsTrained => ((ITrainableIndex)this).IsTrained;
-
-    /// <inheritdoc />
-    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => ((ITrainableFloatIndex)this).TrainAsync(count, vectors);
+    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
     /// <inheritdoc />
     public override void Add(long count, ReadOnlySpan<float> vectors)
@@ -62,6 +48,17 @@ public sealed class IndexScalarQuantizer : CpuFlatFloatIndex<IndexScalarQuantize
         
         base.Add(count, vectors);
     }
+
+    private static FaissIndexHandle CreateHandle(int dimensions, QuantizerType qt = QuantizerType.QT_8bit, MetricType metric = MetricType.L2)
+    {
+        if (metric != MetricType.L2 && metric != MetricType.InnerProduct)
+            throw new ArgumentOutOfRangeException(nameof(metric), "Metric must be L2 or InnerProduct");
+
+        FaissErrorHandler.ThrowIfError(Native.faiss_IndexScalarQuantizer_new_with(out IntPtr handle, dimensions, qt, metric));
+        return new FaissIndexHandle<IndexScalarQuantizerRelease>(handle);
+    }
+
+    static IndexScalarQuantizer IFromNativeIndexHandle<IndexScalarQuantizer>.FromHandle(FaissIndexHandle handle) => new(handle);
 
     bool IGpuClonableIndex<IndexScalarQuantizer, GpuIndexFlat>.IsGpuClonable() => ScalarQuantizer.QuantizerType == QuantizerType.QT_fp16;
 
@@ -76,7 +73,7 @@ public class ScalarQuantizer
 {
     private FaissScalarQuantizerHandle _handle;
 
-    public ScalarQuantizer(FaissScalarQuantizerHandle handle)
+    internal ScalarQuantizer(FaissScalarQuantizerHandle handle)
     {
         _handle = handle;
     }
