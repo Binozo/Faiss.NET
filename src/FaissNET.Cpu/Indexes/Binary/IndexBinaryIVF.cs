@@ -18,7 +18,7 @@ internal readonly struct IndexBinaryIVFRelease : IFaissRelease
 /// Binary inverted file index with coarse quantization and binary flat lists.
 /// </summary>
 public sealed class IndexBinaryIVF : BinaryIndex, ITrainableBinaryIndex, IIDSequentialBinaryIndex, IIDMappedBinaryIndex, IParamsBinarySearchIndex, IRangeSearchBinaryIndex, IIDRemovableBinaryIndex, IReconstructBinaryIndex,
-    ISerializableBinaryIndex, IClonableBinaryIndex<IndexBinaryIVF>, IFromNativeBinaryIndexHandle<IndexBinaryIVF>
+    ICpuBinaryIndex, ISerializableBinaryIndex, IClonableBinaryIndex<IndexBinaryIVF>, IFromNativeBinaryIndexHandle<IndexBinaryIVF>
 {
     /// <summary>
     /// Creates a binary IVF index.
