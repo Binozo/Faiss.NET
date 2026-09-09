@@ -24,16 +24,16 @@ internal static unsafe partial class Native
     internal static partial int faiss_ParameterSpace_set_index_parameters_cno(FaissParameterSpaceHandle space, FaissIndexHandle index, UIntPtr cno);
 
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
-    internal static partial int faiss_ParameterSpace_set_index_parameters_binary(FaissParameterSpaceHandle space, FaissIndexBinaryHandle index, string description);
+    internal static partial int faiss_ParameterSpace_set_index_parameters_binary(FaissParameterSpaceHandle space, FaissBinaryIndexHandle index, string description);
 
     [LibraryImport(LibraryName)]
-    internal static partial int faiss_ParameterSpace_set_index_parameters_cno_binary(FaissParameterSpaceHandle space, FaissIndexBinaryHandle index, UIntPtr cno);
+    internal static partial int faiss_ParameterSpace_set_index_parameters_cno_binary(FaissParameterSpaceHandle space, FaissBinaryIndexHandle index, UIntPtr cno);
 
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial int faiss_ParameterSpace_set_index_parameter(FaissParameterSpaceHandle space, FaissIndexHandle index, string name, double value);
 
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
-    internal static partial int faiss_ParameterSpace_set_index_parameter_binary(FaissParameterSpaceHandle space, FaissIndexBinaryHandle index, string name, double value);
+    internal static partial int faiss_ParameterSpace_set_index_parameter_binary(FaissParameterSpaceHandle space, FaissBinaryIndexHandle index, string name, double value);
 
     [LibraryImport(LibraryName)]
     internal static partial void faiss_ParameterSpace_display(FaissParameterSpaceHandle space);
