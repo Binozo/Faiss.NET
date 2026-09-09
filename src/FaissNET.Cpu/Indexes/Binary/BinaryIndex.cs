@@ -25,6 +25,21 @@ public abstract class BinaryIndex : IBinaryIndex, INativeBinaryIndex
 
     public unsafe void Search(long count, ReadOnlySpan<byte> queryVectors, int k, Span<int> distances, Span<long> labels)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
+
+        long queryLength = checked(count * CodeSize);
+        long resultLength = checked(count * k);
+
+        if (queryVectors.Length < queryLength)
+            throw new ArgumentException($"Query span too small. Expected {queryLength} bytes, got {queryVectors.Length}.", nameof(queryVectors));
+
+        if (distances.Length < resultLength)
+            throw new ArgumentException($"Distance span too small. Expected {resultLength}, got {distances.Length}.", nameof(distances));
+
+        if (labels.Length < resultLength)
+            throw new ArgumentException($"Label span too small. Expected {resultLength}, got {labels.Length}.", nameof(labels));
+
         fixed (byte* pQuery = queryVectors)
         fixed (int* pDistances = distances)
         fixed (long* pLabels = labels)
@@ -37,6 +52,18 @@ public abstract class BinaryIndex : IBinaryIndex, INativeBinaryIndex
 
     public unsafe void Assign(long count, ReadOnlySpan<byte> queryVectors, long k, Span<long> labels)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
+
+        long queryLength = checked(count * CodeSize);
+        long resultLength = checked(count * k);
+
+        if (queryVectors.Length < queryLength)
+            throw new ArgumentException($"Query span too small. Expected {queryLength} bytes, got {queryVectors.Length}.", nameof(queryVectors));
+
+        if (labels.Length < resultLength)
+            throw new ArgumentException($"Label span too small. Expected {resultLength}, got {labels.Length}.", nameof(labels));
+
         fixed (byte* pQuery = queryVectors)
         fixed (long* pLabels = labels)
         {
