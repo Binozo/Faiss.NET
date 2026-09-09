@@ -1,6 +1,5 @@
 using System.Runtime.InteropServices;
 using Faiss.Cpu.Search;
-using Faiss.Cpu.Selectors;
 using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Interop.NativeMethods;
@@ -8,13 +7,13 @@ namespace Faiss.Interop.NativeMethods;
 internal static unsafe partial class Native
 {
     [LibraryImport(LibraryName)]
-    internal static partial int faiss_SearchParameters_new(out IntPtr pSp, FaissIDSelectorHandle? sel);
+    internal static partial int faiss_SearchParameters_new(out IntPtr pSp, IntPtr sel);
 
     [LibraryImport(LibraryName)]
     internal static partial void faiss_SearchParameters_free(IntPtr sp);
 
     [LibraryImport(LibraryName)]
-    internal static partial int faiss_SearchParametersIVF_new_with(out IntPtr pSp, FaissIDSelectorHandle? sel, UIntPtr nprobe, UIntPtr maxCodes);
+    internal static partial int faiss_SearchParametersIVF_new_with(out IntPtr pSp, IntPtr sel, UIntPtr nprobe, UIntPtr maxCodes);
 
     [LibraryImport(LibraryName)]
     internal static partial void faiss_SearchParametersIVF_free(IntPtr sp);
