@@ -46,4 +46,6 @@
     <File Path="Dockerfile.blas" />
     <File Path="Dockerfile.cuda" />
   </Folder>
+
+  <Project Path="src\FaissNET.Server\Faiss.Server.csproj" />
 </Solution>
