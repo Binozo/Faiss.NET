@@ -2,7 +2,6 @@ using Faiss.Cpu.Indexes.Flat;
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Parameters;
 using Faiss.Exceptions;
-using Faiss.Interfaces;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
@@ -15,7 +14,7 @@ internal readonly struct IndexIVFScalarQuantizerRelease : IFaissRelease
     public static void Release(IntPtr handle) => Native.faiss_IndexIVFScalarQuantizer_free(handle);
 }
 
-public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScalarQuantizer<T>>, IIVFIndex, ITrainableFloatIndex, IIDMappedFloatIndex, IFromNativeIndexHandle<IndexIVFScalarQuantizer<T>>,
+public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScalarQuantizer<T>>, IIVFIndex, ITrainableFloatIndex, IIDMappedFloatIndex, ISerializableFloatIndex, IFromNativeIndexHandle<IndexIVFScalarQuantizer<T>>,
     IGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>> where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
 {
     public readonly ScalarQuantizer ScalarQuantizer;
@@ -35,19 +34,6 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
         ScalarQuantizer = new ScalarQuantizer(scalarQuantizerHandle);
     }
 
-    private static FaissIndexHandle CreateHandle(T quantizer, int dimensions, int nlist, QuantizerType qt, MetricType metric = MetricType.L2, bool encodeResidual = true)
-    {
-        if (quantizer.Dimensions != dimensions)
-        {
-            throw new ArgumentOutOfRangeException(nameof(dimensions), $"Dimensions must match {nameof(quantizer)}.Dimensions");
-        }
-
-        FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVFScalarQuantizer_new_with_metric(out IntPtr handle, quantizer.Handle, (nuint)dimensions, (nuint)nlist, qt, metric, encodeResidual));
-        return new FaissIndexHandle<IndexIVFScalarQuantizerRelease>(handle);
-    }
-
-    static IndexIVFScalarQuantizer<T> IFromNativeIndexHandle<IndexIVFScalarQuantizer<T>>.FromHandle(FaissIndexHandle handle) => new(handle);
-
     public bool OwnQuantizer
     {
         get => Native.faiss_IndexIVFScalarQuantizer_own_fields(NativeHandle) != 0;
@@ -55,10 +41,10 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
     }
 
     /// <inheritdoc />
-    public bool IsTrained => ((ITrainableFloatIndex)this).IsTrained;
+    public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
     /// <inheritdoc />
-    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => ((ITrainableFloatIndex)this).TrainAsync(count, vectors);
+    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
     /// <inheritdoc />
     public int Nlist => (int)Native.faiss_IndexIVFScalarQuantizer_nlist(NativeHandle);
@@ -68,6 +54,11 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
     {
         get => (int)Native.faiss_IndexIVFScalarQuantizer_nprobe(NativeHandle);
         set => Native.faiss_IndexIVFScalarQuantizer_set_nprobe(NativeHandle, (nuint)value);
+    }
+
+    public bool DirectMap
+    {
+        set => FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVF_make_direct_map(NativeHandle, value));
     }
 
     /// <inheritdoc />
@@ -89,30 +80,46 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
             throw new FaissUntrainedException();
         }
 
-        ((IIDMappedFloatIndex)this).Add(count, vectors, xids);
+        IDMappedFloatIndexImpl.Add(this, count, vectors, xids);
     }
 
     /// <inheritdoc cref="IParamsFloatSearchIndex" />
     public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, SearchParametersIVF parameters, Span<float> distances, Span<long> labels) =>
-        SearchWithParams(count, queryVectors, k, (ISearchParameters)parameters, distances, labels);
-
-    /// <inheritdoc />
-    public void MakeDirectMap(bool maintainDirectMap) => FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVF_make_direct_map(NativeHandle, maintainDirectMap));
+        SearchWithParams(count, queryVectors, k, (SearchParameters)parameters, distances, labels);
 
     public override float[] Reconstruct(long key)
     {
-        MakeDirectMap(true);
+        DirectMap = true;
         return base.Reconstruct(key);
     }
 
     public override float[] Reconstruct(long startKey, long count)
     {
-        MakeDirectMap(true);
+        DirectMap = true;
         return base.Reconstruct(startKey, count);
     }
 
     /// <inheritdoc />
     public double ImbalanceFactor => Native.faiss_IndexIVF_imbalance_factor(NativeHandle);
+
+    private static FaissIndexHandle CreateHandle(T quantizer, int dimensions, int nlist, QuantizerType qt, MetricType metric = MetricType.L2, bool encodeResidual = true)
+    {
+        if (quantizer.Dimensions != dimensions)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dimensions), $"Dimensions must match {nameof(quantizer)}.Dimensions");
+        }
+
+        FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVFScalarQuantizer_new_with_metric(out IntPtr handle, quantizer.Handle, (nuint)dimensions, (nuint)nlist, qt, metric, encodeResidual));
+        return new FaissIndexHandle<IndexIVFScalarQuantizerRelease>(handle);
+    }
+    
+    private static FaissIndexHandle Wrap(IntPtr handle, bool ownsHandle = true)
+        => new FaissIndexHandle<IndexIVFScalarQuantizerRelease>(handle, ownsHandle);
+
+    static IndexIVFScalarQuantizer<T> IFromNativeIndexHandle<IndexIVFScalarQuantizer<T>>.FromPointer(IntPtr handle, bool ownsHandle)
+        => new(Wrap(handle, ownsHandle));
+
+    static IndexIVFScalarQuantizer<T> IFromNativeIndexHandle<IndexIVFScalarQuantizer<T>>.FromHandle(FaissIndexHandle handle) => new(handle);
 
     bool IGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>>.IsGpuClonable() => Metric is MetricType.L2 or MetricType.InnerProduct && ScalarQuantizer.QuantizerType is QuantizerType.QT_8bit
         or QuantizerType.QT_8bit_uniform or QuantizerType.QT_8bit_direct
@@ -129,17 +136,17 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
 public class GpuIndexIVFScalarQuantizer<T> : FloatIndex, ITrainableFloatIndex, IIDMappedFloatIndex, IIDSequentialFloatIndex, IParamsFloatSearchIndex, IFromNativeIndexHandle<GpuIndexIVFScalarQuantizer<T>>,
     IGpuIndex<IndexIVFScalarQuantizer<T>> where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
 {
-    public GpuIndexIVFScalarQuantizer(FaissIndexHandle handle) : base(handle)
+    internal GpuIndexIVFScalarQuantizer(FaissIndexHandle handle) : base(handle)
     {
     }
 
     static GpuIndexIVFScalarQuantizer<T> IFromNativeIndexHandle<GpuIndexIVFScalarQuantizer<T>>.FromHandle(FaissIndexHandle handle) => new(handle);
 
     /// <inheritdoc />
-    public bool IsTrained => ((ITrainableFloatIndex)this).IsTrained;
+    public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
     /// <inheritdoc />
-    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => ((ITrainableFloatIndex)this).TrainAsync(count, vectors);
+    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
     /// <inheritdoc />
     public void Add(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids)
@@ -149,7 +156,7 @@ public class GpuIndexIVFScalarQuantizer<T> : FloatIndex, ITrainableFloatIndex, I
             throw new FaissUntrainedException();
         }
 
-        ((IIDMappedFloatIndex)this).Add(count, vectors, xids);
+        IDMappedFloatIndexImpl.Add(this, count, vectors, xids);
     }
 
     /// <inheritdoc />
@@ -160,10 +167,10 @@ public class GpuIndexIVFScalarQuantizer<T> : FloatIndex, ITrainableFloatIndex, I
             throw new FaissUntrainedException();
         }
 
-        ((IIDSequentialFloatIndex)this).Add(count, vectors);
+        IDSequentialFloatIndexImpl.Add(this, count, vectors);
     }
 
     /// <inheritdoc />
-    public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, ISearchParameters parameters, Span<float> distances, Span<long> labels) =>
-        ((IParamsFloatSearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
+    public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, SearchParameters parameters, Span<float> distances, Span<long> labels) =>
+        ParamsFloatSearchIndexImpl.SearchWithParams(this, count, queryVectors, k, parameters, distances, labels);
 }
