@@ -1,12 +1,11 @@
 using Faiss.Cpu.Factory;
 using Faiss.Cpu.Interfaces;
-using Faiss.Cpu.Search.Parameters;
 using Faiss.Cpu.Search.Range;
 using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Indexes.Binary;
 
-public sealed class IndexBinaryHash : BinaryIndex, IIDSequentialBinaryIndex, IIDMappedBinaryIndex, IParamsBinarySearchIndex, IRangeSearchBinaryIndex, ICpuBinaryIndex, ISerializableBinaryIndex, IClonableBinaryIndex<IndexBinaryHash>, IFromNativeBinaryIndexHandle<IndexBinaryHash>
+public sealed class IndexBinaryHash : BinaryIndex, IIDSequentialBinaryIndex, IIDMappedBinaryIndex, IRangeSearchBinaryIndex, ICpuBinaryIndex, ISerializableBinaryIndex, IFromNativeBinaryIndexHandle<IndexBinaryHash>
 {
     public IndexBinaryHash(int dimensions, int leadingBits) : this(CreateHandle(dimensions, leadingBits))
     {
@@ -22,7 +21,6 @@ public sealed class IndexBinaryHash : BinaryIndex, IIDSequentialBinaryIndex, IID
 
     public void RangeSearch(long count, ReadOnlySpan<byte> queryVectors, byte radius, RangeSearchResult result) => RangeSearchBinaryIndexImpl.RangeSearch(this, count, queryVectors, radius, result);
 
-    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, SearchParameters parameters, Span<int> distances, Span<long> labels) => ParamsBinarySearchIndexImpl.SearchWithParams(this, count, queryVectors, k, parameters, distances, labels);
 
     private static FaissBinaryIndexHandle CreateHandle(int dimensions, int leadingBits)
     {
@@ -36,5 +34,4 @@ public sealed class IndexBinaryHash : BinaryIndex, IIDSequentialBinaryIndex, IID
 
     static IndexBinaryHash IFromNativeBinaryIndexHandle<IndexBinaryHash>.FromHandle(FaissBinaryIndexHandle handle) => new(handle);
 
-    public IndexBinaryHash Clone() => ClonableBinaryIndexImpl<IndexBinaryHash>.Clone(this);
 }
