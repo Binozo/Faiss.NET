@@ -36,8 +36,8 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
 
         if (typeof(ITrainableFloatIndex).IsAssignableFrom(typeof(T)) && _replicas.Count > 0) // TODO: Create PR that adds a count property in faiss_c
         {
-            ITrainableFloatIndex first = _replicas[0] as ITrainableFloatIndex;
-            ITrainableFloatIndex trainableReplica = replica as ITrainableFloatIndex;
+            ITrainableFloatIndex first = _replicas[0] as ITrainableFloatIndex ?? throw new ArgumentNullException();
+            ITrainableFloatIndex trainableReplica = replica as ITrainableFloatIndex ?? throw new ArgumentNullException();
 
             if (first.IsTrained != trainableReplica.IsTrained)
             {
@@ -53,6 +53,12 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
         }
 
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexReplicas_add_replica(NativeHandle, replica.Handle));
+
+        // Native owns the replica from here; releasing the managed wrapper prevents a double free at finalization.
+        if (OwnIndices)
+        {
+            replica.Handle.SetHandleAsInvalid();
+        }
 
         _replicas.Add(replica);
     }
@@ -73,25 +79,31 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
         private set => Native.faiss_IndexReplicas_set_own_indices(NativeHandle, value);
     }
 
-    public bool IsTrained => ((ITrainableFloatIndex)this).IsTrained;
+    public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
-    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => ((ITrainableFloatIndex)this).TrainAsync(count, vectors);
+    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
-    public void Add(long count, ReadOnlySpan<float> vectors) => ((IIDSequentialFloatIndex)this).Add(count, vectors);
+    public void Add(long count, ReadOnlySpan<float> vectors) => IDSequentialFloatIndexImpl.Add(this, count, vectors);
 
-    public float[] Reconstruct(long key) => ((IReconstructFloatIndex)this).Reconstruct(key);
+    public float[] Reconstruct(long key) => ReconstructFloatIndexImpl.Reconstruct(this, key);
 
-    public float[] Reconstruct(long startKey, long count) => ((IReconstructFloatIndex)this).Reconstruct(startKey, count);
+    public float[] Reconstruct(long startKey, long count) => ReconstructFloatIndexImpl.Reconstruct(this, startKey, count);
 
-    public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVector, residualVector, key);
+    public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVector, residualVector, key);
 
-    public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVectors, residualVectors, keys);
+    public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVectors, residualVectors, keys);
 
     private static FaissIndexHandle CreateHandle(long dimensions, bool threaded)
     {
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexReplicas_new_with_options(out IntPtr ptr, dimensions, threaded));
         return new FaissIndexHandle<IndexReplicasRelease>(ptr);
     }
+    
+    private static FaissIndexHandle Wrap(IntPtr handle, bool ownsHandle = true)
+        => new FaissIndexHandle<IndexReplicasRelease>(handle, ownsHandle);
+
+    static IndexReplicas<T> IFromNativeIndexHandle<IndexReplicas<T>>.FromPointer(IntPtr handle, bool ownsHandle)
+        => new(Wrap(handle, ownsHandle));
 
     static IndexReplicas<T> IFromNativeIndexHandle<IndexReplicas<T>>.FromHandle(FaissIndexHandle handle) => new(handle);
 
