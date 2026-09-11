@@ -17,7 +17,7 @@ internal readonly struct IndexLSHRelease : IFaissRelease
 /// Locality-Sensitive Hashing index.
 /// Hashes vectors into compact binary signatures for fast approximate search.
 /// </summary>
-public sealed class IndexLSH : FloatIndex, IIDSequentialFloatIndex, ITrainableFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IRangeSearchFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ISerializableFloatIndex, IClonableFloatIndex<IndexLSH>, IFromNativeIndexHandle<IndexLSH>
+public sealed class IndexLSH : FloatIndex, IIDSequentialFloatIndex, ITrainableFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IRangeSearchFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IClonableFloatIndex<IndexLSH>, IFromNativeIndexHandle<IndexLSH>
 {
     public IndexLSH(int dimensions, int nbits, bool rotateData = true, bool trainThresholds = false) : this(CreateHandle(dimensions, nbits, rotateData, trainThresholds))
     {
