@@ -1,12 +1,12 @@
 using Faiss.Cpu.Interfaces;
+using Faiss.Cpu.Search.Parameters;
 using Faiss.Cpu.Search.Range;
+using Faiss.Cpu.Selectors;
 using Faiss.Cpu.Transforms;
 using Faiss.Exceptions;
-using Faiss.Interfaces;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
-using Faiss.Search;
 
 namespace Faiss.Cpu.Indexes.Transform;
 
@@ -74,9 +74,9 @@ public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IID
     /// </summary>
     public IReadOnlyList<VectorTransform> TransformChain => _chain.AsReadOnly();
 
-    public bool IsTrained => ((ITrainableFloatIndex)this).IsTrained;
+    public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
-    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => ((ITrainableFloatIndex)this).TrainAsync(count, vectors);
+    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
     public void Add(long count, ReadOnlySpan<float> vectors)
     {
@@ -85,7 +85,7 @@ public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IID
             throw new FaissUntrainedException();
         }
 
-        ((IIDSequentialFloatIndex)this).Add(count, vectors);
+        IDSequentialFloatIndexImpl.Add(this, count, vectors);
     }
 
     public void Add(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids)
@@ -95,28 +95,28 @@ public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IID
             throw new FaissUntrainedException();
         }
 
-        ((IIDMappedFloatIndex)this).Add(count, vectors, xids);
+        IDMappedFloatIndexImpl.Add(this, count, vectors, xids);
     }
 
-    public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, ISearchParameters parameters, Span<float> distances, Span<long> labels) => ((IParamsFloatSearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
+    public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, SearchParameters parameters, Span<float> distances, Span<long> labels) => ParamsFloatSearchIndexImpl.SearchWithParams(this, count, queryVectors, k, parameters, distances, labels);
 
-    public void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result) => ((IRangeSearchFloatIndex)this).RangeSearch(count, queryVectors, radius, result);
+    public void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result) => RangeSearchFloatIndexImpl.RangeSearch(this, count, queryVectors, radius, result);
 
-    public long RemoveIds(IIDSelector selector) => ((IIDRemovableFloatIndex)this).RemoveIds(selector);
+    public long RemoveIds(IDSelector selector) => IDRemovableFloatIndexImpl.RemoveIds(this, selector);
 
-    public float[] Reconstruct(long key) => ((IReconstructFloatIndex)this).Reconstruct(key);
+    public float[] Reconstruct(long key) => ReconstructFloatIndexImpl.Reconstruct(this, key);
 
-    public float[] Reconstruct(long startKey, long count) => ((IReconstructFloatIndex)this).Reconstruct(startKey, count);
+    public float[] Reconstruct(long startKey, long count) => ReconstructFloatIndexImpl.Reconstruct(this, startKey, count);
 
-    public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVector, residualVector, key);
+    public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVector, residualVector, key);
 
-    public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ((IComputeResidualFloatIndex)this).ComputeResidual(originalVectors, residualVectors, keys);
+    public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVectors, residualVectors, keys);
 
-    public long GetStandaloneCodeSize() => ((ICodeFloatIndex)this).GetStandaloneCodeSize();
+    public long GetStandaloneCodeSize() => CodeFloatIndexImpl.GetStandaloneCodeSize(this);
 
-    public void Encode(long count, ReadOnlySpan<float> vectors, Span<byte> outputBytes) => ((ICodeFloatIndex)this).Encode(count, vectors, outputBytes);
+    public void Encode(long count, ReadOnlySpan<float> vectors, Span<byte> outputBytes) => CodeFloatIndexImpl.Encode(this, count, vectors, outputBytes);
 
-    public void Decode(long count, ReadOnlySpan<byte> inputBytes, Span<float> outputVectors) => ((ICodeFloatIndex)this).Decode(count, inputBytes, outputVectors);
+    public void Decode(long count, ReadOnlySpan<byte> inputBytes, Span<float> outputVectors) => CodeFloatIndexImpl.Decode(this, count, inputBytes, outputVectors);
 
     private static FaissIndexHandle CreateHandle(T subIndex, VectorTransform? transform = null)
     {
@@ -128,7 +128,13 @@ public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IID
         return new FaissIndexHandle<IndexPreTransformRelease>(ptr);
     }
     
+    private static FaissIndexHandle Wrap(IntPtr handle, bool ownsHandle = true)
+        => new FaissIndexHandle<IndexPreTransformRelease>(handle, ownsHandle);
+
+    static IndexPreTransform<T> IFromNativeIndexHandle<IndexPreTransform<T>>.FromPointer(IntPtr handle, bool ownsHandle)
+        => new(Wrap(handle, ownsHandle));
+    
     static IndexPreTransform<T> IFromNativeIndexHandle<IndexPreTransform<T>>.FromHandle(FaissIndexHandle handle) => new(handle);
 
-    public IndexPreTransform<T> Clone() => ((IClonableFloatIndex<IndexPreTransform<T>>)this).Clone();
+    public IndexPreTransform<T> Clone() => ClonableFloatIndexImpl<IndexPreTransform<T>>.Clone(this);
 }
