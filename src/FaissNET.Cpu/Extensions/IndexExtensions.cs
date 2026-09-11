@@ -88,9 +88,14 @@ public static class IndexExtensions
     /// <param name="xids">The IDs to assign to the vectors.</param>
     public static void Add(this IIDMappedFloatIndex index, IReadOnlyList<ReadOnlyMemory<float>> vectors, IReadOnlyList<long> xids)
     {
-        if (vectors.Count == 0 || vectors.Count % index.Dimensions != 0)
+        if (vectors.Count == 0)
         {
-            throw new ArgumentException($"Vector span length ({vectors.Count}) must be a multiple of dimensions ({index.Dimensions})");
+            return;
+        }
+
+        if (xids.Count != vectors.Count)
+        {
+            throw new ArgumentException($"Expected {vectors.Count} ids for {vectors.Count} vectors, got {xids.Count}.", nameof(xids));
         }
 
         int dimensions = index.Dimensions;
@@ -207,7 +212,7 @@ public static class IndexExtensions
 
         int dim = index.Dimensions;
 
-        for (int i = 1; i < count; i++)
+        for (int i = 0; i < count; i++)
         {
             if (queryVectors[i].Length != dim)
                 throw new ArgumentException($"queryVectors too small. Expected {dim}, got {queryVectors[i].Length}.");
@@ -240,15 +245,8 @@ public static class IndexExtensions
         }
     }
 
-    public static unsafe void RangeSearch(this IRangeSearchFloatIndex index, ReadOnlySpan<float> queryVector, float radius, RangeSearchResult result)
-    {
-        fixed (float* pQuery = queryVector)
-        {
-            FaissErrorHandler.ThrowIfError(
-                Native.faiss_Index_range_search(index.Handle, 1, pQuery, radius, result.SafeHandle)
-            );
-        }
-    }
+    public static void RangeSearch(this IRangeSearchFloatIndex index, ReadOnlySpan<float> queryVector, float radius, RangeSearchResult result)
+        => index.RangeSearch(1, queryVector, radius, result);
 
     /// <summary>
     /// Gets the nearest labels without distance.
@@ -295,7 +293,7 @@ public static class IndexExtensions
     /// Sets an internal index parameter via the auto-tune parameter space.
     /// </summary>
     /// <example>index.SetParameter("nprobe", 10);</example>
-    private static void SetParameter(this INativeIndex index, string name, double value)
+    public static void SetParameter(this INativeIndex index, string name, double value)
     {
         using var space = new AutoTune.ParameterSpace();
         space.SetParameter(index, name, value);
@@ -306,7 +304,7 @@ public static class IndexExtensions
     /// </summary>
     /// <param name="index"></param>
     /// <param name="vectors">The sample vectors to learn from.</param>
-    public static async Task TrainAsync(this ITrainableIndex index, IReadOnlyList<ReadOnlyMemory<float>> vectors)
+    public static async Task TrainAsync(this ITrainableFloatIndex index, IReadOnlyList<ReadOnlyMemory<float>> vectors)
     {
         if (vectors.Count == 0) return;
 
