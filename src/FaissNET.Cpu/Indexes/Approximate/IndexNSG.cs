@@ -8,7 +8,7 @@ namespace Faiss.Cpu.Indexes.Approximate;
 /// <summary>
 /// NSG (Navigating Spreading-out Graph) index.
 /// </summary>
-public class IndexNSG : FloatIndex, IIDSequentialFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICpuFloatIndex, IClonableFloatIndex<IndexNSG>, IFromNativeIndexHandle<IndexNSG>
+public class IndexNSG : FloatIndex, IIDSequentialFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IClonableFloatIndex<IndexNSG>, IFromNativeIndexHandle<IndexNSG>
 {
     internal IndexNSG(int dimensions, string description, int r = 32, MetricType metricType = MetricType.L2) : this($"NSG{r},{description}", dimensions, CheckMetricType(metricType))
     {
