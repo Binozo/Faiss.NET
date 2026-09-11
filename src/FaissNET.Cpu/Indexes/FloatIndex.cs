@@ -24,6 +24,21 @@ public abstract class FloatIndex : IFloatIndex, INativeIndex
 
     public virtual unsafe void Search(long count, ReadOnlySpan<float> queryVectors, int k, Span<float> distances, Span<long> labels)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
+
+        long queryLength = checked(count * Dimensions);
+        long resultLength = checked(count * k);
+
+        if (queryVectors.Length < queryLength)
+            throw new ArgumentException($"Query span too small. Expected {queryLength}, got {queryVectors.Length}.", nameof(queryVectors));
+
+        if (distances.Length < resultLength)
+            throw new ArgumentException($"Distance span too small. Expected {resultLength}, got {distances.Length}.", nameof(distances));
+
+        if (labels.Length < resultLength)
+            throw new ArgumentException($"Label span too small. Expected {resultLength}, got {labels.Length}.", nameof(labels));
+
         fixed (float* pQuery = queryVectors)
         fixed (float* pDistances = distances)
         fixed (long* pLabels = labels)
@@ -34,6 +49,18 @@ public abstract class FloatIndex : IFloatIndex, INativeIndex
 
     public void Assign(long count, ReadOnlySpan<float> queryVectors, long k, Span<long> labels)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
+
+        long queryLength = checked(count * Dimensions);
+        long resultLength = checked(count * k);
+
+        if (queryVectors.Length < queryLength)
+            throw new ArgumentException($"Query span too small. Expected {queryLength}, got {queryVectors.Length}.", nameof(queryVectors));
+
+        if (labels.Length < resultLength)
+            throw new ArgumentException($"Label span too small. Expected {resultLength}, got {labels.Length}.", nameof(labels));
+
         unsafe
         {
             fixed (float* pQuery = queryVectors)
