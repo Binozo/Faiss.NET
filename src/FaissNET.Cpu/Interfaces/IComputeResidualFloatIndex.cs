@@ -32,6 +32,8 @@ internal static class ComputeResidualFloatIndexImpl
 {
     public static void ComputeResidual(INativeIndex index, ReadOnlySpan<float> originalVector, Span<float> residualVector, long key)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(key);
+
         if (originalVector.Length != index.Dimensions || residualVector.Length != index.Dimensions)
         {
             throw new ArgumentException($"Vector lengths must match index dimensions ({index.Dimensions}).");
@@ -59,6 +61,15 @@ internal static class ComputeResidualFloatIndexImpl
         if (residualVectors.Length < expectedLength)
         {
             throw new ArgumentException($"residualVectors too small. Expected {expectedLength}, got {residualVectors.Length}.");
+        }
+
+        long total = index.TotalCount;
+        for (int i = 0; i < keys.Length; i++)
+        {
+            if (keys[i] < 0 || keys[i] >= total)
+            {
+                throw new ArgumentOutOfRangeException(nameof(keys), keys[i], $"Key at position {i} must be in [0, {total}).");
+            }
         }
 
         unsafe
