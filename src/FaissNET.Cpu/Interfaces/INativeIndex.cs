@@ -18,7 +18,7 @@ public interface INativeObject<out T> : INativeObject where T : FaissHandle
 }
 
 /// <inheritdoc cref="IIndex" />
-public interface INativeIndex : IIndex, INativeObject<FaissIndexHandle>
+public interface INativeIndex : IFloatIndex, INativeObject<FaissIndexHandle>
 {
     internal new FaissIndexHandle Handle { get; }
 
@@ -26,7 +26,7 @@ public interface INativeIndex : IIndex, INativeObject<FaissIndexHandle>
 }
 
 /// <inheritdoc cref="IIndex" />
-public interface INativeBinaryIndex : IIndex, INativeObject<FaissBinaryIndexHandle>
+public interface INativeBinaryIndex : IBinaryIndex, INativeObject<FaissBinaryIndexHandle>
 {
     internal new FaissBinaryIndexHandle Handle { get; }
 
