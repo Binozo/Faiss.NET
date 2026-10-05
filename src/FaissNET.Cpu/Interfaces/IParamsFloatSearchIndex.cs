@@ -22,6 +22,22 @@ internal static class ParamsFloatSearchIndexImpl
 {
     public static void SearchWithParams(INativeIndex index, long count, ReadOnlySpan<float> queryVectors, int k, SearchParameters parameters, Span<float> distances, Span<long> labels)
     {
+        ArgumentNullException.ThrowIfNull(parameters);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
+
+        long queryLength = checked(count * index.Dimensions);
+        long resultLength = checked(count * k);
+
+        if (queryVectors.Length < queryLength)
+            throw new ArgumentException($"Query span too small. Expected {queryLength}, got {queryVectors.Length}.", nameof(queryVectors));
+
+        if (distances.Length < resultLength)
+            throw new ArgumentException($"Distance span too small. Expected {resultLength}, got {distances.Length}.", nameof(distances));
+
+        if (labels.Length < resultLength)
+            throw new ArgumentException($"Label span too small. Expected {resultLength}, got {labels.Length}.", nameof(labels));
+
         unsafe
         {
             fixed (float* pQuery = queryVectors)

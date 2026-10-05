@@ -22,6 +22,22 @@ internal static class ParamsBinarySearchIndexImpl
 {
     public static void SearchWithParams(INativeBinaryIndex index, long count, ReadOnlySpan<byte> queryVectors, int k, SearchParameters parameters, Span<int> distances, Span<long> labels)
     {
+        ArgumentNullException.ThrowIfNull(parameters);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
+
+        long queryLength = checked(count * index.CodeSize);
+        long resultLength = checked(count * k);
+
+        if (queryVectors.Length < queryLength)
+            throw new ArgumentException($"Query span too small. Expected {queryLength} bytes, got {queryVectors.Length}.", nameof(queryVectors));
+
+        if (distances.Length < resultLength)
+            throw new ArgumentException($"Distance span too small. Expected {resultLength}, got {distances.Length}.", nameof(distances));
+
+        if (labels.Length < resultLength)
+            throw new ArgumentException($"Label span too small. Expected {resultLength}, got {labels.Length}.", nameof(labels));
+
         unsafe
         {
             fixed (byte* pQuery = queryVectors)
