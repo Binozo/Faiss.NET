@@ -25,6 +25,8 @@ internal static class ReconstructFloatIndexImpl
 {
     public static float[] Reconstruct(INativeIndex index, long key)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(key);
+
         float[] vector = new float[index.Dimensions];
 
         unsafe
@@ -42,7 +44,10 @@ internal static class ReconstructFloatIndexImpl
 
     public static float[] Reconstruct(INativeIndex index, long startKey, long count)
     {
-        float[] vectors = new float[count * index.Dimensions];
+        ArgumentOutOfRangeException.ThrowIfNegative(startKey);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+
+        float[] vectors = new float[checked(count * index.Dimensions)];
 
         unsafe
         {

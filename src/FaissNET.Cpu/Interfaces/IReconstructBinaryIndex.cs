@@ -25,7 +25,9 @@ internal static class ReconstructBinaryIndexImpl
 {
     public static byte[] Reconstruct(INativeBinaryIndex index, long key)
     {
-        byte[] vector = new byte[index.Dimensions / 8];
+        ArgumentOutOfRangeException.ThrowIfNegative(key);
+
+        byte[] vector = new byte[index.CodeSize];
 
         unsafe
         {
@@ -42,7 +44,10 @@ internal static class ReconstructBinaryIndexImpl
     
     public static byte[] Reconstruct(INativeBinaryIndex index, long startKey, long count)
     {
-        byte[] vectors = new byte[count * index.Dimensions / 8];
+        ArgumentOutOfRangeException.ThrowIfNegative(startKey);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+
+        byte[] vectors = new byte[checked(count * index.CodeSize)];
 
         unsafe
         {
