@@ -51,17 +51,17 @@ public static class Fvec
     }
 
     /// <summary>
-    /// Calculates the squared norm of a vector
+    /// Calculates the squared L2 norm of a single vector.
     /// </summary>
-    public static float NormL2Sqr(ReadOnlySpan<float> vectors, int dimensions)
+    /// <param name="vector">Exactly one vector of <paramref name="dimensions"/> floats.</param>
+    public static float NormL2Sqr(ReadOnlySpan<float> vector, int dimensions)
     {
-        if (Decimal.IsNegative(dimensions) || dimensions == 0)
-            throw new ArgumentOutOfRangeException(nameof(dimensions), "must be a positive integer.");
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(dimensions);
 
-        if (vectors.Length % dimensions != 0)
-            throw new ArgumentOutOfRangeException(nameof(vectors), "array must be divisible by dimensions");
-        
-        return Native.faiss_fvec_norm_L2sqr(vectors, (nuint)dimensions);
+        if (vector.Length != dimensions)
+            throw new ArgumentException($"Expected exactly {dimensions} floats for a single vector, got {vector.Length}.", nameof(vector));
+
+        return Native.faiss_fvec_norm_L2sqr(vector, (nuint)dimensions);
     }
     
     /// <summary>
@@ -78,6 +78,9 @@ public static class Fvec
 
         if (vectors.Length / dimensions != count)
             throw new ArgumentOutOfRangeException(nameof(vectors), "array must be equal to count * dimensions");
+
+        if (norms.Length < count)
+            throw new ArgumentOutOfRangeException(nameof(norms), norms.Length, "array must be at least count");
         
         Native.faiss_fvec_norms_L2(norms, vectors, (nuint)dimensions, (nuint)count);
     }
@@ -96,6 +99,9 @@ public static class Fvec
 
         if (vectors.Length / dimensions != count)
             throw new ArgumentOutOfRangeException(nameof(vectors), "array must be equal to count * dimensions");
+
+        if (norms.Length < count)
+            throw new ArgumentOutOfRangeException(nameof(norms), norms.Length, "array must be at least count");
         
         Native.faiss_fvec_norms_L2sqr(norms, vectors, (nuint)dimensions, (nuint)count);
     }
