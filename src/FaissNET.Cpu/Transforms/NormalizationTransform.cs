@@ -16,6 +16,10 @@ public sealed class NormalizationTransform : VectorTransform
 
     private static IntPtr CreateHandle(int d, float norm)
     {
+        // Only the L2 norm is implemented
+        if (norm != 2.0f)
+            throw new ArgumentOutOfRangeException(nameof(norm), norm, "Only norm = 2.0 is implemented by faiss.");
+
         FaissErrorHandler.ThrowIfError(Native.faiss_NormalizationTransform_new_with(out IntPtr ptr, d, norm));
 
         return ptr;
