@@ -24,9 +24,20 @@ public static class IndexDeserializer
             unsafe
             {
                 var span = new Span<byte>(ptr.ToPointer(), (int)totalBytes);
-                int bytesRead = stream.Read(span);
-                
-                return (nuint)(bytesRead / (long)size);
+
+                int filled = 0;
+                while (filled < span.Length)
+                {
+                    int read = stream.Read(span[filled..]);
+                    if (read == 0)
+                    {
+                        break;
+                    }
+
+                    filled += read;
+                }
+
+                return (nuint)(filled / (long)size);
             }
         };
 
