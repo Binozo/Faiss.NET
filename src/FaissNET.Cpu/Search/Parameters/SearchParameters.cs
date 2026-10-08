@@ -31,7 +31,7 @@ public class SearchParameters : IDisposable
     private static FaissSearchParametersHandle CreateHandle(IDSelector? selector = null)
     {
         FaissErrorHandler.ThrowIfError(
-            Native.faiss_SearchParameters_new(out IntPtr ptr, selector?.SafeHandle)
+            Native.faiss_SearchParameters_new(out IntPtr ptr, selector?.SafeHandle.DangerousGetHandle() ?? IntPtr.Zero)
         );
 
         return new FaissSearchParametersHandle(ptr);

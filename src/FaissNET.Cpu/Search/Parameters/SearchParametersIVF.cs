@@ -31,7 +31,7 @@ public sealed class SearchParametersIVF : SearchParameters
     private static FaissSearchParametersHandle CreateHandle(int nprobe, int maxCodes, IDSelector? selector = null)
     {
         FaissErrorHandler.ThrowIfError(
-            Native.faiss_SearchParametersIVF_new_with(out IntPtr ptr, selector?.SafeHandle, (UIntPtr)nprobe, (UIntPtr)maxCodes)
+            Native.faiss_SearchParametersIVF_new_with(out IntPtr ptr, selector?.SafeHandle.DangerousGetHandle() ?? IntPtr.Zero, (UIntPtr)nprobe, (UIntPtr)maxCodes)
         );
     
         return new FaissSearchParametersHandle<SearchParametersIVFRelease>(ptr);
