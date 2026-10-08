@@ -15,6 +15,9 @@ public sealed class ITQMatrix : VectorTransform
     {
     }
 
+    /// <inheritdoc />
+    public override bool IsReversible => false;
+
     private static IntPtr CreateHandle(int d)
     {
         FaissErrorHandler.ThrowIfError(Native.faiss_ITQMatrix_new_with(out IntPtr ptr, d));

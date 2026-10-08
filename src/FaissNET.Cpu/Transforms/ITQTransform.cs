@@ -14,6 +14,9 @@ public sealed class ITQTransform : VectorTransform
     {
     }
 
+    /// <inheritdoc />
+    public override bool IsReversible => false;
+
     private static IntPtr CreateHandle(int dIn, int dOut, bool doPca)
     {
         FaissErrorHandler.ThrowIfError(Native.faiss_ITQTransform_new_with(out IntPtr ptr, dIn, dOut, doPca));
