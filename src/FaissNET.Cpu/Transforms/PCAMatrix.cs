@@ -16,6 +16,10 @@ public sealed class PCAMatrix : VectorTransform
     {
     }
 
+    /// <inheritdoc />
+    /// <remarks>Whitening (a non-zero eigen power) drops the orthonormality that makes the map invertible.</remarks>
+    public override bool IsReversible => EigenPower == 0f;
+
     private static IntPtr CreateHandle(int dIn, int dOut, float eigenPower, bool randomRotation)
     {
         FaissErrorHandler.ThrowIfError(
