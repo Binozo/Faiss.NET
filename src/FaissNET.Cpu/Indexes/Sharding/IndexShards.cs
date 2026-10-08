@@ -1,6 +1,6 @@
 using Faiss.Cpu.Interfaces;
+using Faiss.Cpu.Search.Parameters;
 using Faiss.Exceptions;
-using Faiss.Interfaces;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
@@ -40,15 +40,21 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
     /// <summary>
     /// Adds the index to the shards.
     /// </summary>
-    /// <param name="index"></param>
+    /// <param name="index">
+    /// The shard to add. When <see cref="OwnIndices"/> is set, native takes ownership and the managed wrapper
+    /// is released so the shard is not freed twice.
+    /// </param>
     public void AddIndex(INativeIndex index)
     {
+        ArgumentNullException.ThrowIfNull(index);
+
         if (Dimensions != 0 && index.Dimensions != Dimensions)
-        {
             throw new ArgumentException($"Index dimensions ({index.Dimensions}) must match squad dimensions ({Dimensions})");
-        }
 
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexShards_add_shard(NativeHandle, index.Handle));
+
+        if (OwnIndices)
+            index.Handle.SetHandleAsInvalid();
 
         _shards.Add(index);
     }
@@ -66,33 +72,37 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
     
     private INativeIndex this[int index] => _shards[index];
 
-    public bool IsTrained => ((ITrainableFloatIndex)this).IsTrained;
+    public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
-    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => ((ITrainableFloatIndex)this).TrainAsync(count, vectors);
+    public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
-    public void Add(long count, ReadOnlySpan<float> vectors) => ((IIDSequentialFloatIndex)this).Add(count, vectors);
+    public void Add(long count, ReadOnlySpan<float> vectors) => IDSequentialFloatIndexImpl.Add(this, count, vectors);
 
     public void Add(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids)
     {
         if (SuccessiveIDs)
-        {
             throw new FaissException($"Can't add custom IDs to an index with {nameof(SuccessiveIDs)} enabled");
-        }
         
-        ((IIDMappedFloatIndex)this).Add(count, vectors, xids);
+        IDMappedFloatIndexImpl.Add(this, count, vectors, xids);
     }
 
-    public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, ISearchParameters parameters, Span<float> distances, Span<long> labels) => ((IParamsFloatSearchIndex)this).SearchWithParams(count, queryVectors, k, parameters, distances, labels);
+    public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, SearchParameters parameters, Span<float> distances, Span<long> labels) => ParamsFloatSearchIndexImpl.SearchWithParams(this, count, queryVectors, k, parameters, distances, labels);
 
     private static FaissIndexHandle CreateHandle(int dimensions, bool threaded, bool successiveIDs)
     {
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexShards_new_with_options(out IntPtr ptr, dimensions, threaded, successiveIDs));
         return new FaissIndexHandle<IndexShardsRelease>(ptr);
     }
+    
+    private static FaissIndexHandle Wrap(IntPtr handle, bool ownsHandle = true)
+        => new FaissIndexHandle<IndexShardsRelease>(handle, ownsHandle);
+
+    static IndexShards IFromNativeIndexHandle<IndexShards>.FromPointer(IntPtr handle, bool ownsHandle)
+        => new(Wrap(handle, ownsHandle));
 
     static IndexShards IFromNativeIndexHandle<IndexShards>.FromHandle(FaissIndexHandle handle) => new(handle);
     
-    public IndexShards Clone() => ((IClonableFloatIndex<IndexShards>)this).Clone();
+    public IndexShards Clone() => ClonableFloatIndexImpl<IndexShards>.Clone(this);
 
     public override void Dispose()
     {
