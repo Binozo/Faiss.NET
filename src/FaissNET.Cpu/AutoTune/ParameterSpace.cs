@@ -30,8 +30,19 @@ public sealed class ParameterSpace : IDisposable
     /// </summary>
     /// <param name="cno">The combination index.</param>
     /// <returns>The name of the combination.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the space contains a range with no values.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="cno"/> is outside the combination count.</exception>
     public unsafe string GetCombinationName(int cno)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(cno);
+        if (CombinationCount == 0) 
+            throw new InvalidOperationException("The parameter space has no combinations because one of its ranges is empty.");
+
+        if (cno >= CombinationCount)
+            throw new ArgumentOutOfRangeException(nameof(cno), cno, $"Combination index must be < {CombinationCount}.");
+
         const int bufSize = 1000;
         byte* buf = stackalloc byte[bufSize];
 
@@ -61,6 +72,13 @@ public sealed class ParameterSpace : IDisposable
     /// <param name="combinationNo">The combination index.</param>
     public void SetParameters(INativeIndex index, int combinationNo)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(combinationNo);
+        if (CombinationCount == 0) 
+            throw new InvalidOperationException("The parameter space has no combinations because one of its ranges is empty.");
+
+        if (combinationNo >= CombinationCount)
+            throw new ArgumentOutOfRangeException(nameof(combinationNo), combinationNo, $"Combination index must be < {CombinationCount}.");
+
         FaissErrorHandler.ThrowIfError(
             Native.faiss_ParameterSpace_set_index_parameters_cno(_handle, index.Handle, (UIntPtr)combinationNo)
         );
@@ -85,12 +103,17 @@ public sealed class ParameterSpace : IDisposable
     public void Display() => Native.faiss_ParameterSpace_display(_handle);
     
     /// <summary>
-    /// Adds a new parameter range with explicit values.
+    /// Adds a new, empty parameter range.
     /// </summary>
     /// <param name="name">The name of the parameter.</param>
-    /// <param name="values">The possible values for the parameter.</param>
     /// <returns>The added parameter range.</returns>
-    public unsafe ParameterRange AddRange(string name, ReadOnlySpan<double> values)
+    /// <remarks>
+    /// The C API exposes no way to populate a range's values (<c>faiss_ParameterSpace_add_range</c> only
+    /// creates the named range), so the result always has zero values. A space containing an empty range
+    /// has no enumerable combinations: use <see cref="SetParameter"/> or the string form of
+    /// <see cref="SetParameters(INativeIndex, string)"/> to configure an index instead.
+    /// </remarks>
+    public ParameterRange AddRange(string name)
     {
         FaissErrorHandler.ThrowIfError(
             Native.faiss_ParameterSpace_add_range(_handle, name, out IntPtr rangePtr)
