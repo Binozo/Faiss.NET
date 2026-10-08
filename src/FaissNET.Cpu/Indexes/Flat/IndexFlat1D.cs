@@ -42,7 +42,7 @@ public sealed class IndexFlat1D : CpuFlatFloatIndex<IndexFlat1D>, IFromNativeInd
 
     /// <summary>
     /// Manually rebuilds the sorted permutation of the database.
-    /// Only needed when <see cref="ContinuousUpdate"/> is false.
+    /// Only needed when the index was constructed with <c>continuousUpdate: false</c>.
     /// </summary>
     public void UpdatePermutation() => FaissErrorHandler.ThrowIfError(Native.faiss_IndexFlat1D_update_permutation(NativeHandle));
 }
@@ -58,7 +58,7 @@ public class GpuIndexFlat1D : GpuFlatFloatIndex<GpuIndexFlat1D>, IFromNativeInde
 
     /// <summary>
     /// Manually rebuilds the sorted permutation of the database.
-    /// Only needed when <see cref="ContinuousUpdate"/> is false.
+    /// Only needed when the index was constructed with <c>continuousUpdate: false</c>.
     /// </summary>
     public void UpdatePermutation() => FaissErrorHandler.ThrowIfError(Native.faiss_IndexFlat1D_update_permutation(NativeHandle));
 }
