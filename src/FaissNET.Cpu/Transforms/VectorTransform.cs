@@ -1,3 +1,4 @@
+using Faiss.Exceptions;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
@@ -33,6 +34,12 @@ public abstract class VectorTransform : IDisposable
 
     public unsafe void Train(long n, ReadOnlySpan<float> vectors)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(n);
+
+        long expected = checked(n * DIn);
+        if (vectors.Length < expected)
+            throw new ArgumentException($"Training span too small. Expected {expected}, got {vectors.Length}.", nameof(vectors));
+
         if (!IsTrained)
         {
             fixed (float* pVectors = vectors)
@@ -46,7 +53,16 @@ public abstract class VectorTransform : IDisposable
 
     public unsafe float[] Apply(long n, ReadOnlySpan<float> vectors)
     {
-        float[] result = new float[n * DOut];
+        ArgumentOutOfRangeException.ThrowIfNegative(n);
+
+        long expected = checked(n * DIn);
+        if (vectors.Length < expected)
+            throw new ArgumentException($"Vector span too small. Expected {expected}, got {vectors.Length}.", nameof(vectors));
+
+        if (!IsTrained)
+            throw new FaissUntrainedException();
+
+        float[] result = new float[checked(n * DOut)];
         fixed (float* pVectors = vectors)
         fixed (float* pResult = result)
         {
@@ -58,10 +74,24 @@ public abstract class VectorTransform : IDisposable
 
     public unsafe void ReverseTransform(ReadOnlySpan<float> input, Span<float> output)
     {
+        if (!IsReversible)
+            throw new NotSupportedException($"{GetType().Name} does not implement reverse_transform.");
+
+        if (!IsTrained)
+            throw new FaissUntrainedException();
+
+        if (input.Length == 0 || input.Length % DOut != 0)
+            throw new ArgumentException($"Input span length ({input.Length}) must be a positive multiple of d_out ({DOut}).", nameof(input));
+
+        long n = input.Length / DOut;
+        long expected = checked(n * DIn);
+        if (output.Length < expected)
+            throw new ArgumentException($"Output span too small. Expected {expected}, got {output.Length}.", nameof(output));
+
         fixed (float* pInput = input)
         fixed (float* pOutput = output)
         {
-            Native.faiss_VectorTransform_reverse_transform(Handle, input.Length / DOut, pInput, pOutput);
+            Native.faiss_VectorTransform_reverse_transform(Handle, n, pInput, pOutput);
         }
     }
 
