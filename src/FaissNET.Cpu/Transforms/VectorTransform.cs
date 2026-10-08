@@ -26,6 +26,11 @@ public abstract class VectorTransform : IDisposable
     
     public int DOut => Native.faiss_VectorTransform_d_out(Handle);
 
+    /// <summary>
+    /// Whether <see cref="ReverseTransform"/> is implemented for this transform.
+    /// </summary>
+    public virtual bool IsReversible => true;
+
     public unsafe void Train(long n, ReadOnlySpan<float> vectors)
     {
         if (!IsTrained)
