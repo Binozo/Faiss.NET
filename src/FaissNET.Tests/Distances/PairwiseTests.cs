@@ -1,22 +1,65 @@
 using Faiss.Cpu.Distances;
-using Faiss.Tests.Data;
+using Faiss.Tests.Infrastructure;
 using Xunit;
 
 namespace Faiss.Tests.Distances;
 
-/// <summary>
-/// Tests for pairwise operations.
-/// </summary>
 public class PairwiseTests
 {
-    [Fact]
-    public void PairwiseL2Sqr_CalculatesCorrect()
-    {
-        float[] distanceMatrix = new float[1];
-        float[] expectedDistanceMatrix = [0.353011966f];
-        
-        Pairwise.L2Sqr(Embeddings.Dimension, 1, Embeddings.Query, 1, Embeddings.Documents[0], distanceMatrix);
+    private const int Dimensions = 4;
+    private const int Queries = 3;
+    private const int Count = 5;
 
-        Assert.Equal(expectedDistanceMatrix, distanceMatrix, (a, b) => Math.Abs(a - b) <= 1e-5f);
+    [Fact]
+    public void L2Sqr_FillsRowMajorMatrixWithSquaredDistances()
+    {
+        var queries = Vectors.Random(seed: 70, count: Queries, dimensions: Dimensions);
+        var vectors = Vectors.Random(seed: 71, count: Count, dimensions: Dimensions);
+        var matrix = new float[Queries * Count];
+
+        Pairwise.L2Sqr(Dimensions, Queries, queries, Count, vectors, matrix);
+
+        for (var q = 0; q < Queries; q++)
+        {
+            for (var i = 0; i < Count; i++)
+            {
+                // Row-major: query q occupies matrix[q * Count .. (q + 1) * Count).
+                var expected = Oracles.L2Sqr(queries.AsSpan(q * Dimensions, Dimensions), vectors.AsSpan(i * Dimensions, Dimensions));
+                FloatAssert.Equal(expected, matrix[(q * Count) + i]);
+            }
+        }
+    }
+
+    [Fact]
+    public void L2Sqr_IdenticalSets_HaveZeroDiagonal()
+    {
+        var vectors = Vectors.Random(seed: 72, count: Count, dimensions: Dimensions);
+        var matrix = new float[Count * Count];
+
+        Pairwise.L2Sqr(Dimensions, Count, vectors, Count, vectors, matrix);
+
+        for (var i = 0; i < Count; i++)
+        {
+            FloatAssert.Equal(0f, matrix[(i * Count) + i]);
+
+            // L2 is symmetric, so the matrix must mirror across the diagonal.
+            for (var j = 0; j < Count; j++)
+            {
+                FloatAssert.Equal(matrix[(i * Count) + j], matrix[(j * Count) + i]);
+            }
+        }
+    }
+
+    [Fact]
+    public void L2Sqr_InvalidArguments_Throw()
+    {
+        var queries = new float[Queries * Dimensions];
+        var vectors = new float[Count * Dimensions];
+        var matrix = new float[Queries * Count];
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => Pairwise.L2Sqr(0, Queries, queries, Count, vectors, matrix));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Pairwise.L2Sqr(Dimensions, Queries + 1, queries, Count, vectors, matrix));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Pairwise.L2Sqr(Dimensions, Queries, queries, Count + 1, vectors, matrix));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Pairwise.L2Sqr(Dimensions, Queries, queries, Count, vectors, new float[(Queries * Count) - 1]));
     }
 }
