@@ -4,39 +4,54 @@ using Xunit;
 namespace Faiss.Tests.Distances;
 
 /// <summary>
-/// Tests for Blas operations.
+/// These knobs are process-global faiss state, so every test restores the original value.
 /// </summary>
 public class BlasTests
 {
     [Fact]
-    public void DistanceComputeBlasThreshold_Initial_And_Modification()
+    public void Threshold_RoundTrips()
     {
-        Blas.DistanceComputeBlasThreshold = 128_000;
-        
-        Assert.Equal(128_000, Blas.DistanceComputeBlasThreshold);
+        var original = Blas.DistanceComputeBlasThreshold;
+        try
+        {
+            Blas.DistanceComputeBlasThreshold = original + 7;
+            Assert.Equal(original + 7, Blas.DistanceComputeBlasThreshold);
+        }
+        finally
+        {
+            Blas.DistanceComputeBlasThreshold = original;
+        }
+
+        Assert.Equal(original, Blas.DistanceComputeBlasThreshold);
     }
-    
+
     [Fact]
-    public void DistanceComputeBlasBlockSizes_Initial_And_Modification()
+    public void EachKnobIsWiredToItsOwnNativeSetting()
     {
-        Blas.DistanceComputeBlasBlockSizes = 2048;
-        
-        Assert.Equal(2048, Blas.DistanceComputeBlasBlockSizes);
-    }
-    
-    [Fact]
-    public void DistanceComputeBlasDatabaseBlockSizes_Initial_And_Modification()
-    {
-        Blas.DistanceComputeBlasDatabaseBlockSizes = 512;
-        
-        Assert.Equal(512, Blas.DistanceComputeBlasDatabaseBlockSizes);
-    }
-    
-    [Fact]
-    public void DistanceComputeComputeMinKReservoir_Initial_And_Modification()
-    {
-        Blas.DistanceComputeMinKReservoir = 256;
-        
-        Assert.Equal(256, Blas.DistanceComputeMinKReservoir);
+        var threshold = Blas.DistanceComputeBlasThreshold;
+        var queryBlock = Blas.DistanceComputeBlasBlockSizes;
+        var databaseBlock = Blas.DistanceComputeBlasDatabaseBlockSizes;
+        var reservoir = Blas.DistanceComputeMinKReservoir;
+
+        try
+        {
+            // Distinct values: a property wired to the wrong native getter/setter reads back a neighbour's value.
+            Blas.DistanceComputeBlasThreshold = 1001;
+            Blas.DistanceComputeBlasBlockSizes = 1002;
+            Blas.DistanceComputeBlasDatabaseBlockSizes = 1003;
+            Blas.DistanceComputeMinKReservoir = 1004;
+
+            Assert.Equal(1001, Blas.DistanceComputeBlasThreshold);
+            Assert.Equal(1002, Blas.DistanceComputeBlasBlockSizes);
+            Assert.Equal(1003, Blas.DistanceComputeBlasDatabaseBlockSizes);
+            Assert.Equal(1004, Blas.DistanceComputeMinKReservoir);
+        }
+        finally
+        {
+            Blas.DistanceComputeBlasThreshold = threshold;
+            Blas.DistanceComputeBlasBlockSizes = queryBlock;
+            Blas.DistanceComputeBlasDatabaseBlockSizes = databaseBlock;
+            Blas.DistanceComputeMinKReservoir = reservoir;
+        }
     }
 }
