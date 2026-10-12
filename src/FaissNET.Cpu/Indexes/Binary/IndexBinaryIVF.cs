@@ -6,6 +6,7 @@ using Faiss.Cpu.Selectors;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
+using Faiss.Models;
 
 namespace Faiss.Cpu.Indexes.Binary;
 
@@ -100,6 +101,11 @@ public sealed class IndexBinaryIVF : BinaryIndex, ITrainableBinaryIndex, IIDSequ
     public double ImbalanceFactor => Native.faiss_IndexBinaryIVF_imbalance_factor(NativeHandle);
 
     public void MakeDirectMap(bool maintainDirectMap) => FaissErrorHandler.ThrowIfError(Native.faiss_IndexBinaryIVF_make_direct_map(NativeHandle, maintainDirectMap));
+
+    public DirectMapType DirectMapType
+    {
+        set => FaissErrorHandler.ThrowIfError(Native.faiss_IndexBinaryIVF_set_direct_map_type(NativeHandle, value));
+    }
 
     private static FaissBinaryIndexHandle CreateHandle(int dimensions, int nlist, int? hnswM)
     {
