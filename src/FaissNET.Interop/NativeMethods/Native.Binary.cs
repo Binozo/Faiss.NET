@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Faiss.Cpu.Search;
 using Faiss.Cpu.Selectors;
@@ -130,6 +131,10 @@ internal static unsafe partial class Native
 
     [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexBinaryIVF_make_direct_map(FaissBinaryIndexHandle index, [MarshalAs(UnmanagedType.Bool)] bool maintainDirectMap);
+
+    [LibraryImport(LibraryName)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial int faiss_IndexBinaryIVF_set_direct_map_type(FaissBinaryIndexHandle index, DirectMapType directMapType);
 
     [LibraryImport(LibraryName)]
     internal static partial double faiss_IndexBinaryIVF_imbalance_factor(FaissBinaryIndexHandle index);
