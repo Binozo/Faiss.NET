@@ -102,14 +102,14 @@ public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIn
 
     public void AddCore(ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids, ReadOnlySpan<long> precomputedIdx)
     {
-        if (vectors.Length != xids.Length)
+        if (vectors.Length / Dimensions != xids.Length)
         {
-            throw new ArgumentOutOfRangeException(nameof(vectors), $"vectors must match {nameof(vectors)}.Length");
+            throw new ArgumentOutOfRangeException(nameof(xids), $"xids must match {nameof(vectors)} / Dimensions.Length");
         }
 
         if (xids.Length != precomputedIdx.Length)
         {
-            throw new ArgumentOutOfRangeException(nameof(xids), $"xids must match {nameof(precomputedIdx)}.Length");
+            throw new ArgumentOutOfRangeException(nameof(precomputedIdx), $"precomputedIdx must match {nameof(xids)}.Length");
         }
 
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVFFlat_add_core(NativeHandle, vectors.Length, vectors, xids, precomputedIdx));
