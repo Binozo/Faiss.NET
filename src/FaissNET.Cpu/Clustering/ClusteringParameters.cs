@@ -11,8 +11,8 @@ public sealed class ClusteringOptions
     public bool IntCentroids { get; set; }
     public bool UpdateIndex { get; set; }
     public bool FrozenCentroids { get; set; }
-    public int MinPointsPerCentroid { get; set; }
-    public int MaxPointsPerCentroid { get; set; }
+    public int MinPointsPerCentroid { get; set; } = 39;
+    public int MaxPointsPerCentroid { get; set; } = 256;
     public int Seed { get; set; } = 1234;
     public int DecodeBlockSize { get; set; } = 32768;
 
