@@ -1,5 +1,7 @@
+using System.Runtime.InteropServices;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
+using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Transforms;
 
@@ -15,6 +17,12 @@ public sealed class RandomRotationMatrix : VectorTransform
     public RandomRotationMatrix(int dIn, int dOut) : base(CreateHandle(dIn, dOut))
     {
     }
+
+    private RandomRotationMatrix(FaissVectorTransformHandle handle) : base(handle)
+    {
+    }
+
+    internal override VectorTransform CreateView(SafeHandle owner) => new RandomRotationMatrix(BorrowFor(owner));
 
     private static IntPtr CreateHandle(int dIn, int dOut)
     {
