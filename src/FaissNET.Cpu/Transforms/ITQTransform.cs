@@ -1,5 +1,7 @@
+using System.Runtime.InteropServices;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
+using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Transforms;
 
@@ -13,6 +15,12 @@ public sealed class ITQTransform : VectorTransform
         : base(CreateHandle(dIn, dOut, doPca))
     {
     }
+
+    private ITQTransform(FaissVectorTransformHandle handle) : base(handle)
+    {
+    }
+
+    internal override VectorTransform CreateView(SafeHandle owner) => new ITQTransform(BorrowFor(owner));
 
     /// <inheritdoc />
     public override bool IsReversible => false;
