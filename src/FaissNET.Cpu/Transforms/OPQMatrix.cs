@@ -1,5 +1,7 @@
+using System.Runtime.InteropServices;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
+using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Transforms;
 
@@ -13,6 +15,12 @@ public sealed class OPQMatrix : VectorTransform
     public OPQMatrix(int d, int m, int d2) : base(CreateHandle(d, m, d2))
     {
     }
+
+    private OPQMatrix(FaissVectorTransformHandle handle) : base(handle)
+    {
+    }
+
+    internal override VectorTransform CreateView(SafeHandle owner) => new OPQMatrix(BorrowFor(owner));
 
     private static IntPtr CreateHandle(int d, int m, int d2)
     {
