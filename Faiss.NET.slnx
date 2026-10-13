@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Docs/">
     <File Path="README.md" />
+    <File Path="docs/AGENTS.md" />
     <File Path="LICENSE" />
   </Folder>
   
