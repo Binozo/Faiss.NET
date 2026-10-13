@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Faiss.Exceptions;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
@@ -20,6 +21,23 @@ public abstract class VectorTransform : IDisposable
     {
         Handle = new FaissVectorTransformHandle(handle);
     }
+
+    private protected VectorTransform(FaissVectorTransformHandle handle)
+    {
+        Handle = handle;
+    }
+
+    /// <summary>
+    /// A view object of the same concrete type over this native transform,
+    /// which never frees it and thus keeps <paramref name="owner"/> alive while open.
+    /// </summary>
+    /// <remarks>
+    /// Must be called while this object's handle is still open.
+    /// </remarks>
+    internal abstract VectorTransform CreateView(SafeHandle owner);
+
+    private protected FaissVectorTransformHandle BorrowFor(SafeHandle owner)
+        => new FaissBorrowedVectorTransformHandle(Handle.DangerousGetHandle(), owner);
     
     public bool IsTrained => Native.faiss_VectorTransform_is_trained(Handle) != 0;
     
