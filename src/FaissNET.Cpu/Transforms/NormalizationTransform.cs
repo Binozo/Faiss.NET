@@ -1,5 +1,7 @@
+using System.Runtime.InteropServices;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
+using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Transforms;
 
@@ -13,6 +15,12 @@ public sealed class NormalizationTransform : VectorTransform
     public NormalizationTransform(int dimension, float norm = 2.0f) : base(CreateHandle(dimension, norm))
     {
     }
+
+    private NormalizationTransform(FaissVectorTransformHandle handle) : base(handle)
+    {
+    }
+
+    internal override VectorTransform CreateView(SafeHandle owner) => new NormalizationTransform(BorrowFor(owner));
 
     private static IntPtr CreateHandle(int d, float norm)
     {
