@@ -26,7 +26,7 @@ As soon as the PRs noted below get merged and I fix some minor stuff I will publ
 
 - [x] Adding bindings for `distances_c.h`
 - [x] Improving class hierarchy and generic constraints design to further prevent footguns (~ September 2026)
-- [ ] Adding remaining functionality to IndexShards, IndexReplicas, IndexRefineFlat and GPU indexes (Waiting for faiss PRs to merge: [#5516](https://github.com/facebookresearch/faiss/pull/5516), [#5514](https://github.com/facebookresearch/faiss/pull/5514), [#5513](https://github.com/facebookresearch/faiss/pull/5513), [#5512](https://github.com/facebookresearch/faiss/pull/5512), [#5511](https://github.com/facebookresearch/faiss/pull/5511)) (~ September 2026)
+- [ ] Adding remaining functionality to IndexShards, IndexReplicas, IndexRefineFlat and GPU indexes (Waiting for faiss PRs to merge: [#5516](https://github.com/facebookresearch/faiss/pull/5516), [#5514](https://github.com/facebookresearch/faiss/pull/5514), [#5513](https://github.com/facebookresearch/faiss/pull/5513), [#5512](https://github.com/facebookresearch/faiss/pull/5512), [#5511](https://github.com/facebookresearch/faiss/pull/5511)) (~ November 2026)
 - [ ] Adding more tests      (~ October 2026)
 - [ ] Adding example project (~ October 2026)
 - [ ] v1.0 Release 🚀        (~ November 2026)
@@ -90,9 +90,6 @@ dotnet add package Faiss.NET.Native.MacOS
 ```
 
 ## Usage
-
-All examples assume `using Faiss.Cpu.Extensions;` plus the relevant type namespaces.
-
 ### Quick start
 
 ```csharp
@@ -107,10 +104,7 @@ var label = result.Labels[0]; // 0
 var distance = result.Distances[0]; // 0f
 ```
 
-### Indexes
-<details>
-<summary>Embeddings - RAG</summary>
-
+### RAG Embeddings
 ```csharp
 using Faiss.Cpu.Extensions;
 using Faiss.Cpu.Indexes.Approximate;
@@ -120,8 +114,8 @@ using Faiss.Cpu.Search.Parameters;
 using Faiss.Cpu.Selectors;
 using Faiss.Models;
 
-var index = new IndexHNSW(dimensions: 4, metricType: MetricType.InnerProduct); // We don't need `using` here because takeOwnership below
-using var mappedIndex = new IndexIDMap<IndexHNSW>(index, takeOwnership: true); // disposes index as soon as mappedIndex is disposed
+var index = new IndexHNSW(dimensions: 4, metricType: MetricType.InnerProduct); // No `using`: ownership is handed to mappedIndex below
+using var mappedIndex = new IndexIDMap<IndexHNSW>(index, takeOwnership: true); // `index` is closed from here on; use mappedIndex.SubIndex
 
 mappedIndex.Add([new[] { 1f, 2f, 3f, 4f }, new[] { 2f, 3f, 4f, 1f }, new[] { 3f, 4f, 1f, 2f }, new[] { 4f, 1f, 2f, 3f }], [4, 3, 2, 1]);
 
@@ -137,11 +131,8 @@ for (int i = 0; i < searchResult.K; i++)
     Console.WriteLine($"Rank {i}: label={label}, dist={distance}");
 }
 ```
-</details>
 
-<details>
-<summary>Serialization/Deserialization</summary>
-
+### Serialization/Deserialization
 ```csharp
 using Faiss.Cpu.Extensions;
 using Faiss.Cpu.Indexes.Binary;
@@ -155,10 +146,8 @@ BinaryIndexSerializer.Write(index, "my_index.faiss");
 using var readIndex = BinaryIndexDeserializer.Read<IndexBinaryFlat>( "my_index.faiss");
 var reconstructed = readIndex.Reconstruct(0); // [1, 2, 3, 4]
 ```
-</details>
 
-### Factory - approximate indexes
-
+### Approximate indexes with Factory
 The factory string mirrors the upstream Faiss API: `HNSW32`, `IVF256,Flat`, `PQ8x12`, and so on.
 
 ```csharp
@@ -244,6 +233,19 @@ Seeing other bindings being completely out-of-date and way too old I decided to 
 My goal is to have **amazing** DX including guardrails that make it really hard to do something wrong, all enforced by the compiler.
 
 Made with ♥️
+
+</details>
+
+<details>
+<summary>
+
+## Documentation for Agents/LLMs
+
+</summary>
+
+If you're an Agent/LLM you can take a look at [AGENTS.md](docs/AGENTS.md) which is specifically handwritten for agents.
+It will help you get along with this codebase while avoiding common footguns and pitfalls.
+This `AGENTS.md` is for library usage only; it is not designed as a guide on how to develop this library itself.
 
 </details>
 
