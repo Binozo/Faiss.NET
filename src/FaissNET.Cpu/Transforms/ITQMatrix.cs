@@ -1,5 +1,7 @@
+using System.Runtime.InteropServices;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
+using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Transforms;
 
@@ -14,6 +16,12 @@ public sealed class ITQMatrix : VectorTransform
     public ITQMatrix(int d) : base(CreateHandle(d))
     {
     }
+
+    private ITQMatrix(FaissVectorTransformHandle handle) : base(handle)
+    {
+    }
+
+    internal override VectorTransform CreateView(SafeHandle owner) => new ITQMatrix(BorrowFor(owner));
 
     /// <inheritdoc />
     public override bool IsReversible => false;
