@@ -1,5 +1,7 @@
+using System.Runtime.InteropServices;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
+using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Transforms;
 
@@ -15,6 +17,12 @@ public sealed class PCAMatrix : VectorTransform
         : base(CreateHandle(dIn, dOut, eigenPower, randomRotation))
     {
     }
+
+    private PCAMatrix(FaissVectorTransformHandle handle) : base(handle)
+    {
+    }
+
+    internal override VectorTransform CreateView(SafeHandle owner) => new PCAMatrix(BorrowFor(owner));
 
     /// <inheritdoc />
     /// <remarks>Whitening (a non-zero eigen power) drops the orthonormality that makes the map invertible.</remarks>
