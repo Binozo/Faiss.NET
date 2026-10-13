@@ -1,5 +1,7 @@
+using System.Runtime.InteropServices;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
+using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Transforms;
 
@@ -12,6 +14,12 @@ public sealed class CenteringTransform : VectorTransform
     public CenteringTransform(int d) : base(CreateHandle(d))
     {
     }
+
+    private CenteringTransform(FaissVectorTransformHandle handle) : base(handle)
+    {
+    }
+
+    internal override VectorTransform CreateView(SafeHandle owner) => new CenteringTransform(BorrowFor(owner));
 
     private static IntPtr CreateHandle(int d)
     {
