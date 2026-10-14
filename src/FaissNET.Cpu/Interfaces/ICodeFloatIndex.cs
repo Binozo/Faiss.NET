@@ -115,6 +115,9 @@ internal static class CodeFloatIndexImpl
             throw new ArgumentException($"Output vector span too small. Expected {expectedVectorLength}, got {outputVectors.Length}.", nameof(outputVectors));
         }
 
+        if (index is IListNumberPrefixedCodes prefixed)
+            ThrowIfInvalidListNumbers(inputBytes, count, codeSize, prefixed.Nlist);
+
         unsafe
         {
             fixed (byte* pBytes = inputBytes)
@@ -124,4 +127,31 @@ internal static class CodeFloatIndexImpl
             }
         }
     }
+
+    private static void ThrowIfInvalidListNumbers(ReadOnlySpan<byte> codes, long count, long codeSize, int nlist)
+    {
+        int prefixBytes = 0;
+        for (long remaining = nlist - 1; remaining > 0; remaining >>= 8)
+        {
+            prefixBytes++;
+        }
+
+        for (long i = 0; i < count; i++)
+        {
+            var prefix = codes.Slice((int)(i * codeSize), prefixBytes);
+            long listNumber = 0;
+            for (int b = prefixBytes - 1; b >= 0; b--)
+            {
+                listNumber = (listNumber << 8) | prefix[b];
+            }
+
+            if (listNumber >= nlist)
+                throw new ArgumentException($"Code {i} names inverted list {listNumber}, but the index has {nlist} lists.", "inputBytes");
+        }
+    }
+}
+
+internal interface IListNumberPrefixedCodes
+{
+    int Nlist { get; }
 }
