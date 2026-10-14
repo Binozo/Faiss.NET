@@ -4,10 +4,6 @@ using Faiss.Cpu.Search;
 using Faiss.Cpu.Search.Parameters;
 using Faiss.Cpu.Search.Range;
 using Faiss.Cpu.Selectors;
-using Faiss.Interfaces;
-using Faiss.Interop.Errors;
-using Faiss.Interop.NativeMethods;
-using ITrainableIndex = Faiss.Interfaces.ITrainableIndex;
 
 namespace Faiss.Cpu.Extensions;
 
@@ -21,9 +17,7 @@ public static class IndexExtensions
     public static void Add(this IIDSequentialFloatIndex index, ReadOnlySpan<float> vectors)
     {
         if (vectors.Length == 0 || vectors.Length % index.Dimensions != 0)
-        {
-            throw new ArgumentException($"Vector span length ({vectors.Length}) must be a multiple of dimensions ({index.Dimensions})");
-        }
+            throw new ArgumentException($"Vector span length ({vectors.Length}) must be a positive multiple of dimensions ({index.Dimensions}).", nameof(vectors));
 
         index.Add(vectors.Length / index.Dimensions, vectors);
     }
@@ -51,7 +45,7 @@ public static class IndexExtensions
                 ReadOnlySpan<float> source = vectors[i].Span;
 
                 if (source.Length != dimensions)
-                    throw new ArgumentException($"Vector at index {i} has dimension {source.Length}, expected {dimensions}.");
+                    throw new ArgumentException($"Vector at index {i} has dimension {source.Length}, expected {dimensions}.", nameof(vectors));
 
                 source.CopyTo(destination.Slice(i * dimensions, dimensions));
             }
@@ -73,9 +67,7 @@ public static class IndexExtensions
     public static void Add(this IIDMappedFloatIndex index, ReadOnlySpan<float> vectors, long xid)
     {
         if (vectors.Length == 0 || vectors.Length % index.Dimensions != 0)
-        {
-            throw new ArgumentException($"Vector span length ({vectors.Length}) must be a multiple of dimensions ({index.Dimensions})");
-        }
+            throw new ArgumentException($"Vector span length ({vectors.Length}) must be a positive multiple of dimensions ({index.Dimensions}).", nameof(vectors));
 
         index.Add(vectors.Length / index.Dimensions, vectors, new[]{xid});
     }
@@ -88,15 +80,11 @@ public static class IndexExtensions
     /// <param name="xids">The IDs to assign to the vectors.</param>
     public static void Add(this IIDMappedFloatIndex index, IReadOnlyList<ReadOnlyMemory<float>> vectors, IReadOnlyList<long> xids)
     {
-        if (vectors.Count == 0)
-        {
-            return;
-        }
-
         if (xids.Count != vectors.Count)
-        {
             throw new ArgumentException($"Expected {vectors.Count} ids for {vectors.Count} vectors, got {xids.Count}.", nameof(xids));
-        }
+
+        if (vectors.Count == 0)
+            return;
 
         int dimensions = index.Dimensions;
         int totalFloats = vectors.Count * dimensions;
@@ -112,7 +100,7 @@ public static class IndexExtensions
                 ReadOnlySpan<float> source = vectors[i].Span;
 
                 if (source.Length != dimensions)
-                    throw new ArgumentException($"Vector at index {i} has dimension {source.Length}, expected {dimensions}.");
+                    throw new ArgumentException($"Vector at index {i} has dimension {source.Length}, expected {dimensions}.", nameof(vectors));
 
                 source.CopyTo(destination.Slice(i * dimensions, dimensions));
             }
@@ -130,10 +118,9 @@ public static class IndexExtensions
     /// </summary>
     public static SearchResultSpan Search(this IFloatIndex index, ReadOnlySpan<float> queryVectors, int k)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
         if (queryVectors.Length != index.Dimensions)
-        {
-            throw new ArgumentException($"Vector span length ({queryVectors.Length}) must exactly match dimensions ({index.Dimensions})");
-        }
+            throw new ArgumentException($"Query length ({queryVectors.Length}) must match dimensions ({index.Dimensions}).", nameof(queryVectors));
 
         long count = 1;
         var distances = ArrayPool<float>.Shared.Rent(k);
@@ -158,13 +145,13 @@ public static class IndexExtensions
     public static SearchResultView Search(this IFloatIndex index, ReadOnlySpan<float> queryVector, int k, Span<float> distances, Span<long> labels)
     {
         if (queryVector.Length != index.Dimensions)
-            throw new ArgumentException($"Query has {queryVector.Length} dimensions, expected {index.Dimensions}");
+            throw new ArgumentException($"Query has {queryVector.Length} dimensions, expected {index.Dimensions}.", nameof(queryVector));
 
         if (distances.Length < k)
-            throw new ArgumentException($"Distances buffer too small: {distances.Length} < {k}");
+            throw new ArgumentException($"Distances buffer too small: {distances.Length} < {k}.", nameof(distances));
 
         if (labels.Length < k)
-            throw new ArgumentException($"Labels buffer too small: {labels.Length} < {k}");
+            throw new ArgumentException($"Labels buffer too small: {labels.Length} < {k}.", nameof(labels));
 
         index.Search(1, queryVector, k, distances, labels);
         return new SearchResultView(distances, labels);
@@ -175,9 +162,10 @@ public static class IndexExtensions
     /// </summary>
     public static PooledSearchResults SearchPooled(this IFloatIndex index, ReadOnlySpan<float> queryVectors, int k)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
         if (queryVectors.Length == 0 || queryVectors.Length % index.Dimensions != 0)
         {
-            throw new ArgumentException($"Vector span length ({queryVectors.Length}) must be a multiple of dimensions ({index.Dimensions})");
+            throw new ArgumentException($"Query span length ({queryVectors.Length}) must be a positive multiple of dimensions ({index.Dimensions}).", nameof(queryVectors));
         }
 
         int count = queryVectors.Length / index.Dimensions;
@@ -199,23 +187,23 @@ public static class IndexExtensions
         }
     }
 
-    public static SearchResults SearchWithParams(this IParamsFloatSearchIndex index, ReadOnlyMemory<float> queryVectors, int k, SearchParameters parameters) => index.SearchWithParams([queryVectors], k, parameters);
+    /// <summary>Searches one query vector; <paramref name="queryVector"/> must hold exactly one vector.</summary>
+    public static SearchResults SearchWithParams(this IParamsFloatSearchIndex index, ReadOnlyMemory<float> queryVector, int k, SearchParameters parameters) => index.SearchWithParams([queryVector], k, parameters);
 
     public static SearchResults SearchWithParams(this IParamsFloatSearchIndex index, IReadOnlyList<ReadOnlyMemory<float>> queryVectors, int k, SearchParameters parameters)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
         int count = queryVectors.Count;
 
-        if (count == 0 || k <= 0)
-        {
+        if (count == 0)
             return new SearchResults(default, default, count, k);
-        }
 
         int dim = index.Dimensions;
 
         for (int i = 0; i < count; i++)
         {
             if (queryVectors[i].Length != dim)
-                throw new ArgumentException($"queryVectors too small. Expected {dim}, got {queryVectors[i].Length}.");
+                throw new ArgumentException($"Query at index {i} has {queryVectors[i].Length} floats, expected exactly {dim}.", nameof(queryVectors));
         }
 
         int totalQueryFloats = count * dim;
@@ -246,17 +234,21 @@ public static class IndexExtensions
     }
 
     public static void RangeSearch(this IRangeSearchFloatIndex index, ReadOnlySpan<float> queryVector, float radius, RangeSearchResult result)
-        => index.RangeSearch(1, queryVector, radius, result);
+    {
+        if (queryVector.Length != index.Dimensions)
+            throw new ArgumentException($"Query has {queryVector.Length} dimensions, expected {index.Dimensions}.", nameof(queryVector));
+
+        index.RangeSearch(1, queryVector, radius, result);
+    }
 
     /// <summary>
     /// Gets the nearest labels without distance.
     /// </summary>
     public static AssignResultSpan Assign(this IFloatIndex index, ReadOnlySpan<float> queryVectors, int k)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
         if (queryVectors.Length == 0 || queryVectors.Length % index.Dimensions != 0)
-        {
-            throw new ArgumentException($"Vector span length ({queryVectors.Length}) must be a multiple of dimensions ({index.Dimensions})");
-        }
+            throw new ArgumentException($"Query span length ({queryVectors.Length}) must be a positive multiple of dimensions ({index.Dimensions}).", nameof(queryVectors));
 
         int count = queryVectors.Length / index.Dimensions;
         int resultCount = count * k;
@@ -281,10 +273,10 @@ public static class IndexExtensions
     public static void Assign(this IFloatIndex index, ReadOnlySpan<float> queryVector, int k, Span<long> labels)
     {
         if (queryVector.Length != index.Dimensions)
-            throw new ArgumentException($"Query has {queryVector.Length} dimensions, expected {index.Dimensions}");
+            throw new ArgumentException($"Query has {queryVector.Length} dimensions, expected {index.Dimensions}.", nameof(queryVector));
 
         if (labels.Length < k)
-            throw new ArgumentException($"Labels buffer too small: {labels.Length} < {k}");
+            throw new ArgumentException($"Labels buffer too small: {labels.Length} < {k}.", nameof(labels));
 
         index.Assign(1, queryVector, k, labels);
     }
@@ -321,10 +313,7 @@ public static class IndexExtensions
                 ReadOnlySpan<float> source = vectors[i].Span;
 
                 if (source.Length != index.Dimensions)
-                {
-                    throw new ArgumentException(
-                        $"Vector at index {i} has dimension {source.Length}, expected {index.Dimensions}.");
-                }
+                    throw new ArgumentException($"Vector at index {i} has dimension {source.Length}, expected {index.Dimensions}.", nameof(vectors));
 
                 source.CopyTo(destination.Slice(i * index.Dimensions, index.Dimensions));
             }
