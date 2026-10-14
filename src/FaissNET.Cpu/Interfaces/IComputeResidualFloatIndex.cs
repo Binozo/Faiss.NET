@@ -54,13 +54,29 @@ internal static class ComputeResidualFloatIndexImpl
         long count = keys.Length;
         long expectedLength = count * index.Dimensions;
         if (originalVectors.Length < expectedLength)
-        {
             throw new ArgumentException($"originalVectors too small. Expected {expectedLength}, got {originalVectors.Length}.");
-        }
 
         if (residualVectors.Length < expectedLength)
-        {
             throw new ArgumentException($"residualVectors too small. Expected {expectedLength}, got {residualVectors.Length}.");
+
+        if (KeyLayout.Of(index).KeysAreIds)
+        {
+            // As the id existence cannot be checked up front this batch call must be splitted into individual calls
+            // because this way they fail cleanly instead of causing a process kill caused by the OpenMP region
+            int dimensions = index.Dimensions;
+            unsafe
+            {
+                fixed (float* pX = originalVectors)
+                fixed (float* pRes = residualVectors)
+                {
+                    for (int i = 0; i < keys.Length; i++)
+                    {
+                        FaissErrorHandler.ThrowIfError(Native.faiss_Index_compute_residual(index.Handle, pX + (long)i * dimensions, pRes + (long)i * dimensions, keys[i]));
+                    }
+                }
+            }
+
+            return;
         }
 
         long total = index.TotalCount;
