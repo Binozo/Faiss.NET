@@ -7,6 +7,9 @@ namespace Faiss.Interop.NativeMethods;
 internal static unsafe partial class Native
 {
     [LibraryImport(LibraryName)]
+    internal static partial IntPtr faiss_IndexIVF_cast(IntPtr index);
+
+    [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexIVF_merge_from(FaissIndexHandle index, FaissIndexHandle other, long addId);
     
     [LibraryImport(LibraryName)]

@@ -102,6 +102,13 @@ internal static unsafe partial class Native
     internal static partial IntPtr faiss_IndexPreTransform_index(FaissIndexHandle index);
 
     [LibraryImport(LibraryName)]
+    internal static partial IntPtr faiss_IndexPreTransform_cast(IntPtr index);
+
+    /// <summary>Raw-pointer overload for inspecting nested native indexes that have no managed wrapper.</summary>
+    [LibraryImport(LibraryName, EntryPoint = "faiss_IndexPreTransform_index")]
+    internal static partial IntPtr faiss_IndexPreTransform_index_ptr(IntPtr index);
+
+    [LibraryImport(LibraryName)]
     internal static partial int faiss_IndexPreTransform_own_fields(FaissIndexHandle index);
 
     [LibraryImport(LibraryName)]
