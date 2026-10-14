@@ -7,9 +7,13 @@ using Faiss.Interop.SafeHandles;
 namespace Faiss.Cpu.Indexes.Flat;
 
 /// <inheritdoc cref="FlatFloatIndex{T}" />
-public abstract class FlatFloatIndex<T> : FloatIndex, IFlatIndex, IParamsFloatSearchIndex, IReconstructFloatIndex, IComputeResidualFloatIndex where T : FloatIndex, INativeIndex, IFromNativeIndexHandle<T>
+public abstract class FlatFloatIndex<T> : FloatIndex, IFlatIndex, IParamsFloatSearchIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, IKeyLayout where T : FloatIndex, INativeIndex, IFromNativeIndexHandle<T>
 {
     internal FlatFloatIndex(FaissIndexHandle handle) : base(handle) { }
+
+    private protected virtual KeyLayout KeyLayout => KeyLayout.CheckedPositions;
+
+    KeyLayout IKeyLayout.KeyLayout => KeyLayout;
     
     public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, SearchParameters parameters, Span<float> distances, Span<long> labels) => ParamsFloatSearchIndexImpl.SearchWithParams(this, count, queryVectors, k, parameters, distances, labels);
 

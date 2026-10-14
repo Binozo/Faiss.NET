@@ -1,4 +1,5 @@
 using Faiss.Cpu.Interfaces;
+using Faiss.Cpu.Search.Parameters;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
@@ -25,6 +26,14 @@ public abstract class BinaryIndex : IBinaryIndex, INativeBinaryIndex
 
     public int CodeSize => Dimensions / 8;
 
+    /// <summary>
+    /// Rejects search configurations the native index mishandles.
+    /// <paramref name="parameters"/> is the per-call override when the search goes through SearchWithParams.
+    /// </summary>
+    private protected virtual void ValidateSearch(long count, SearchParameters? parameters)
+    {
+    }
+
     public unsafe void Search(long count, ReadOnlySpan<byte> queryVectors, int k, Span<int> distances, Span<long> labels)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
@@ -41,6 +50,8 @@ public abstract class BinaryIndex : IBinaryIndex, INativeBinaryIndex
 
         if (labels.Length < resultLength)
             throw new ArgumentException($"Label span too small. Expected {resultLength}, got {labels.Length}.", nameof(labels));
+
+        ValidateSearch(count, parameters: null);
 
         fixed (byte* pQuery = queryVectors)
         fixed (int* pDistances = distances)
@@ -65,6 +76,9 @@ public abstract class BinaryIndex : IBinaryIndex, INativeBinaryIndex
 
         if (labels.Length < resultLength)
             throw new ArgumentException($"Label span too small. Expected {resultLength}, got {labels.Length}.", nameof(labels));
+
+        // faiss assign also runs search under the hood
+        ValidateSearch(count, parameters: null);
 
         fixed (byte* pQuery = queryVectors)
         fixed (long* pLabels = labels)
