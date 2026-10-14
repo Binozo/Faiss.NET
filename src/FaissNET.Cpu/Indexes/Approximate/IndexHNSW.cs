@@ -19,7 +19,7 @@ public class IndexHNSW : FloatIndex, IFlatIndex, IRangeSearchFloatIndex, IIDSequ
     /// <param name="dimensions">Vector dimensionality</param>
     /// <param name="m">Number of neighbors per graph node</param>
     /// <param name="metricType">Distance metric</param>
-    public IndexHNSW(int dimensions, int m = 32, MetricType metricType = MetricType.L2) : this($"HNSW{dimensions}", m, metricType)
+    public IndexHNSW(int dimensions, int m = 32, MetricType metricType = MetricType.L2) : this($"HNSW{m}", dimensions, metricType)
     {
     }
 
