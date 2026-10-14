@@ -30,16 +30,15 @@ public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IID
     public readonly T Index;
     private readonly List<VectorTransform> _chain = new();
 
-    public IndexPreTransform(T index, VectorTransform transform, bool ownSubIndex = false)
-        : this(CreateHandle(OwnershipGuard.RequireIndependent(index, nameof(index)), RequireOwned(transform), ownSubIndex), ownSubIndex, ownSubIndex ? null : index)
+    public IndexPreTransform(T index, VectorTransform transform, bool ownSubIndex = false) : this(CreateHandle(OwnershipGuard.RequireIndependent(index, nameof(index)), RequireOwned(transform), ownSubIndex), ownSubIndex, ownSubIndex ? null : index)
     {
         if (ownSubIndex)
         {
-            // Native frees both from now on. The chain gets a view, created while the caller's handle is still
-            // open; the caller's wrappers are then closed so they never free them too.
+            // This parent index is responsible for freeing both now
+            // Store only the view in the chain
             _chain.Add(transform.CreateView(NativeHandle));
             index.Handle.SetHandleAsInvalid();
-            transform.ReleaseOwnership();
+            transform.Handle.SetHandleAsInvalid();
         }
         else
         {
@@ -47,39 +46,28 @@ public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IID
         }
     }
 
-    /// <summary>
-    /// A view already belongs to another index: handing it over again would give the same native transform two
-    /// owners, and keeping it alive would pin the wrong parent.
-    /// </summary>
     private static VectorTransform RequireOwned(VectorTransform transform)
     {
         ArgumentNullException.ThrowIfNull(transform);
 
         if (transform.Handle is FaissBorrowedVectorTransformHandle)
-        {
             throw new ArgumentException("This transform belongs to another index (it came from a TransformChain); create a new one instead.", nameof(transform));
-        }
 
         return transform;
     }
 
-    public IndexPreTransform(T index, bool ownSubIndex = false)
-        : this(CreateHandle(OwnershipGuard.RequireIndependent(index, nameof(index)), transform: null, ownSubIndex), ownSubIndex, ownSubIndex ? null : index)
+    public IndexPreTransform(T index, bool ownSubIndex = false) : this(CreateHandle(OwnershipGuard.RequireIndependent(index, nameof(index)), transform: null, ownSubIndex), ownSubIndex, ownSubIndex ? null : index)
     {
         if (ownSubIndex)
-        {
             index.Handle.SetHandleAsInvalid();
-        }
     }
 
-    /// <param name="ownSubIndex">Build path: the ownership the caller requested. <see langword="null"/> when wrapping, so the native flag is left as faiss set it.</param>
-    /// <param name="callerIndex">Build path without ownership: the caller's sub-index, exposed as-is. Otherwise a view is created.</param>
+    /// <param name="ownSubIndex">The ownership the caller requested. <see langword="null"/> when wrapping, so the native flag is left as faiss set it.</param>
+    /// <param name="callerIndex">Without ownership: the caller's sub-index, exposed as-is. Otherwise, a view is created.</param>
     private IndexPreTransform(FaissIndexHandle handle, bool? ownSubIndex = null, T? callerIndex = null) : base(handle)
     {
         if (ownSubIndex is bool own)
-        {
             OwnSubIndex = own;
-        }
 
         Index = callerIndex ?? T.FromBorrowed(Native.faiss_IndexPreTransform_index(handle), handle);
     }
@@ -94,9 +82,8 @@ public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IID
     /// Prepends a transform to the chain. The prepended transform is applied first during add and search operations.
     /// </summary>
     /// <param name="transform">
-    /// The transform to prepend. When this index owns its parts (<see cref="OwnSubIndex"/>), ownership passes to it
-    /// and <paramref name="transform"/> is closed. Otherwise the caller keeps ownership and this index keeps the
-    /// transform alive until this index is freed.
+    /// The transform to prepend. When this index owns its parts (<see cref="OwnSubIndex"/>), ownership passes to it and <paramref name="transform"/> is closed.
+    /// Otherwise, the caller keeps ownership and this index keeps the transform alive until this index is freed.
     /// </param>
     /// <exception cref="InvalidOperationException">
     /// This instance neither owns its parts nor can keep the transform alive: it is a non-owning view of an index
@@ -107,23 +94,18 @@ public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IID
     {
         RequireOwned(transform);
 
-        // Decide who keeps the transform alive before native takes the pointer, so a refusal leaves nothing half-done.
         var owned = OwnSubIndex;
         var keepAlive = NativeHandle as FaissDependentIndexHandle<IndexPreTransformRelease>;
 
         if (!owned && keepAlive is null)
-        {
-            throw new InvalidOperationException(
-                "Nothing would keep the transform alive: this is a view of an index that does not own its parts. Prepend through the original instance.");
-        }
+            throw new InvalidOperationException("Nothing would keep the transform alive: this is a view of an index that does not own its parts. Prepend through the original instance.");
 
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexPreTransform_prepend_transform(NativeHandle, transform.Handle));
 
         if (owned)
         {
-            // The chain gets a view created while the caller's handle is still open; then the caller's wrapper is closed.
             _chain.Insert(0, transform.CreateView(NativeHandle));
-            transform.ReleaseOwnership();
+            transform.Handle.SetHandleAsInvalid();
         }
         else
         {
@@ -167,7 +149,6 @@ public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IID
 
     public long RemoveIds(IDSelector selector) => IDRemovableFloatIndexImpl.RemoveIds(this, selector);
 
-    /// <summary>faiss passes keys and reconstruct_n straight to the sub-index, so its layout applies.</summary>
     KeyLayout IKeyLayout.KeyLayout => KeyLayout.Of(Index);
 
     public float[] Reconstruct(long key) => ReconstructFloatIndexImpl.Reconstruct(this, key);
@@ -192,18 +173,14 @@ public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IID
             : Native.faiss_IndexPreTransform_new_with(out ptr, subIndex.Handle));
 
         if (ownSubIndex)
-        {
             return new FaissIndexHandle<IndexPreTransformRelease>(ptr);
-        }
 
-        // The caller owns the parts: keep them alive until this index has been freed.
+        // As the caller owns the parts they must be kept alive until this index has been freed
         var handle = new FaissDependentIndexHandle<IndexPreTransformRelease>(ptr);
         handle.AddDependency(subIndex.Handle);
 
         if (transform != null)
-        {
             handle.AddDependency(transform.Handle);
-        }
 
         return handle;
     }
@@ -220,19 +197,15 @@ public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IID
 
     public override void Dispose()
     {
-        // Views of the sub-index and of chain transforms reference this index's own handle. Release them first so
-        // Dispose frees this index now rather than when the views are finalized. Caller-owned parts are left alone.
+        // As borrowed/views of the sub-index and chain transforms reference this index's own handle,
+        // they need to be freed first to ensure this index gets disposed now
         if (Index.Handle is FaissBorrowedIndexHandle)
-        {
             Index.Dispose();
-        }
 
         foreach (var transform in _chain)
         {
             if (transform.Handle is FaissBorrowedVectorTransformHandle)
-            {
                 transform.Dispose();
-            }
         }
 
         base.Dispose();
