@@ -20,9 +20,7 @@ public static class BinaryIndexExtensions
         int codeSize = index.CodeSize;
 
         if (vectors.Length == 0 || vectors.Length % codeSize != 0)
-        {
-            throw new ArgumentException($"Vector span length ({vectors.Length}) must be a multiple of the code size ({codeSize})");
-        }
+            throw new ArgumentException($"Vector span length ({vectors.Length}) must be a positive multiple of the code size ({codeSize}).", nameof(vectors));
 
         index.Add(vectors.Length / codeSize, vectors);
     }
@@ -50,7 +48,7 @@ public static class BinaryIndexExtensions
                 ReadOnlySpan<byte> source = vectors[i].Span;
 
                 if (source.Length != codeSize)
-                    throw new ArgumentException($"Vector at index {i} has {source.Length} bytes, expected {codeSize}.");
+                    throw new ArgumentException($"Vector at index {i} has {source.Length} bytes, expected {codeSize}.", nameof(vectors));
 
                 source.CopyTo(destination.Slice(i * codeSize, codeSize));
             }
@@ -68,12 +66,11 @@ public static class BinaryIndexExtensions
     /// </summary>
     public static AssignResultSpan Assign(this IBinaryIndex index, ReadOnlySpan<byte> queryVectors, int k)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
         int codeSize = index.CodeSize;
 
         if (queryVectors.Length == 0 || queryVectors.Length % codeSize != 0)
-        {
-            throw new ArgumentException($"Vector span length ({queryVectors.Length}) must be a multiple of the code size ({codeSize})");
-        }
+            throw new ArgumentException($"Query span length ({queryVectors.Length}) must be a positive multiple of the code size ({codeSize}).", nameof(queryVectors));
 
         int count = queryVectors.Length / codeSize;
         int resultCount = count * k;
@@ -98,10 +95,10 @@ public static class BinaryIndexExtensions
     public static void Assign(this IBinaryIndex index, ReadOnlySpan<byte> queryVector, int k, Span<long> labels)
     {
         if (queryVector.Length != index.CodeSize)
-            throw new ArgumentException($"Query has {queryVector.Length} bytes, expected {index.CodeSize}");
+            throw new ArgumentException($"Query has {queryVector.Length} bytes, expected {index.CodeSize}.", nameof(queryVector));
 
         if (labels.Length < k)
-            throw new ArgumentException($"Labels buffer too small: {labels.Length} < {k}");
+            throw new ArgumentException($"Labels buffer too small: {labels.Length} < {k}.", nameof(labels));
 
         index.Assign(1, queryVector, k, labels);
     }
@@ -129,9 +126,7 @@ public static class BinaryIndexExtensions
                 ReadOnlySpan<byte> source = vectors[i].Span;
 
                 if (source.Length != codeSize)
-                {
-                    throw new ArgumentException($"Vector at index {i} has {source.Length} bytes, expected {codeSize}.");
-                }
+                    throw new ArgumentException($"Vector at index {i} has {source.Length} bytes, expected {codeSize}.", nameof(vectors));
 
                 source.CopyTo(destination.Slice(i * codeSize, codeSize));
             }
