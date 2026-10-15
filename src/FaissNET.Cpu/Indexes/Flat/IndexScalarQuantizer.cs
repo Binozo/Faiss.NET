@@ -29,8 +29,7 @@ public sealed class IndexScalarQuantizer : CpuFlatFloatIndex<IndexScalarQuantize
 
     private IndexScalarQuantizer(FaissIndexHandle handle) : base(handle)
     {
-        FaissScalarQuantizerHandle scalarQuantizerHandle = new FaissScalarQuantizerHandle(Native.faiss_IndexScalarQuantizer_sq(NativeHandle));
-        ScalarQuantizer = new ScalarQuantizer(scalarQuantizerHandle);
+        ScalarQuantizer = new ScalarQuantizer(new FaissBorrowedScalarQuantizerHandle(Native.faiss_IndexScalarQuantizer_sq(handle), handle));
     }
 
     public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
@@ -71,7 +70,7 @@ public sealed class IndexScalarQuantizer : CpuFlatFloatIndex<IndexScalarQuantize
 
 public class ScalarQuantizer
 {
-    private FaissScalarQuantizerHandle _handle;
+    private readonly FaissScalarQuantizerHandle _handle;
 
     internal ScalarQuantizer(FaissScalarQuantizerHandle handle)
     {
@@ -80,7 +79,7 @@ public class ScalarQuantizer
 
     internal void Dispose()
     {
-        _handle.SetHandleAsInvalid();
+        _handle.Dispose();
     }
 
     public QuantizerType QuantizerType => Native.faiss_ScalarQuantizer_qtype(_handle);
@@ -121,9 +120,7 @@ public class ScalarQuantizer
     public void CopyTrainedValues(Span<float> trainedValues)
     {
         if (trainedValues.Length != (int)TrainedSize)
-        {
             throw new ArgumentOutOfRangeException(nameof(trainedValues), $"TrainedValues must be of the same length as {nameof(TrainedSize)}");
-        }
 
         Native.faiss_ScalarQuantizer_trained(_handle, trainedValues);
     }
