@@ -1,12 +1,10 @@
 using Faiss.Cpu.Factory;
-using Faiss.Cpu.Indexes.Flat;
 using Faiss.Cpu.Indexes.IVF;
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Parameters;
 using Faiss.Cpu.Search.Range;
 using Faiss.Cpu.Selectors;
 using Faiss.Exceptions;
-using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
 using Faiss.Models;
@@ -17,10 +15,9 @@ namespace Faiss.Cpu.Indexes.Approximate;
 /// IVF + Product Quantization index.
 /// </summary>
 public sealed class IndexIVFPQ : FloatIndex, IIVFIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IRangeSearchFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex,
-    ICodeFloatIndex, ITrainableFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IGpuClonableIndex<IndexIVFPQ, GpuIndexIVFPQ>, IClonableFloatIndex<IndexIVFPQ>, IFromNativeIndexHandle<IndexIVFPQ>
+    ICodeFloatIndex, ITrainableFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IGpuClonableIndex<IndexIVFPQ, GpuIndexIVFPQ>, IClonableFloatIndex<IndexIVFPQ>, IFromNativeIndexHandle<IndexIVFPQ>, IKeyLayout,
+    IListNumberPrefixedCodes
 {
-    private readonly IndexFlat _quantizer;
-
     public IndexIVFPQ(int dimensions, int n = 4096, int m = 16, int? subQuantizer = null, bool polysemy = false, MetricType metricType = MetricType.L2) : this(
         CreateHandle($"IVF{n},PQ{m}{(subQuantizer != null ? $"x{subQuantizer}" : string.Empty)}{(polysemy ? string.Empty : "np")}", dimensions, CheckMetricType(metricType)))
     {
@@ -28,7 +25,6 @@ public sealed class IndexIVFPQ : FloatIndex, IIVFIndex, IIDSequentialFloatIndex,
 
     internal IndexIVFPQ(FaissIndexHandle handle) : base(handle)
     {
-        _quantizer = new IndexFlat(new FaissIndexHandle(Native.faiss_IndexIVF_quantizer(handle), false));
     }
 
     private static MetricType CheckMetricType(MetricType metricType)
@@ -55,9 +51,10 @@ public sealed class IndexIVFPQ : FloatIndex, IIVFIndex, IIDSequentialFloatIndex,
         set => Native.faiss_IndexIVF_set_nprobe(NativeHandle, (nuint)value);
     }
 
+    /// <inheritdoc cref="IndexIVFFlat{T}.DirectMap"/>
     public bool DirectMap
     {
-        set => FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVF_make_direct_map(NativeHandle, value));
+        set => FloatDirectMapImpl.Make(NativeHandle, value);
     }
 
     public QuantizerTrainMode QuantizerTrainMode => (QuantizerTrainMode)Native.faiss_IndexIVF_quantizer_trains_alone(NativeHandle);
@@ -94,19 +91,11 @@ public sealed class IndexIVFPQ : FloatIndex, IIVFIndex, IIDSequentialFloatIndex,
 
     public void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result) => RangeSearchFloatIndexImpl.RangeSearch(this, count, queryVectors, radius, result);
 
-    public long RemoveIds(IDSelector selector)
-    {
-        DirectMap = true;
+    public long RemoveIds(IDSelector selector) => IDRemovableFloatIndexImpl.RemoveIds(this, selector);
 
-        return IDRemovableFloatIndexImpl.RemoveIds(this, selector);
-    }
+    KeyLayout IKeyLayout.KeyLayout => KeyLayout.CheckedIds;
 
-    public float[] Reconstruct(long key)
-    {
-        DirectMap = true;
-
-        return ReconstructFloatIndexImpl.Reconstruct(this, key);
-    }
+    public float[] Reconstruct(long key) => ReconstructFloatIndexImpl.Reconstruct(this, key);
 
     public float[] Reconstruct(long startKey, long count) => ReconstructFloatIndexImpl.Reconstruct(this, startKey, count);
 
