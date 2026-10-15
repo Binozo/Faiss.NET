@@ -38,16 +38,28 @@ public enum QuantizerTrainMode : sbyte
 /// <inheritdoc cref="CpuFlatFloatIndex{T}" />
 public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIndex, ITrainableFloatIndex, IIDMappedFloatIndex, ISerializableFloatIndex, IFromNativeIndexHandle<IndexIVFFlat<T>>, IGpuClonableIndex<IndexIVFFlat<T>, GpuIndexIVFFlat<T>> where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
 {
-    private readonly T _quantizer;
-
-    public IndexIVFFlat(T quantizer, int dimensions, int nlist, MetricType metric = MetricType.L2, bool ownQuantizer = false) : this(CreateHandle(quantizer, dimensions, nlist, metric), quantizer, ownQuantizer)
+    /// <param name="quantizer">The coarse quantizer.</param>
+    /// <param name="ownQuantizer">
+    /// If <c>true</c>, this index frees the quantizer and <paramref name="quantizer"/> is closed immediately.
+    /// If <c>false</c>, the caller keeps ownership. This index keeps the quantizer alive until it is freed, even if the caller disposes it first.
+    /// </param>
+    /// <exception cref="ArgumentException"><paramref name="quantizer"/> is part of another index, such as <c>IndexIDMap.SubIndex</c>.</exception>
+    public IndexIVFFlat(T quantizer, int dimensions, int nlist, MetricType metric = MetricType.L2, bool ownQuantizer = false)
+        : this(CreateHandle(OwnershipGuard.RequireIndependent(quantizer, nameof(quantizer)), dimensions, nlist, metric, ownQuantizer), ownQuantizer)
     {
+        if (ownQuantizer)
+        {
+            quantizer.Handle.SetHandleAsInvalid();
+        }
     }
 
-    private IndexIVFFlat(FaissIndexHandle handle, T? quantizer = null, bool ownFields = false) : base(handle)
+    /// <param name="ownFields">Override the ownership. Keep <see langword="null"/> when wrapping if you want to keep default faiss behavior.</param>
+    private IndexIVFFlat(FaissIndexHandle handle, bool? ownFields = null) : base(handle)
     {
-        OwnQuantizer = ownFields;
-        _quantizer = quantizer ?? T.FromPointer(Native.faiss_IndexIVFFlat_quantizer(handle));
+        if (ownFields is bool own)
+        {
+            OwnQuantizer = own;
+        }
     }
 
     public bool OwnQuantizer
@@ -145,13 +157,19 @@ public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIn
     /// <inheritdoc />
     public double ImbalanceFactor => Native.faiss_IndexIVF_imbalance_factor(NativeHandle);
     
-    private static FaissIndexHandle CreateHandle(T quantizer, int dimensions, int nlist, MetricType metric = MetricType.L2)
+    private static FaissIndexHandle CreateHandle(T quantizer, int dimensions, int nlist, MetricType metric, bool ownQuantizer)
     {
         if (quantizer.Dimensions != dimensions)
             throw new ArgumentOutOfRangeException(nameof(dimensions), $"Dimensions must match {nameof(quantizer)}.Dimensions");
 
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVFFlat_new_with_metric(out IntPtr handle, quantizer.Handle, (nuint)dimensions, (nuint)nlist, metric));
-        return new FaissIndexHandle<IndexIVFFlatRelease>(handle);
+
+        if (ownQuantizer)
+            return new FaissIndexHandle<IndexIVFFlatRelease>(handle);
+
+        var keepAlive = new FaissDependentIndexHandle<IndexIVFFlatRelease>(handle);
+        keepAlive.AddDependency(quantizer.Handle);
+        return keepAlive;
     }
 
     static IndexIVFFlat<T> IFromNativeIndexHandle<IndexIVFFlat<T>>.FromHandle(FaissIndexHandle handle) => new(handle);
