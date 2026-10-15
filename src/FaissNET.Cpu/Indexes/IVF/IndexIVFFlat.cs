@@ -71,9 +71,10 @@ public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIn
         set => Native.faiss_IndexIVFFlat_set_nprobe(NativeHandle, (nuint)value);
     }
 
+    /// <remarks>If enabling fails, the index is left without a direct map.</remarks>
     public bool DirectMap
     {
-        set => FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVF_make_direct_map(NativeHandle, value));
+        set => FloatDirectMapImpl.Make(NativeHandle, value);
     }
 
     public QuantizerTrainMode QuantizerTrainMode => (QuantizerTrainMode)Native.faiss_IndexIVFFlat_quantizer_trains_alone(NativeHandle);
