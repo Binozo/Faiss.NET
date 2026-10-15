@@ -138,12 +138,12 @@ public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIn
 
     /// <summary>
     /// In-place update of vectors. The index must have a direct map.
-    /// Call <see cref="DirectMap"/> first if not already done.
+    /// Set <see cref="DirectMap"/> first.
     /// </summary>
     public unsafe void UpdateVectors(ReadOnlySpan<long> ids, ReadOnlySpan<float> vectors)
     {
-        if (ids.Length != vectors.Length / Dimensions)
-            throw new ArgumentException(nameof(ids), $"count must match {nameof(vectors)} count.");
+        if (vectors.Length != (long)ids.Length * Dimensions)
+            throw new ArgumentException($"Expected {ids.Length} vectors of {Dimensions} floats ({(long)ids.Length * Dimensions}), got {vectors.Length} floats.", nameof(vectors));
 
         fixed (long* pIdx = ids)
         fixed (float* pV = vectors)
