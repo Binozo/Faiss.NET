@@ -1,9 +1,9 @@
 using Faiss.Cpu.Factory;
+using Faiss.Cpu.Indexes.IVF;
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Parameters;
 using Faiss.Cpu.Search.Range;
 using Faiss.Cpu.Selectors;
-using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
 using Faiss.Models;
@@ -47,24 +47,19 @@ public sealed class IndexBinaryIVF : BinaryIndex, ITrainableBinaryIndex, IIDSequ
     
     public long RemoveIds(IDSelector selector) => IDRemovableBinaryIndexImpl.RemoveIds(this, selector);
 
-    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, SearchParameters parameters, Span<int> distances, Span<long> labels) =>
+    public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, SearchParameters parameters, Span<int> distances, Span<long> labels)
+    {
+        ValidateSearch(count, parameters);
         ParamsBinarySearchIndexImpl.SearchWithParams(this, count, queryVectors, k, parameters, distances, labels);
+    }
 
     /// <inheritdoc cref="IParamsBinarySearchIndex" />
     public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, SearchParametersIVF parameters, Span<int> distances, Span<long> labels) =>
         SearchWithParams(count, queryVectors, k, (SearchParameters)parameters, distances, labels);
 
-    public byte[] Reconstruct(long key)
-    {
-        MakeDirectMap(true);
-        return ReconstructBinaryIndexImpl.Reconstruct(this, key);
-    }
+    public byte[] Reconstruct(long key) => ReconstructBinaryIndexImpl.Reconstruct(this, key);
 
-    public byte[] Reconstruct(long startKey, long count)
-    {
-        MakeDirectMap(true);
-        return ReconstructBinaryIndexImpl.Reconstruct(this, startKey, count);
-    }
+    public byte[] Reconstruct(long startKey, long count) => ReconstructBinaryIndexImpl.Reconstruct(this, startKey, count);
 
     public int Nlist => (int)Native.faiss_IndexBinaryIVF_nlist(NativeHandle);
 
@@ -96,6 +91,28 @@ public sealed class IndexBinaryIVF : BinaryIndex, ITrainableBinaryIndex, IIDSequ
     {
         get => Native.faiss_IndexBinaryIVF_per_invlist_search(NativeHandle) != 0;
         set => Native.faiss_IndexBinaryIVF_set_per_invlist_search(NativeHandle, value);
+    }
+
+    private protected override void ValidateSearch(long count, SearchParameters? parameters)
+    {
+        var ivf = parameters as SearchParametersIVF;
+        long maxCodes = ivf?.MaxCodes ?? MaxCodes;
+
+        if (PerInvlistSearch)
+        {
+            if (maxCodes != 0)
+                throw new InvalidOperationException("PerInvlistSearch requires a code budget (MaxCodes) of 0.");
+
+            long nlist = Nlist;
+            long nprobe = Math.Min(nlist, ivf?.Nprobe ?? NProbe);
+            if (count < nlist || count * nprobe <= nlist)
+                throw new ArgumentOutOfRangeException(nameof(count), count,
+                    $"PerInvlistSearch needs at least {nlist} queries (nlist) and more than {nlist} query × probe pairs; got {count} queries with nprobe {nprobe}.");
+        }
+        else if (!UseHeap && maxCodes == 0)
+        {
+            throw new InvalidOperationException("Counting search (UseHeap = false) requires a positive code budget (MaxCodes); with 0, faiss scans nothing.");
+        }
     }
 
     public double ImbalanceFactor => Native.faiss_IndexBinaryIVF_imbalance_factor(NativeHandle);
