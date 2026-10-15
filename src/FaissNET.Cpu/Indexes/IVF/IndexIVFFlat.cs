@@ -103,17 +103,21 @@ public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIn
 
     public void AddCore(ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids, ReadOnlySpan<long> precomputedIdx)
     {
-        if (vectors.Length / Dimensions != xids.Length)
+        if (!IsTrained)
         {
-            throw new ArgumentOutOfRangeException(nameof(xids), $"xids must match {nameof(vectors)} / Dimensions.Length");
+            throw new FaissUntrainedException();
         }
 
+        var dimensions = Dimensions;
+
+        if (vectors.Length % dimensions != 0)
+            throw new ArgumentOutOfRangeException(nameof(vectors), $"{nameof(vectors)}.Length must be divisible by {nameof(Dimensions)}");
+        if (vectors.Length / dimensions != xids.Length)
+            throw new ArgumentOutOfRangeException(nameof(xids), $"xids must match {nameof(vectors)}.Length / {nameof(Dimensions)}");
         if (xids.Length != precomputedIdx.Length)
-        {
             throw new ArgumentOutOfRangeException(nameof(precomputedIdx), $"precomputedIdx must match {nameof(xids)}.Length");
-        }
 
-        FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVFFlat_add_core(NativeHandle, vectors.Length, vectors, xids, precomputedIdx));
+        FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVFFlat_add_core(NativeHandle, vectors.Length / dimensions, vectors, xids, precomputedIdx));
     }
 
     /// <inheritdoc cref="IParamsFloatSearchIndex" />
