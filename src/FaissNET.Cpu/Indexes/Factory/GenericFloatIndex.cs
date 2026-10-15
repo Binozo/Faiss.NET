@@ -6,11 +6,16 @@ using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Indexes.Factory;
 
-public class GenericFloatIndex : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IRangeSearchFloatIndex, IParamsFloatSearchIndex, IReconstructFloatIndex, IIDRemovableFloatIndex, ICodeFloatIndex, IComputeResidualFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IClonableFloatIndex<GenericFloatIndex>, IFromNativeIndexHandle<GenericFloatIndex>
+public class GenericFloatIndex : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IRangeSearchFloatIndex, IParamsFloatSearchIndex, IReconstructFloatIndex, IIDRemovableFloatIndex, ICodeFloatIndex, IComputeResidualFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IClonableFloatIndex<GenericFloatIndex>, IFromNativeIndexHandle<GenericFloatIndex>, IKeyLayout
 {
+    private readonly KeyLayout _keyLayout;
+
     internal GenericFloatIndex(FaissIndexHandle handle) : base(handle)
     {
+        _keyLayout = KeyLayout.OfNative(handle.DangerousGetHandle());
     }
+
+    KeyLayout IKeyLayout.KeyLayout => _keyLayout;
 
     public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
