@@ -33,9 +33,17 @@ public sealed class IndexBinaryFlat : BinaryIndex, IIDSequentialBinaryIndex, IRa
 
     public long RemoveIds(IDSelector selector) => IDRemovableBinaryIndexImpl.RemoveIds(this, selector);
     
-    public byte[] Reconstruct(long key) =>  ReconstructBinaryIndexImpl.Reconstruct(this, key);
+    public byte[] Reconstruct(long key)
+    {
+        ReconstructBinaryIndexImpl.ThrowIfRangeExceedsCount(this, key, 1);
+        return ReconstructBinaryIndexImpl.Reconstruct(this, key);
+    }
 
-    public byte[] Reconstruct(long startKey, long count)  => ReconstructBinaryIndexImpl.Reconstruct(this, startKey, count);
+    public byte[] Reconstruct(long startKey, long count)
+    {
+        ReconstructBinaryIndexImpl.ThrowIfRangeExceedsCount(this, startKey, count);
+        return ReconstructBinaryIndexImpl.Reconstruct(this, startKey, count);
+    }
 
     private static FaissBinaryIndexHandle CreateHandle(int dimensions)
     {
