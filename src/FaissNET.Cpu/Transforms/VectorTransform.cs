@@ -118,6 +118,4 @@ public abstract class VectorTransform : IDisposable
         Handle.Dispose();
         GC.SuppressFinalize(this);
     }
-
-    internal void ReleaseOwnership() => Handle.SetHandleAsInvalid();
 }
