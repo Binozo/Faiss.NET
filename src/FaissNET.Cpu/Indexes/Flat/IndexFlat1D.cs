@@ -13,9 +13,10 @@ internal readonly struct IndexFlat1DRelease : IFaissRelease
 /// <summary>
 /// Specialized 1D flat index with sorted permutation and binary search.
 /// Orders of magnitude faster than a generic flat index for single-dimensional data.
+/// Search reports the absolute difference |q - x| as distance, not its square.
 /// </summary>
 /// <inheritdoc cref="CpuFlatFloatIndex{T}" />
-public sealed class IndexFlat1D : CpuFlatFloatIndex<IndexFlat1D>, IFromNativeIndexHandle<IndexFlat1D>, IGpuClonableIndex<IndexFlat1D, GpuIndexFlat1D>
+public sealed class IndexFlat1D : CpuFlatFloatIndex<IndexFlat1D>, IFromNativeIndexHandle<IndexFlat1D>//, IGpuClonableIndex<IndexFlat1D, GpuIndexFlat>
 {
     public IndexFlat1D(bool continuousUpdate = true) : this(CreateHandle(continuousUpdate))
     {
@@ -39,22 +40,6 @@ public sealed class IndexFlat1D : CpuFlatFloatIndex<IndexFlat1D>, IFromNativeInd
         => new(Wrap(handle, ownsHandle));
 
     static IndexFlat1D IFromNativeIndexHandle<IndexFlat1D>.FromHandle(FaissIndexHandle handle) => new(handle);
-
-    /// <summary>
-    /// Manually rebuilds the sorted permutation of the database.
-    /// Only needed when the index was constructed with <c>continuousUpdate: false</c>.
-    /// </summary>
-    public void UpdatePermutation() => FaissErrorHandler.ThrowIfError(Native.faiss_IndexFlat1D_update_permutation(NativeHandle));
-}
-
-/// <inheritdoc cref="GpuFlatFloatIndex{T}" />
-public class GpuIndexFlat1D : GpuFlatFloatIndex<GpuIndexFlat1D>, IFromNativeIndexHandle<GpuIndexFlat1D>, IGpuIndex<IndexFlat1D>
-{
-    private GpuIndexFlat1D(FaissIndexHandle handle) : base(handle)
-    {
-    }
-
-    static GpuIndexFlat1D IFromNativeIndexHandle<GpuIndexFlat1D>.FromHandle(FaissIndexHandle handle) => new(handle);
 
     /// <summary>
     /// Manually rebuilds the sorted permutation of the database.
