@@ -117,11 +117,19 @@ public sealed class IndexBinaryIVF : BinaryIndex, ITrainableBinaryIndex, IIDSequ
 
     public double ImbalanceFactor => Native.faiss_IndexBinaryIVF_imbalance_factor(NativeHandle);
 
-    public void MakeDirectMap(bool maintainDirectMap) => FaissErrorHandler.ThrowIfError(Native.faiss_IndexBinaryIVF_make_direct_map(NativeHandle, maintainDirectMap));
+    /// <inheritdoc cref="IndexIVFFlat{T}.DirectMap"/>
+    public void MakeDirectMap(bool maintainDirectMap) => BinaryDirectMapImpl.Make(NativeHandle, maintainDirectMap);
 
+    /// <summary>
+    /// Sets the direct map type.
+    /// <see cref="Models.DirectMapType.Hashtable"/> supports non-sequential ids.
+    /// </summary>
+    /// <remarks>
+    /// If building the map fails, the index is left without a direct map.
+    /// </remarks>
     public DirectMapType DirectMapType
     {
-        set => FaissErrorHandler.ThrowIfError(Native.faiss_IndexBinaryIVF_set_direct_map_type(NativeHandle, value));
+        set => BinaryDirectMapImpl.SetType(NativeHandle, value);
     }
 
     private static FaissBinaryIndexHandle CreateHandle(int dimensions, int nlist, int? hnswM)
