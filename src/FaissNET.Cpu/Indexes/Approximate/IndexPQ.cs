@@ -11,7 +11,7 @@ namespace Faiss.Cpu.Indexes.Approximate;
 /// <summary>
 /// Product Quantization flat index.
 /// </summary>
-public sealed class IndexPQ : FloatIndex, IFlatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IRangeSearchFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IClonableFloatIndex<IndexPQ>, IFromNativeIndexHandle<IndexPQ>
+public sealed class IndexPQ : FloatIndex, IFlatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IRangeSearchFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IClonableFloatIndex<IndexPQ>, IFromNativeIndexHandle<IndexPQ>, IKeyLayout
 {
     public IndexPQ(int dimensions, int m = 16, MetricType metricType = MetricType.L2, int? nbits = null, bool polysemousTraining = true) : this($"PQ{m}{(nbits != null ? $"x{nbits}" : string.Empty)}{(polysemousTraining ? string.Empty : "np")}", dimensions, metricType)
     {
@@ -42,6 +42,8 @@ public sealed class IndexPQ : FloatIndex, IFlatIndex, ITrainableFloatIndex, IIDS
     public void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result) => RangeSearchFloatIndexImpl.RangeSearch(this, count, queryVectors, radius, result);
 
     public long RemoveIds(IDSelector selector) => IDRemovableFloatIndexImpl.RemoveIds(this, selector);
+
+    KeyLayout IKeyLayout.KeyLayout => KeyLayout.CheckedPositions;
 
     public float[] Reconstruct(long key) => ReconstructFloatIndexImpl.Reconstruct(this, key);
 
