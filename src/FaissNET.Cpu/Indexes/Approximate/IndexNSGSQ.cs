@@ -36,7 +36,7 @@ public sealed class IndexNSGSQ : IndexNSG, ITrainableFloatIndex, IClonableFloatI
             QuantizerType.QT_3bit_tq => "tq3",
             QuantizerType.QT_4bit_tq => "tq4",
             QuantizerType.QT_5bit_tq => "tq5",
-            _ => throw new ArgumentException($"Unsupported quantizer for HNSWSQ: {quantizerType}")
+            _ => throw new ArgumentException($"Unsupported quantizer for NSGSQ: {quantizerType}", nameof(quantizerType))
         };
     }
     
