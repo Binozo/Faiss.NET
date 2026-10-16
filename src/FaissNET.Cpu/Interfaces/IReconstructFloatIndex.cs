@@ -47,18 +47,41 @@ internal static class ReconstructFloatIndexImpl
         ArgumentOutOfRangeException.ThrowIfNegative(startKey);
         ArgumentOutOfRangeException.ThrowIfNegative(count);
 
+        KeyLayout layout = KeyLayout.Of(index);
+        if (layout is { NativeChecksBatchReconstruct: false, KeysAreIds: false })
+            ThrowIfRangeExceedsCount(index, startKey, count);
+
         float[] vectors = new float[checked(count * index.Dimensions)];
 
         unsafe
         {
             fixed (float* pVectors = vectors)
             {
-                FaissErrorHandler.ThrowIfError(
-                    Native.faiss_Index_reconstruct_n(index.Handle, startKey, count, pVectors)
-                );
+                if (layout.NativeChecksBatchReconstruct || !layout.KeysAreIds)
+                {
+                    FaissErrorHandler.ThrowIfError(Native.faiss_Index_reconstruct_n(index.Handle, startKey, count, pVectors));
+                }
+                else
+                {
+                    // As the id existence cannot be checked up front this batch call must be splitted into individual calls
+                    // because this way they fail cleanly instead of causing a process kill caused by the OpenMP region
+                    int dimensions = index.Dimensions;
+                    for (long i = 0; i < count; i++)
+                    {
+                        FaissErrorHandler.ThrowIfError(Native.faiss_Index_reconstruct(index.Handle, startKey + i, pVectors + i * dimensions));
+                    }
+                }
             }
         }
 
         return vectors;
+    }
+
+    /// <summary>Rejects <c>[startKey, startKey + count)</c> unless every position in it holds a vector.</summary>
+    internal static void ThrowIfRangeExceedsCount(INativeIndex index, long startKey, long count)
+    {
+        long total = index.TotalCount;
+        if (count > total - startKey)
+            throw new ArgumentOutOfRangeException(nameof(count), count, $"Range [{startKey}, {startKey} + {count}) exceeds the {total} vectors in the index.");
     }
 }
