@@ -15,60 +15,73 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
 {
     private readonly List<T> _replicas = new();
 
-    public IndexReplicas(long dimensions, bool threaded = true, bool ownIndices = true) : this(CreateHandle(dimensions, threaded), ownIndices)
+    public IndexReplicas(long dimensions, bool threaded = true, bool ownIndices = true) : this(CreateHandle(dimensions, threaded, ownIndices), ownIndices)
     {
     }
 
-    private IndexReplicas(FaissIndexHandle handle, bool ownIndices = true) : base(handle)
+    /// <param name="ownIndices">Override the ownership. Keep <see langword="null"/> when wrapping if you want to keep default faiss behavior.</param>
+    private IndexReplicas(FaissIndexHandle handle, bool? ownIndices = null) : base(handle)
     {
-        OwnIndices = ownIndices;
+        if (ownIndices is bool own)
+        {
+            OwnIndices = own;
+        }
     }
     
     /// <summary>
     /// Adds a cloned index to the squad.
     /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="replica"/> is part of another index, such as <c>IndexIDMap.SubIndex</c>.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// This instance neither owns its replicas nor can keep them alive: it is a view of a squad built with
+    /// <c>ownIndices: false</c>. Add through the original instance instead.
+    /// </exception>
     public void AddReplica(T replica)
     {
+        OwnershipGuard.RequireIndependent(replica, nameof(replica));
+
         if (Dimensions != 0 && replica.Dimensions != Dimensions)
         {
             throw new ArgumentException($"Replica dimensions ({replica.Dimensions}) must match squad dimensions ({Dimensions})");
         }
+        
+        // TODO: Don't use _replicas.Count for counting (won't work for IndexReplicas got from FromPointer) and use c api instead
+        // Waiting for PR #5512 (https://github.com/facebookresearch/faiss/pull/5512) to merge
+        if (_replicas.Count > 0 && replica is ITrainableFloatIndex trainable && trainable.IsTrained != IsTrained)
+            throw trainable.IsTrained
+                ? new ArgumentException("You can't pass a trained index to this untrained squad of indexes.", nameof(replica))
+                : new FaissUntrainedException();
 
-        if (typeof(ITrainableFloatIndex).IsAssignableFrom(typeof(T)) && _replicas.Count > 0) // TODO: Create PR that adds a count property in faiss_c
-        {
-            ITrainableFloatIndex first = _replicas[0] as ITrainableFloatIndex ?? throw new ArgumentNullException();
-            ITrainableFloatIndex trainableReplica = replica as ITrainableFloatIndex ?? throw new ArgumentNullException();
+        // Decide who keeps the replica alive before native takes the pointer, so a refusal leaves nothing half-done.
+        var owned = OwnIndices;
+        var keepAlive = NativeHandle as FaissDependentIndexHandle<IndexReplicasRelease>;
 
-            if (first.IsTrained != trainableReplica.IsTrained)
-            {
-                if (!trainableReplica.IsTrained)
-                {
-                    throw new FaissUntrainedException();
-                }
-                else
-                {
-                    throw new ArgumentException("You can't pass a trained index to this untrained squad of indexes.", nameof(replica));
-                }
-            }
-        }
+        if (!owned && keepAlive is null)
+            throw new InvalidOperationException("Nothing would keep the replica alive: this is a view of a squad that does not own its replicas. Add through the original instance.");
 
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexReplicas_add_replica(NativeHandle, replica.Handle));
 
-        // Native owns the replica from here; releasing the managed wrapper prevents a double free at finalization.
-        if (OwnIndices)
-        {
+        if (owned)
             replica.Handle.SetHandleAsInvalid();
-        }
+        else
+            keepAlive!.AddDependency(replica.Handle);
 
         _replicas.Add(replica);
     }
 
     /// <summary>
-    /// Removes a cloned index from the squad.
+    /// Removes a cloned index from the squad. The caller owns it again and may dispose it.
+    /// If <see cref="OwnIndices"/> has been set to true, this operation will throw <see cref="InvalidOperationException"/>.
     /// </summary>
     public void RemoveReplica(T replica)
     {
+        if (OwnIndices)
+            throw new InvalidOperationException("This index can't be removed while its ownership is taken by its parent index.");
+
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexReplicas_remove_replica(NativeHandle, replica.Handle));
+
+        // Native no longer references it, so stop keeping it alive.
+        (NativeHandle as FaissDependentIndexHandle<IndexReplicasRelease>)?.RemoveDependency(replica.Handle);
 
         _replicas.Remove(replica);
     }
@@ -93,10 +106,13 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
 
     public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVectors, residualVectors, keys);
 
-    private static FaissIndexHandle CreateHandle(long dimensions, bool threaded)
+    private static FaissIndexHandle CreateHandle(long dimensions, bool threaded, bool ownIndices)
     {
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexReplicas_new_with_options(out IntPtr ptr, dimensions, threaded));
-        return new FaissIndexHandle<IndexReplicasRelease>(ptr);
+
+        return ownIndices
+            ? new FaissIndexHandle<IndexReplicasRelease>(ptr)
+            : new FaissDependentIndexHandle<IndexReplicasRelease>(ptr);
     }
     
     private static FaissIndexHandle Wrap(IntPtr handle, bool ownsHandle = true)
