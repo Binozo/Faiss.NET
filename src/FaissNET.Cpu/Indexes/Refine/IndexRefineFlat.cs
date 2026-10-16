@@ -19,26 +19,42 @@ internal readonly struct IndexRefineFlatRelease : IFaissRelease
 public sealed class IndexRefineFlat<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IRangeSearchFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICodeFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IFromNativeIndexHandle<IndexRefineFlat<T>>, IClonableFloatIndex<IndexRefineFlat<T>> where T : FloatIndex, IIDSequentialFloatIndex, IFromNativeIndexHandle<T>
 {
     public readonly T BaseIndex;
-    private readonly bool _ownBaseIndex;
 
-    public IndexRefineFlat(T baseIndex, bool ownBaseIndex = true) : this(CreateHandle(baseIndex), baseIndex, ownBaseIndex)
+    /// <param name="baseIndex">The empty approximate index to refine.</param>
+    /// <param name="ownBaseIndex">
+    /// If <c>true</c>, this index frees the quantizer and <paramref name="baseIndex"/> is closed immediately.
+    /// If <c>false</c>, the caller keeps ownership. This index keeps the quantizer alive until it is freed, even if the caller disposes it first.
+    /// </param>
+    /// <exception cref="ArgumentException"><paramref name="baseIndex"/> is part of another index, such as <c>IndexIDMap.SubIndex</c>.</exception>
+    public IndexRefineFlat(T baseIndex, bool ownBaseIndex = true)
+        : this(CreateHandle(OwnershipGuard.RequireIndependent(baseIndex, nameof(baseIndex)), ownBaseIndex), ownBaseIndex, baseIndex)
     {
         if (ownBaseIndex)
         {
             baseIndex.Handle.SetHandleAsInvalid();
         }
     }
-    
-    internal IndexRefineFlat(FaissIndexHandle handle, T? baseIndex = null, bool ownBaseIndex = true) : base(handle)
+
+    /// <param name="ownBaseIndex">Override the ownership. Keep <see langword="null"/> when wrapping if you want to keep default faiss behavior.</param>
+    internal IndexRefineFlat(FaissIndexHandle handle, bool? ownBaseIndex = null, T? baseIndex = null) : base(handle)
     {
-        BaseIndex = baseIndex ?? T.FromPointer(Native.faiss_IndexRefineFlat_base_index(NativeHandle));
-        OwnBaseIndex = ownBaseIndex;
-        _ownBaseIndex = ownBaseIndex;
+        if (ownBaseIndex is bool own)
+        {
+            OwnBaseIndex = own;
+        }
+
+        BaseIndex = ownBaseIndex switch
+        {
+            // A view of the caller's index, created while the caller's handle is still open.
+            true => T.FromBorrowed(baseIndex!.Handle.DangerousGetHandle(), handle),
+            false => baseIndex!,
+            null => T.FromBorrowed(Native.faiss_IndexRefineFlat_base_index(handle), handle),
+        };
     }
 
     public bool OwnBaseIndex
     {
-        get => Native.faiss_IndexRefineFlat_own_fields(BaseIndex.Handle) != 0;
+        get => Native.faiss_IndexRefineFlat_own_fields(NativeHandle) != 0;
         private set => Native.faiss_IndexRefineFlat_set_own_fields(NativeHandle, value);
     }
 
@@ -80,7 +96,7 @@ public sealed class IndexRefineFlat<T> : FloatIndex, ITrainableFloatIndex, IIDSe
         }
     }
     
-    private static FaissIndexHandle CreateHandle(T baseIndex)
+    private static FaissIndexHandle CreateHandle(T baseIndex, bool ownBaseIndex)
     {
         if (baseIndex.Metric != MetricType.L2 && baseIndex.Metric != MetricType.InnerProduct)
             throw new ArgumentOutOfRangeException(nameof(baseIndex), "Metric must be L2 or InnerProduct");
@@ -89,7 +105,13 @@ public sealed class IndexRefineFlat<T> : FloatIndex, ITrainableFloatIndex, IIDSe
             throw new FaissArgumentException($"{nameof(baseIndex)} must be empty");
 
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexRefineFlat_new(out IntPtr ptr, baseIndex.Handle));
-        return new FaissIndexHandle<IndexRefineFlatRelease>(ptr);
+
+        if (ownBaseIndex)
+            return new FaissIndexHandle<IndexRefineFlatRelease>(ptr);
+
+        var keepAlive = new FaissDependentIndexHandle<IndexRefineFlatRelease>(ptr);
+        keepAlive.AddDependency(baseIndex.Handle);
+        return keepAlive;
     }
     
     private static FaissIndexHandle Wrap(IntPtr handle, bool ownsHandle = true)
@@ -104,7 +126,7 @@ public sealed class IndexRefineFlat<T> : FloatIndex, ITrainableFloatIndex, IIDSe
 
     public override void Dispose()
     {
-        if (_ownBaseIndex)
+        if (BaseIndex.Handle is FaissBorrowedIndexHandle)
         {
             BaseIndex.Dispose();
         }
