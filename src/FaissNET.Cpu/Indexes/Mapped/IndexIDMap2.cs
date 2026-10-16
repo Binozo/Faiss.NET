@@ -17,21 +17,33 @@ namespace Faiss.Cpu.Indexes.Mapped;
 /// Use this wrapper with indexes that do not natively support custom IDs
 /// (e.g. <see cref="IndexFlatL2"/>, <see cref="IndexHNSW"/>, <see cref="IndexPQ"/>).
 /// </remarks>
-public sealed class IndexIDMap2<T> : MappedIndex<IndexIDMap2<T>, T>, IFromNativeIndexHandle<IndexIDMap2<T>>, IComputeResidualFloatIndex, IReconstructFloatIndex where T : class, IIDSequentialFloatIndex, IFloatIndex, IFromNativeIndexHandle<T>
+public sealed class IndexIDMap2<T> : MappedIndex<IndexIDMap2<T>, T>, IFromNativeIndexHandle<IndexIDMap2<T>>, IComputeResidualFloatIndex, IReconstructFloatIndex, IKeyLayout where T : class, IIDSequentialFloatIndex, IFloatIndex, IFromNativeIndexHandle<T>
 {
-    private readonly T _subIndex;
-    private readonly bool _takeOwnership;
+    /// <inheritdoc cref="IndexIDMap{T}.SubIndex"/>
+    public readonly T SubIndex;
 
-    public IndexIDMap2(T index, bool takeOwnership = false) : this(index.Handle, index, takeOwnership)
+    /// <inheritdoc cref="IndexIDMap{T}(T, bool)"/>
+    public IndexIDMap2(T index, bool takeOwnership = false) : base(CreateHandle(OwnershipGuard.RequireIndependent(index, nameof(index)).Handle, takeOwnership))
     {
+        OwnsSubIndex = takeOwnership;
+
+        if (takeOwnership)
+        {
+            index.Handle.SetHandleAsInvalid();
+            SubIndex = T.FromBorrowed(Native.faiss_IndexIDMap2_sub_index(NativeHandle), NativeHandle);
+        }
+        else
+        {
+            SubIndex = index;
+        }
+
+        ReconstructRevMap();
     }
 
-    private IndexIDMap2(FaissIndexHandle subIndexHandle, T? subIndex = null, bool takeOwnership = false) : base(CreateHandle(subIndexHandle))
+    private IndexIDMap2(FaissIndexHandle handle) : base(handle)
     {
-        _subIndex = subIndex ?? T.FromPointer(Native.faiss_IndexIDMap2_sub_index(subIndexHandle));
-        OwnsSubIndex = takeOwnership;
-        _takeOwnership = takeOwnership;
-        
+        SubIndex = T.FromBorrowed(Native.faiss_IndexIDMap2_sub_index(handle), handle);
+
         ReconstructRevMap();
     }
 
@@ -53,19 +65,26 @@ public sealed class IndexIDMap2<T> : MappedIndex<IndexIDMap2<T>, T>, IFromNative
     
     public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVectors, residualVectors, keys);
 
-    private static FaissIndexHandle CreateHandle(FaissIndexHandle subIndexHandle)
+    private static FaissIndexHandle CreateHandle(FaissIndexHandle subIndexHandle, bool takeOwnership)
     {
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexIDMap2_new(out var ptr, subIndexHandle));
-        return new FaissIndexHandle(ptr);
+
+        if (takeOwnership)
+            return new FaissIndexHandle(ptr);
+
+        var handle = new FaissDependentIndexHandle<IndexRelease>(ptr);
+        handle.AddDependency(subIndexHandle);
+        return handle;
     }
 
-    static IndexIDMap2<T> IFromNativeIndexHandle<IndexIDMap2<T>>.FromHandle(FaissIndexHandle handle) => new(handle, takeOwnership: true);
+    static IndexIDMap2<T> IFromNativeIndexHandle<IndexIDMap2<T>>.FromHandle(FaissIndexHandle handle) => new(handle);
 
     public override void Dispose()
     {
-        if (_takeOwnership)
+        // A view of the sub-index references this map's own handle and keeps it alive thus it must be released first
+        if (SubIndex.Handle is FaissBorrowedIndexHandle)
         {
-            _subIndex.Handle.SetHandleAsInvalid();
+            SubIndex.Dispose();
         }
 
         base.Dispose();
