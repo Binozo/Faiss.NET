@@ -61,4 +61,18 @@ internal static class ReconstructBinaryIndexImpl
 
         return vectors;
     }
+
+    /// <summary>
+    /// Rejects <c>[startKey, startKey + count)</c> unless every position in it holds a vector.
+    /// Otherwise a bad key could read foreign memory because faiss is missing an out-of-bounds check.
+    /// </summary>
+    internal static void ThrowIfRangeExceedsCount(INativeBinaryIndex index, long startKey, long count)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(startKey);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+
+        long total = index.TotalCount;
+        if (count > total - startKey)
+            throw new ArgumentOutOfRangeException(nameof(count), count, $"Range [{startKey}, {startKey} + {count}) exceeds the {total} vectors in the index.");
+    }
 }
