@@ -15,23 +15,27 @@ internal readonly struct IndexIVFScalarQuantizerRelease : IFaissRelease
 }
 
 public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScalarQuantizer<T>>, IIVFIndex, ITrainableFloatIndex, IIDMappedFloatIndex, ISerializableFloatIndex, IFromNativeIndexHandle<IndexIVFScalarQuantizer<T>>,
-    IGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>> where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
+    IGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>>, IListNumberPrefixedCodes where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
 {
     public readonly ScalarQuantizer ScalarQuantizer;
-    private readonly T _quantizer;
 
+    /// <inheritdoc cref="IndexIVFFlat{T}(T, int, int, MetricType, bool)"/>
     public IndexIVFScalarQuantizer(T quantizer, int dimensions, int nlist, QuantizerType qt, MetricType metric = MetricType.L2, bool encodeResidual = true, bool ownQuantizer = false) : this(
-        CreateHandle(quantizer, dimensions, nlist, qt, metric, encodeResidual), quantizer, ownQuantizer)
+        CreateHandle(OwnershipGuard.RequireIndependent(quantizer, nameof(quantizer)), dimensions, nlist, qt, metric, encodeResidual, ownQuantizer), ownQuantizer)
     {
+        if (ownQuantizer)
+            quantizer.Handle.SetHandleAsInvalid();
     }
 
-    private IndexIVFScalarQuantizer(FaissIndexHandle handle, T? quantizer = null, bool ownFields = false) : base(handle)
+    /// <param name="ownFields">Override the ownership. Keep <see langword="null"/> when wrapping if you want to keep default faiss behavior.</param>
+    private IndexIVFScalarQuantizer(FaissIndexHandle handle, bool? ownFields = null) : base(handle)
     {
-        OwnQuantizer = ownFields;
-        _quantizer = quantizer ?? T.FromPointer(Native.faiss_IndexIVFScalarQuantizer_quantizer(NativeHandle));
+        if (ownFields is bool own)
+        {
+            OwnQuantizer = own;
+        }
 
-        FaissScalarQuantizerHandle scalarQuantizerHandle = new FaissScalarQuantizerHandle(Native.faiss_IndexIVFScalarQuantizer_sq(NativeHandle));
-        ScalarQuantizer = new ScalarQuantizer(scalarQuantizerHandle);
+        ScalarQuantizer = new ScalarQuantizer(new FaissBorrowedScalarQuantizerHandle(Native.faiss_IndexIVFScalarQuantizer_sq(handle), handle));
     }
 
     public bool OwnQuantizer
@@ -103,7 +107,7 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
     /// <inheritdoc />
     public double ImbalanceFactor => Native.faiss_IndexIVF_imbalance_factor(NativeHandle);
 
-    private static FaissIndexHandle CreateHandle(T quantizer, int dimensions, int nlist, QuantizerType qt, MetricType metric = MetricType.L2, bool encodeResidual = true)
+    private static FaissIndexHandle CreateHandle(T quantizer, int dimensions, int nlist, QuantizerType qt, MetricType metric, bool encodeResidual, bool ownQuantizer)
     {
         if (quantizer.Dimensions != dimensions)
         {
@@ -111,7 +115,13 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
         }
 
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVFScalarQuantizer_new_with_metric(out IntPtr handle, quantizer.Handle, (nuint)dimensions, (nuint)nlist, qt, metric, encodeResidual));
-        return new FaissIndexHandle<IndexIVFScalarQuantizerRelease>(handle);
+
+        if (ownQuantizer)
+            return new FaissIndexHandle<IndexIVFScalarQuantizerRelease>(handle);
+
+        var keepAlive = new FaissDependentIndexHandle<IndexIVFScalarQuantizerRelease>(handle);
+        keepAlive.AddDependency(quantizer.Handle);
+        return keepAlive;
     }
     
     private static FaissIndexHandle Wrap(IntPtr handle, bool ownsHandle = true)
