@@ -92,17 +92,7 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
     public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, SearchParametersIVF parameters, Span<float> distances, Span<long> labels) =>
         SearchWithParams(count, queryVectors, k, (SearchParameters)parameters, distances, labels);
 
-    public override float[] Reconstruct(long key)
-    {
-        DirectMap = true;
-        return base.Reconstruct(key);
-    }
-
-    public override float[] Reconstruct(long startKey, long count)
-    {
-        DirectMap = true;
-        return base.Reconstruct(startKey, count);
-    }
+    private protected override KeyLayout KeyLayout => KeyLayout.CheckedIds;
 
     /// <inheritdoc />
     public double ImbalanceFactor => Native.faiss_IndexIVF_imbalance_factor(NativeHandle);
