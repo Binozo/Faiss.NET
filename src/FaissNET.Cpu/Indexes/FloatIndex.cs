@@ -22,10 +22,19 @@ public abstract class FloatIndex : IFloatIndex, INativeIndex
 
     public MetricType Metric => Native.faiss_Index_metric_type(NativeHandle);
 
+    /// <summary>
+    /// Rejects a positive <paramref name="k"/> the native index cannot search with.
+    /// Intended for indexes where faiss would literally kill the process instead of throwing.
+    /// </summary>
+    internal virtual void ThrowIfKUnsupported(long k)
+    {
+    }
+
     public virtual unsafe void Search(long count, ReadOnlySpan<float> queryVectors, int k, Span<float> distances, Span<long> labels)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
+        ThrowIfKUnsupported(k);
 
         long queryLength = checked(count * Dimensions);
         long resultLength = checked(count * k);
@@ -51,6 +60,7 @@ public abstract class FloatIndex : IFloatIndex, INativeIndex
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
+        ThrowIfKUnsupported(k);
 
         long queryLength = checked(count * Dimensions);
         long resultLength = checked(count * k);
