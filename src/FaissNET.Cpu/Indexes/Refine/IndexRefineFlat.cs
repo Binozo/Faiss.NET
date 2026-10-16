@@ -65,7 +65,7 @@ public sealed class IndexRefineFlat<T> : FloatIndex, ITrainableFloatIndex, IIDSe
     public void Decode(long count, ReadOnlySpan<byte> inputBytes, Span<float> outputVectors) => CodeFloatIndexImpl.Decode(this, count, inputBytes, outputVectors);
 
     /// <summary>
-    /// Oversampling factor for refinement. Must be >= 1.
+    /// Oversampling factor for refinement, in [1, 1000].
     /// When searching for k results, the base index is queried for k * KFactor candidates,
     /// which are then re-ranked exactly by the internal flat index.
     /// </summary>
@@ -74,8 +74,8 @@ public sealed class IndexRefineFlat<T> : FloatIndex, ITrainableFloatIndex, IIDSe
         get => Native.faiss_IndexRefineFlat_k_factor(NativeHandle);
         set
         {
-            if (value < 1.0f)
-                throw new ArgumentOutOfRangeException(nameof(value), "KFactor must be >= 1");
+            if (!float.IsFinite(value) || value < 1.0f || value > 1000.0f)
+                throw new ArgumentOutOfRangeException(nameof(value), value, "KFactor must be finite and in [1, 1000].");
             Native.faiss_IndexRefineFlat_set_k_factor(NativeHandle, value);
         }
     }
