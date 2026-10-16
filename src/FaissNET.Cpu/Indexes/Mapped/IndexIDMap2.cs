@@ -43,6 +43,8 @@ public sealed class IndexIDMap2<T> : MappedIndex<IndexIDMap2<T>, T>, IFromNative
 
     private void ReconstructRevMap() => FaissErrorHandler.ThrowIfError(Native.faiss_IndexIDMap2_construct_rev_map(NativeHandle));
 
+    KeyLayout IKeyLayout.KeyLayout => KeyLayout.Ids;
+
     public float[] Reconstruct(long key) =>  ReconstructFloatIndexImpl.Reconstruct(this, key);
 
     public float[] Reconstruct(long startKey, long count)  => ReconstructFloatIndexImpl.Reconstruct(this, startKey, count);
