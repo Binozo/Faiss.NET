@@ -56,9 +56,10 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
         set => Native.faiss_IndexIVFScalarQuantizer_set_nprobe(NativeHandle, (nuint)value);
     }
 
+    /// <inheritdoc cref="IndexIVFFlat{T}.DirectMap"/>
     public bool DirectMap
     {
-        set => FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVF_make_direct_map(NativeHandle, value));
+        set => FloatDirectMapImpl.Make(NativeHandle, value);
     }
 
     /// <inheritdoc />
