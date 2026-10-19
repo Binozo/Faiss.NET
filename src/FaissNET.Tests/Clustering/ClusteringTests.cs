@@ -40,22 +40,49 @@ public class ClusteringTests
     }
 
     [Fact]
-    public void Train_WithDefaultOptions_ProducesKCentroids()
+    public void Train_CentroidsAreTheMeansOfWellSeparatedClusters()
     {
-        using var clustering = new Faiss.Cpu.Clustering.Clustering(Dimensions, K, new ClusteringOptions());
-        using var index = new IndexFlatL2(Dimensions);
+        float[][] centers = [[2, 2, 0, 0], [2, -2, 0, 0], [-2, 2, 0, 0], [-2, -2, 0, 0]];
+        const int perCluster = 64;
+        const float spread = 0.05f;
 
-        var train = Vectors.Random(seed: 150, count: Count, dimensions: Dimensions);
-        clustering.Train(Count, train, index);
+        // Row-major, cluster-major -> points [c * perCluster, (c + 1) * perCluster) belong to centers[c].
+        var noise = Vectors.Random(seed: 150, count: centers.Length * perCluster, dimensions: Dimensions);
+        var train = new float[noise.Length];
+        for (var i = 0; i < train.Length; i++)
+        {
+            train[i] = centers[i / (perCluster * Dimensions)][i % Dimensions] + spread * noise[i];
+        }
+
+        using var clustering = new Faiss.Cpu.Clustering.Clustering(Dimensions, centers.Length, new ClusteringOptions { Nredo = 10 });
+        using var index = new IndexFlatL2(Dimensions);
+        clustering.Train(train.Length / Dimensions, train, index);
 
         var centroids = clustering.GetCentroids();
+        Assert.Equal(centers.Length * Dimensions, centroids.Length);
+        Assert.Equal(centers.Length, index.TotalCount);
 
-        Assert.Equal(K * Dimensions, centroids.Length);
+        var matched = new HashSet<int>();
+        for (var c = 0; c < centers.Length; c++)
+        {
+            var nearest = Enumerable.Range(0, centers.Length)
+                .MinBy(j => Oracles.L2Sqr(centers[c], centroids.AsSpan(j * Dimensions, Dimensions)));
+            Assert.True(matched.Add(nearest), $"Centroid {nearest} is the nearest to more than one cluster.");
 
-        Assert.All(centroids, v => Assert.InRange(v, -1.5f, 1.5f));
-        Assert.Contains(centroids, v => v != 0f);
+            var mean = new float[Dimensions];
+            for (var j = 0; j < Dimensions; j++)
+            {
+                double sum = 0;
+                for (var p = c * perCluster; p < (c + 1) * perCluster; p++)
+                {
+                    sum += train[p * Dimensions + j];
+                }
 
-        Assert.Equal(K, index.TotalCount);
+                mean[j] = (float)(sum / perCluster);
+            }
+
+            FloatAssert.Equal(mean, centroids.AsSpan(nearest * Dimensions, Dimensions), absTol: 1e-4f);
+        }
     }
 
     [Fact]
