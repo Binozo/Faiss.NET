@@ -28,6 +28,9 @@ public class SearchParameters : IDisposable
         _selector = selector;
     }
 
+    /// <summary>Whether these parameters restrict the search to an <see cref="IDSelector"/>.</summary>
+    internal bool HasSelector => _selector is not null;
+
     private static FaissSearchParametersHandle CreateHandle(IDSelector? selector = null)
     {
         FaissErrorHandler.ThrowIfError(
