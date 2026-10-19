@@ -2,10 +2,10 @@ namespace Faiss.Cpu.Search;
 
 using System.Buffers;
 
-public readonly struct PooledSearchResults : IDisposable
+public struct PooledSearchResults : IDisposable
 {
-    private readonly float[] _distances;
-    private readonly long[] _labels;
+    private float[]? _distances;
+    private long[]? _labels;
     private readonly int _k;
     private readonly int _count;
 
@@ -17,13 +17,15 @@ public readonly struct PooledSearchResults : IDisposable
         _count = count;
     }
 
-    public int Count => _count;
-    public int K => _k;
+    public readonly int Count => _count;
+    public readonly int K => _k;
 
-    public SearchResult this[int queryIndex, int neighborIndex]
+    public readonly SearchResult this[int queryIndex, int neighborIndex]
     {
         get
         {
+            ObjectDisposedException.ThrowIf(_labels is null && _count != 0, typeof(PooledSearchResults));
+
             if ((uint)queryIndex >= (uint)_count)
                 throw new ArgumentOutOfRangeException(
                     nameof(queryIndex), queryIndex, $"Query index must be < {_count}");
@@ -33,13 +35,20 @@ public readonly struct PooledSearchResults : IDisposable
                     nameof(neighborIndex), neighborIndex, $"Neighbor index must be < {_k}");
 
             int idx = queryIndex * _k + neighborIndex;
-            return new(_labels![idx], _distances[idx]);
+            return new(_labels![idx], _distances![idx]);
         }
     }
 
     public void Dispose()
     {
-        ArrayPool<float>.Shared.Return(_distances);
-        ArrayPool<long>.Shared.Return(_labels);
+        var distances = _distances;
+        var labels = _labels;
+        _distances = null;
+        _labels = null;
+
+        if (distances is not null)
+            ArrayPool<float>.Shared.Return(distances);
+        if (labels is not null)
+            ArrayPool<long>.Shared.Return(labels);
     }
 }
