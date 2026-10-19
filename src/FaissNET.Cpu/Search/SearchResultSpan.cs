@@ -5,10 +5,10 @@ using System.Buffers;
 /// <summary>
 /// Search result that owns pooled arrays. Dispose to return arrays to pool.
 /// </summary>
-public readonly ref struct SearchResultSpan : IDisposable
+public ref struct SearchResultSpan : IDisposable
 {
-    private readonly float[]? _distancesArray;
-    private readonly long[]? _labelsArray;
+    private float[]? _distancesArray;
+    private long[]? _labelsArray;
     private readonly int _k;
 
     /// <summary>
@@ -21,15 +21,31 @@ public readonly ref struct SearchResultSpan : IDisposable
         _k = k;
     }
 
-    public int Length => _k;
-    
-    public ReadOnlySpan<float> Distances => _distancesArray.AsSpan(0, _k);
-    public ReadOnlySpan<long> Labels =>  _labelsArray.AsSpan(0, _k);
+    public readonly int Length => _k;
 
-    public SearchResult this[int index]
+    public readonly ReadOnlySpan<float> Distances
     {
         get
         {
+            ThrowIfDisposed();
+            return _distancesArray.AsSpan(0, _k);
+        }
+    }
+
+    public readonly ReadOnlySpan<long> Labels
+    {
+        get
+        {
+            ThrowIfDisposed();
+            return _labelsArray.AsSpan(0, _k);
+        }
+    }
+
+    public readonly SearchResult this[int index]
+    {
+        get
+        {
+            ThrowIfDisposed();
             if ((uint)index >= (uint)_k)
                 throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be < {_k}");
 
@@ -41,6 +57,8 @@ public readonly ref struct SearchResultSpan : IDisposable
     {
         var distances = _distancesArray;
         var labels = _labelsArray;
+        _distancesArray = null;
+        _labelsArray = null;
 
         if (distances is not null)
             ArrayPool<float>.Shared.Return(distances);
@@ -48,7 +66,10 @@ public readonly ref struct SearchResultSpan : IDisposable
             ArrayPool<long>.Shared.Return(labels);
     }
 
-    public SearchResultSpan.Enumerator GetEnumerator() => new(this);
+    public readonly SearchResultSpan.Enumerator GetEnumerator() => new(this);
+
+    private readonly void ThrowIfDisposed() =>
+        ObjectDisposedException.ThrowIf(_labelsArray is null && _k != 0, typeof(SearchResultSpan));
 
     public ref struct Enumerator
     {
@@ -61,7 +82,7 @@ public readonly ref struct SearchResultSpan : IDisposable
             _index = -1;
         }
 
-        public SearchResult Current => _result[_index];
+        public readonly SearchResult Current => _result[_index];
         public bool MoveNext() => ++_index < _result.Length;
     }
 }
