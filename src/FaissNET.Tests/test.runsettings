@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+    <RunConfiguration>
+        <EnvironmentVariables>
+            <!-- Helper to detect use-after-frees.-->
+            <MALLOC_PERTURB_>165</MALLOC_PERTURB_>
+        </EnvironmentVariables>
+    </RunConfiguration>
+</RunSettings>
