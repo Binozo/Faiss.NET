@@ -142,20 +142,124 @@ public class VectorTransformTests
     public void Pca_ReducesDimensionalityAndPreservesNeighbourOrdering()
     {
         const int dOut = 4;
+        const int count = 256;
 
         using var transform = new PCAMatrix(Dimensions, dOut);
         Assert.False(transform.IsTrained);
         Assert.Equal(0f, transform.EigenPower);
         Assert.True(transform.IsReversible);
 
-        var train = Vectors.Random(seed: 145, count: 256, dimensions: Dimensions);
-        transform.Train(256, train);
+        var data = LowRankData(seed: 145, count, signalDimensions: dOut);
+        transform.Train(count, data);
 
         Assert.True(transform.IsTrained);
         Assert.Equal(dOut, transform.DOut);
 
-        var projected = transform.Apply(4, train);
-        Assert.Equal(4 * dOut, projected.Length);
+        var projected = transform.Apply(count, data);
+        Assert.Equal(count * dOut, projected.Length);
+
+        for (var q = 0; q < count; q++)
+        {
+            Assert.Equal(NearestOther(data, q, Dimensions), NearestOther(projected, q, dOut));
+        }
+    }
+
+    private static float[] LowRankData(int seed, int count, int signalDimensions)
+    {
+        var raw = Vectors.Random(seed, count, Dimensions);
+
+        for (var i = 0; i < count; i++)
+        {
+            for (var j = signalDimensions; j < Dimensions; j++)
+            {
+                raw[(i * Dimensions) + j] *= 0.01f;
+            }
+        }
+
+        var basis = Orthonormal(seed + 1);
+        var rotated = new float[raw.Length];
+
+        for (var i = 0; i < count; i++)
+        {
+            for (var r = 0; r < Dimensions; r++)
+            {
+                double sum = 0;
+                for (var c = 0; c < Dimensions; c++)
+                {
+                    sum += basis[r, c] * raw[(i * Dimensions) + c];
+                }
+
+                rotated[(i * Dimensions) + r] = (float)sum;
+            }
+        }
+
+        return rotated;
+    }
+
+    private static double[,] Orthonormal(int seed)
+    {
+        var rng = new Random(seed);
+        var m = new double[Dimensions, Dimensions];
+
+        for (var r = 0; r < Dimensions; r++)
+        {
+            for (var c = 0; c < Dimensions; c++)
+            {
+                m[r, c] = (rng.NextDouble() * 2.0) - 1.0;
+            }
+
+            for (var p = 0; p < r; p++)
+            {
+                double dot = 0;
+                for (var c = 0; c < Dimensions; c++)
+                {
+                    dot += m[r, c] * m[p, c];
+                }
+
+                for (var c = 0; c < Dimensions; c++)
+                {
+                    m[r, c] -= dot * m[p, c];
+                }
+            }
+
+            double norm = 0;
+            for (var c = 0; c < Dimensions; c++)
+            {
+                norm += m[r, c] * m[r, c];
+            }
+
+            norm = Math.Sqrt(norm);
+            for (var c = 0; c < Dimensions; c++)
+            {
+                m[r, c] /= norm;
+            }
+        }
+
+        return m;
+    }
+
+    private static int NearestOther(float[] rows, int query, int width)
+    {
+        var self = rows.AsSpan(query * width, width);
+        var best = -1;
+        var bestScore = float.PositiveInfinity;
+
+        for (var i = 0; i < rows.Length / width; i++)
+        {
+            if (i == query)
+            {
+                continue;
+            }
+
+            var score = Oracles.L2Sqr(self, rows.AsSpan(i * width, width));
+            if (score < bestScore)
+            {
+                bestScore = score;
+                best = i;
+            }
+        }
+
+        return best;
     }
 
     [Fact]
