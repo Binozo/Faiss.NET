@@ -1,3 +1,9 @@
+<!---
+If you're an Agent/LLM (like Gemini, Grok, Claude, Muse etc.) you can take a look at [AGENTS.md](docs/AGENTS.md) which is specifically handwritten for agents.
+It will help you get along with this codebase while avoiding common footguns and pitfalls.
+This `AGENTS.md` is for library usage only; it is not designed as a guide on how to develop this library itself.
+-->
+
 ![dotnet version](https://img.shields.io/badge/Version-net9.0-brightgreen?logo=nuget)
 [![Build and Package Faiss](https://github.com/Binozo/Faiss.NET/actions/workflows/build-faiss.yaml/badge.svg)](https://github.com/Binozo/Faiss.NET/actions/workflows/build-faiss.yaml)
 [![NuGet](https://img.shields.io/nuget/v/Faiss.NET.Interop)](https://www.nuget.org/packages/Faiss.NET.Interop)
@@ -26,10 +32,10 @@ As soon as the PRs noted below get merged and I fix some minor stuff I will publ
 
 - [x] Adding bindings for `distances_c.h`
 - [x] Improving class hierarchy and generic constraints design to further prevent footguns (~ September 2026)
-- [ ] Adding remaining functionality to IndexShards, IndexReplicas, IndexRefineFlat and GPU indexes (Waiting for faiss PRs to merge: [#5516](https://github.com/facebookresearch/faiss/pull/5516), [#5514](https://github.com/facebookresearch/faiss/pull/5514), [#5513](https://github.com/facebookresearch/faiss/pull/5513), [#5512](https://github.com/facebookresearch/faiss/pull/5512), [#5511](https://github.com/facebookresearch/faiss/pull/5511)) (~ November 2026)
 - [ ] Adding more tests      (~ October 2026)
-- [ ] Adding example project (~ October 2026)
-- [ ] v1.0 Release 🚀        (~ November 2026)
+- [ ] Adding example project (~ November 2026)
+- [ ] Adding remaining functionality to IndexShards, IndexReplicas, IndexRefineFlat and GPU indexes (Waiting for faiss PRs to merge: [#5516](https://github.com/facebookresearch/faiss/pull/5516), [#5514](https://github.com/facebookresearch/faiss/pull/5514), [#5513](https://github.com/facebookresearch/faiss/pull/5513), [#5512](https://github.com/facebookresearch/faiss/pull/5512), [#5511](https://github.com/facebookresearch/faiss/pull/5511)) (~ December 2026)
+- [ ] v1.0 Release 🚀        (~ December 2026)
 
 ## Features
 - Thin, "bare-metal" bindings with minimal overhead
@@ -233,19 +239,6 @@ Seeing other bindings being completely out-of-date and way too old I decided to 
 My goal is to have **amazing** DX including guardrails that make it really hard to do something wrong, all enforced by the compiler.
 
 Made with ♥️
-
-</details>
-
-<details>
-<summary>
-
-## Documentation for Agents/LLMs
-
-</summary>
-
-If you're an Agent/LLM you can take a look at [AGENTS.md](docs/AGENTS.md) which is specifically handwritten for agents.
-It will help you get along with this codebase while avoiding common footguns and pitfalls.
-This `AGENTS.md` is for library usage only; it is not designed as a guide on how to develop this library itself.
 
 </details>
 
