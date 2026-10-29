@@ -23,12 +23,12 @@ public class FaissErrorMappingTests
     [Fact]
     public void StdException_MapsToFaissRuntimeException()
     {
-        // An nlist that overflows the parser raises std::out_of_range.
+        // An nlist that overflows the parser makes std::stoi throw std::out_of_range.
         var ex = Assert.Throws<FaissRuntimeException>(
             () => IndexFactory.Create<GenericFloatIndex>("IVF99999999999999999999,Flat", 8, MetricType.L2)
         );
 
-        Assert.Contains("std::exception", ex.Message);
+        Assert.Contains("stoi", ex.Message);
     }
 
     [Fact]

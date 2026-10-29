@@ -1,0 +1,64 @@
+diff --git a/c_api/error_impl.cpp b/c_api/error_impl.cpp
+index a0c2d52fe..728c9c023 100644
+--- a/c_api/error_impl.cpp
++++ b/c_api/error_impl.cpp
+@@ -10,16 +10,22 @@
+ #include "error_impl.h"
+ #include <faiss/impl/FaissException.h>
+ #include <exception>
++#include <string>
+ #include "error_c.h"
+ 
+ thread_local std::exception_ptr faiss_last_exception;
+ 
++namespace {
++thread_local std::string faiss_last_error_message;
++}
++
+ const char* faiss_get_last_error() {
+     if (faiss_last_exception) {
+         try {
+             std::rethrow_exception(faiss_last_exception);
+         } catch (std::exception& e) {
+-            return e.what();
++            faiss_last_error_message = e.what();
++            return faiss_last_error_message.c_str();
+         }
+     }
+     return nullptr;
+diff --git a/c_api/macros_impl.h b/c_api/macros_impl.h
+index 6c3fd8a52..35f01f554 100644
+--- a/c_api/macros_impl.h
++++ b/c_api/macros_impl.h
+@@ -20,12 +20,12 @@
+ 
+ #ifdef NDEBUG
+ #define CATCH_AND_HANDLE                                                      \
+-    catch (faiss::FaissException & e) {                                       \
+-        faiss_last_exception = std::make_exception_ptr(e);                    \
++    catch (faiss::FaissException&) {                                          \
++        faiss_last_exception = std::current_exception();                      \
+         return -2;                                                            \
+     }                                                                         \
+-    catch (std::exception & e) {                                              \
+-        faiss_last_exception = std::make_exception_ptr(e);                    \
++    catch (std::exception&) {                                                 \
++        faiss_last_exception = std::current_exception();                      \
+         return -4;                                                            \
+     }                                                                         \
+     catch (...) {                                                             \
+@@ -38,12 +38,12 @@
+ #define CATCH_AND_HANDLE                                                      \
+     catch (faiss::FaissException & e) {                                       \
+         std::cerr << e.what() << '\n';                                        \
+-        faiss_last_exception = std::make_exception_ptr(e);                    \
++        faiss_last_exception = std::current_exception();                      \
+         return -2;                                                            \
+     }                                                                         \
+     catch (std::exception & e) {                                              \
+         std::cerr << e.what() << '\n';                                        \
+-        faiss_last_exception = std::make_exception_ptr(e);                    \
++        faiss_last_exception = std::current_exception();                      \
+         return -4;                                                            \
+     }                                                                         \
+     catch (...) {                                                             \
