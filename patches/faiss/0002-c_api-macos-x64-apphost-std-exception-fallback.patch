@@ -1,0 +1,82 @@
+diff --git a/c_api/error_impl.cpp b/c_api/error_impl.cpp
+index b91efa633..a6f1876b9 100644
+--- a/c_api/error_impl.cpp
++++ b/c_api/error_impl.cpp
+@@ -11,10 +11,56 @@
+ #include <exception>
+ #include <string>
+ #include "error_c.h"
++#if defined(__APPLE__)
++#include <cxxabi.h>
++#include <cstring>
++#include <typeinfo>
++#endif
+ 
+ namespace {
+ thread_local bool faiss_has_last_error = false;
+ thread_local std::string faiss_last_error_message;
++
++#if defined(__APPLE__)
++struct BaseClassInfo {
++    const std::type_info* type;
++    long offset_flags;
++};
++
++const void* find_std_exception(const std::type_info* type, const void* object) {
++    if (std::strcmp(type->name(), "St9exception") == 0) {
++        return object;
++    }
++    const char* kind = typeid(*type).name();
++    const char* fields =
++            reinterpret_cast<const char*>(type) + sizeof(std::type_info);
++    if (std::strcmp(kind, "N10__cxxabiv120__si_class_type_infoE") == 0) {
++        return find_std_exception(
++                *reinterpret_cast<const std::type_info* const*>(fields),
++                object);
++    }
++    if (std::strcmp(kind, "N10__cxxabiv121__vmi_class_type_infoE") == 0) {
++        unsigned count = reinterpret_cast<const unsigned*>(fields)[1];
++        const BaseClassInfo* bases = reinterpret_cast<const BaseClassInfo*>(
++                fields + 2 * sizeof(unsigned));
++        for (unsigned i = 0; i < count; ++i) {
++            long flags = bases[i].offset_flags;
++            bool is_virtual = flags & 1;
++            bool is_public = flags & 2;
++            if (is_virtual || !is_public) {
++                continue;
++            }
++            const void* found = find_std_exception(
++                    bases[i].type,
++                    static_cast<const char*>(object) + (flags >> 8));
++            if (found) {
++                return found;
++            }
++        }
++    }
++    return nullptr;
++}
++#endif
+ }
+ 
+ void faiss_set_last_error(const char* message) {
+@@ -23,6 +69,20 @@ void faiss_set_last_error(const char* message) {
+ }
+ 
+ int faiss_handle_unknown_exception() {
++#if defined(__APPLE__)
++    if (const std::type_info* type = abi::__cxa_current_exception_type()) {
++        void* object = abi::__cxa_current_primary_exception();
++        const void* found = object ? find_std_exception(type, object) : nullptr;
++        if (found) {
++            faiss_set_last_error(
++                    static_cast<const std::exception*>(found)->what());
++        }
++        abi::__cxa_decrement_exception_refcount(object);
++        if (found) {
++            return -4;
++        }
++    }
++#endif
+     faiss_set_last_error("Unknown error");
+     return -1;
+ }

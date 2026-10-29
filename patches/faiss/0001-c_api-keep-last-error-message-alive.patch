@@ -1,127 +1,103 @@
 diff --git a/c_api/error_impl.cpp b/c_api/error_impl.cpp
-index a0c2d52fe..ee1c9ed47 100644
+index a0c2d52fe..b91efa633 100644
 --- a/c_api/error_impl.cpp
 +++ b/c_api/error_impl.cpp
-@@ -10,17 +10,62 @@
+@@ -8,19 +8,25 @@
+ // -*- c++ -*-
+ 
  #include "error_impl.h"
- #include <faiss/impl/FaissException.h>
+-#include <faiss/impl/FaissException.h>
  #include <exception>
 +#include <string>
-+#if defined(__APPLE__)
-+#include <cxxabi.h>
-+#include <dlfcn.h>
-+#include <cstdio>
-+#include <stdexcept>
-+#include <typeinfo>
-+#endif
  #include "error_c.h"
  
- thread_local std::exception_ptr faiss_last_exception;
- 
+-thread_local std::exception_ptr faiss_last_exception;
 +namespace {
++thread_local bool faiss_has_last_error = false;
 +thread_local std::string faiss_last_error_message;
 +}
 +
++void faiss_set_last_error(const char* message) {
++    faiss_last_error_message = message ? message : "";
++    faiss_has_last_error = true;
++}
++
++int faiss_handle_unknown_exception() {
++    faiss_set_last_error("Unknown error");
++    return -1;
++}
+ 
  const char* faiss_get_last_error() {
-     if (faiss_last_exception) {
-         try {
-             std::rethrow_exception(faiss_last_exception);
-         } catch (std::exception& e) {
+-    if (faiss_last_exception) {
+-        try {
+-            std::rethrow_exception(faiss_last_exception);
+-        } catch (std::exception& e) {
 -            return e.what();
-+            faiss_last_error_message = e.what();
-+            return faiss_last_error_message.c_str();
-         }
-     }
-     return nullptr;
+-        }
+-    }
+-    return nullptr;
++    return faiss_has_last_error ? faiss_last_error_message.c_str() : nullptr;
  }
-+
-+#if defined(__APPLE__)
-+namespace {
-+std::string describe_type_info(const char* label, const std::type_info* t) {
-+    Dl_info info = {};
-+    const char* image =
-+            t && dladdr(t, &info) && info.dli_fname ? info.dli_fname : "?";
-+    char buf[512];
-+    std::snprintf(
-+            buf,
-+            sizeof(buf),
-+            " %s{name=%s ti=%p name_ptr=%p image=%s}",
-+            label,
-+            t ? t->name() : "null",
-+            (const void*)t,
-+            t ? (const void*)t->name() : nullptr,
-+            image);
-+    return buf;
-+}
-+}
-+#endif
-+
-+std::string faiss_describe_unknown_exception() {
-+    std::string message = "Unknown error";
-+#if defined(__APPLE__)
-+    message += describe_type_info("thrown", abi::__cxa_current_exception_type());
-+    message += describe_type_info("std::exception", &typeid(std::exception));
-+    message += describe_type_info(
-+            "std::out_of_range", &typeid(std::out_of_range));
-+#endif
-+    return message;
-+}
 diff --git a/c_api/error_impl.h b/c_api/error_impl.h
-index 5fe7c1ec6..e84163d0c 100644
+index 5fe7c1ec6..54726e009 100644
 --- a/c_api/error_impl.h
 +++ b/c_api/error_impl.h
-@@ -8,8 +8,11 @@
+@@ -7,9 +7,6 @@
+ 
  // -*- c++ -*-
  
- #include <exception>
-+#include <string>
+-#include <exception>
++void faiss_set_last_error(const char* message);
  
- /** global variable for holding the last exception thrown by
-  * calls to Faiss functions through the C API
-  */
- extern thread_local std::exception_ptr faiss_last_exception;
-+
-+std::string faiss_describe_unknown_exception();
+-/** global variable for holding the last exception thrown by
+- * calls to Faiss functions through the C API
+- */
+-extern thread_local std::exception_ptr faiss_last_exception;
++int faiss_handle_unknown_exception();
 diff --git a/c_api/macros_impl.h b/c_api/macros_impl.h
-index 6c3fd8a52..8bb8ff090 100644
+index 6c3fd8a52..00c695970 100644
 --- a/c_api/macros_impl.h
 +++ b/c_api/macros_impl.h
-@@ -20,17 +20,17 @@
- 
+@@ -21,36 +21,32 @@
  #ifdef NDEBUG
  #define CATCH_AND_HANDLE                                                      \
--    catch (faiss::FaissException & e) {                                       \
+     catch (faiss::FaissException & e) {                                       \
 -        faiss_last_exception = std::make_exception_ptr(e);                    \
-+    catch (faiss::FaissException&) {                                          \
-+        faiss_last_exception = std::current_exception();                      \
++        faiss_set_last_error(e.what());                                       \
          return -2;                                                            \
      }                                                                         \
--    catch (std::exception & e) {                                              \
+     catch (std::exception & e) {                                              \
 -        faiss_last_exception = std::make_exception_ptr(e);                    \
-+    catch (std::exception&) {                                                 \
-+        faiss_last_exception = std::current_exception();                      \
++        faiss_set_last_error(e.what());                                       \
          return -4;                                                            \
      }                                                                         \
      catch (...) {                                                             \
 -        faiss_last_exception =                                                \
 -                std::make_exception_ptr(std::runtime_error("Unknown error")); \
-+        faiss_last_exception = std::make_exception_ptr(                       \
-+                std::runtime_error(faiss_describe_unknown_exception()));      \
-         return -1;                                                            \
+-        return -1;                                                            \
++        return faiss_handle_unknown_exception();                              \
      }                                                                         \
      return 0;
-@@ -38,12 +38,12 @@
+ #else
  #define CATCH_AND_HANDLE                                                      \
      catch (faiss::FaissException & e) {                                       \
          std::cerr << e.what() << '\n';                                        \
 -        faiss_last_exception = std::make_exception_ptr(e);                    \
-+        faiss_last_exception = std::current_exception();                      \
++        faiss_set_last_error(e.what());                                       \
          return -2;                                                            \
      }                                                                         \
      catch (std::exception & e) {                                              \
          std::cerr << e.what() << '\n';                                        \
 -        faiss_last_exception = std::make_exception_ptr(e);                    \
-+        faiss_last_exception = std::current_exception();                      \
++        faiss_set_last_error(e.what());                                       \
          return -4;                                                            \
      }                                                                         \
      catch (...) {                                                             \
+         std::cerr << "Unrecognized exception!\n";                             \
+-        faiss_last_exception =                                                \
+-                std::make_exception_ptr(std::runtime_error("Unknown error")); \
+-        return -1;                                                            \
++        return faiss_handle_unknown_exception();                              \
+     }                                                                         \
+     return 0;
+ #endif
