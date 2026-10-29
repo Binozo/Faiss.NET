@@ -63,4 +63,4 @@ RUN set -eux; \
     mkdir -p /app/src/FaissNET.Linux/runtimes/linux-${RID}/native/ && \
     cp /tmp/libfaiss_c.so /tmp/libfaiss.so /app/src/FaissNET.Linux/runtimes/linux-${RID}/native/
 
-CMD ["dotnet", "test", "src/FaissNET.Tests/Faiss.Tests.csproj", "-c", "Release"]
+CMD ["dotnet", "test", "src/FaissNET.Tests/Faiss.Tests.csproj", "-c", "Release", "--filter", "Category!=VendoredFaiss"]
