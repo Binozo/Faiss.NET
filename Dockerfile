@@ -41,7 +41,6 @@ RUN --mount=type=cache,id=apt,sharing=locked,target=/var/cache/apt \
     apt-get update && apt-get install -y --no-install-recommends \
     libopenblas0 \
     libgomp1 \
-    libgfortran5 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
