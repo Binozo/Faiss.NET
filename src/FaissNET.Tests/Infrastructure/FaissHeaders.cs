@@ -8,6 +8,8 @@ namespace Faiss.Tests.Infrastructure;
 /// </summary>
 public static class FaissHeaders
 {
+    public const string Trait = "VendoredFaiss";
+
     private static readonly string Root = FindVendoredFaiss();
 
     /// <summary>Value of a <c>const int NAME = …;</c> declaration, resolving references to earlier constants.</summary>
