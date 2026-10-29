@@ -1,12 +1,19 @@
 diff --git a/c_api/error_impl.cpp b/c_api/error_impl.cpp
-index a0c2d52fe..728c9c023 100644
+index a0c2d52fe..ee1c9ed47 100644
 --- a/c_api/error_impl.cpp
 +++ b/c_api/error_impl.cpp
-@@ -10,16 +10,22 @@
+@@ -10,17 +10,62 @@
  #include "error_impl.h"
  #include <faiss/impl/FaissException.h>
  #include <exception>
 +#include <string>
++#if defined(__APPLE__)
++#include <cxxabi.h>
++#include <dlfcn.h>
++#include <cstdio>
++#include <stdexcept>
++#include <typeinfo>
++#endif
  #include "error_c.h"
  
  thread_local std::exception_ptr faiss_last_exception;
@@ -26,11 +33,60 @@ index a0c2d52fe..728c9c023 100644
          }
      }
      return nullptr;
+ }
++
++#if defined(__APPLE__)
++namespace {
++std::string describe_type_info(const char* label, const std::type_info* t) {
++    Dl_info info = {};
++    const char* image =
++            t && dladdr(t, &info) && info.dli_fname ? info.dli_fname : "?";
++    char buf[512];
++    std::snprintf(
++            buf,
++            sizeof(buf),
++            " %s{name=%s ti=%p name_ptr=%p image=%s}",
++            label,
++            t ? t->name() : "null",
++            (const void*)t,
++            t ? (const void*)t->name() : nullptr,
++            image);
++    return buf;
++}
++}
++#endif
++
++std::string faiss_describe_unknown_exception() {
++    std::string message = "Unknown error";
++#if defined(__APPLE__)
++    message += describe_type_info("thrown", abi::__cxa_current_exception_type());
++    message += describe_type_info("std::exception", &typeid(std::exception));
++    message += describe_type_info(
++            "std::out_of_range", &typeid(std::out_of_range));
++#endif
++    return message;
++}
+diff --git a/c_api/error_impl.h b/c_api/error_impl.h
+index 5fe7c1ec6..e84163d0c 100644
+--- a/c_api/error_impl.h
++++ b/c_api/error_impl.h
+@@ -8,8 +8,11 @@
+ // -*- c++ -*-
+ 
+ #include <exception>
++#include <string>
+ 
+ /** global variable for holding the last exception thrown by
+  * calls to Faiss functions through the C API
+  */
+ extern thread_local std::exception_ptr faiss_last_exception;
++
++std::string faiss_describe_unknown_exception();
 diff --git a/c_api/macros_impl.h b/c_api/macros_impl.h
-index 6c3fd8a52..35f01f554 100644
+index 6c3fd8a52..8bb8ff090 100644
 --- a/c_api/macros_impl.h
 +++ b/c_api/macros_impl.h
-@@ -20,12 +20,12 @@
+@@ -20,17 +20,17 @@
  
  #ifdef NDEBUG
  #define CATCH_AND_HANDLE                                                      \
@@ -47,6 +103,13 @@ index 6c3fd8a52..35f01f554 100644
          return -4;                                                            \
      }                                                                         \
      catch (...) {                                                             \
+-        faiss_last_exception =                                                \
+-                std::make_exception_ptr(std::runtime_error("Unknown error")); \
++        faiss_last_exception = std::make_exception_ptr(                       \
++                std::runtime_error(faiss_describe_unknown_exception()));      \
+         return -1;                                                            \
+     }                                                                         \
+     return 0;
 @@ -38,12 +38,12 @@
  #define CATCH_AND_HANDLE                                                      \
      catch (faiss::FaissException & e) {                                       \
