@@ -81,6 +81,10 @@ jobs:
         echo "MKLROOT=/opt/intel/oneapi/mkl/latest" >> "$GITHUB_ENV"
         echo "BLAS_CMAKE_FLAGS=-DFAISS_ENABLE_MKL=ON -DBLA_VENDOR=Intel10_64lp_seq -DBLA_STATIC=ON" >> "$GITHUB_ENV"
 
+    - name: Apply Faiss Patches
+      shell: bash
+      run: for p in patches/faiss/*.patch; do git -C faiss apply --ignore-whitespace "../$p"; done
+
     - name: Configure Faiss
       working-directory: faiss
       run: |
@@ -285,6 +289,10 @@ jobs:
           key: ${{ github.job }}-${{ matrix.runner }}-${{ matrix.cuda_arch }}
           max-size: "10G"
 
+      - name: Apply Faiss Patches
+        shell: bash
+        run: for p in patches/faiss/*.patch; do git -C faiss apply --ignore-whitespace "../$p"; done
+
       - name: Configure Faiss
         working-directory: faiss
         run: |
@@ -414,6 +422,10 @@ jobs:
         with:
           key: ${{ github.job }}-${{ matrix.runner }}-${{ matrix.cuda_arch }}-12
           max-size: "10G"
+
+      - name: Apply Faiss Patches
+        shell: bash
+        run: for p in patches/faiss/*.patch; do git -C faiss apply --ignore-whitespace "../$p"; done
 
       - name: Configure Faiss
         working-directory: faiss
@@ -577,6 +589,10 @@ jobs:
           key: ${{ github.job }}-${{ matrix.runner }}-${{ matrix.rocm_arch }}
           max-size: "10G"
 
+      - name: Apply Faiss Patches
+        shell: bash
+        run: for p in patches/faiss/*.patch; do git -C faiss apply --ignore-whitespace "../$p"; done
+
       - name: Configure Faiss
         working-directory: faiss
         run: |
@@ -675,6 +691,10 @@ jobs:
     - name: Install Build Dependencies
       run: |
         brew install libomp
+
+    - name: Apply Faiss Patches
+      shell: bash
+      run: for p in patches/faiss/*.patch; do git -C faiss apply --ignore-whitespace "../$p"; done
 
     - name: Configure Faiss
       working-directory: faiss
@@ -979,6 +999,10 @@ jobs:
           key: ${{ github.job }}-${{ matrix.runner }}-${{ matrix.arch }}-${{ matrix.blas }}
           max-size: "10G"
 
+      - name: Apply Faiss Patches
+        shell: bash
+        run: for p in patches/faiss/*.patch; do git -C faiss apply --ignore-whitespace "../$p"; done
+
       - name: Configure Faiss
         working-directory: faiss
         shell: pwsh
@@ -1263,6 +1287,10 @@ jobs:
           key: ${{ github.job }}-${{ matrix.runner }}-${{ matrix.arch }}
           max-size: "10G"
 
+      - name: Apply Faiss Patches
+        shell: bash
+        run: for p in patches/faiss/*.patch; do git -C faiss apply --ignore-whitespace "../$p"; done
+
       - name: Configure Faiss
         working-directory: faiss
         shell: pwsh
@@ -1430,6 +1458,10 @@ jobs:
           runVcpkgInstall: true
           vcpkgGitCommitId: 'master'
           runVcpkgFormatString: '[`install`, `openblas:${{ matrix.arch }}-windows`]'
+
+      - name: Apply Faiss Patches
+        shell: bash
+        run: for p in patches/faiss/*.patch; do git -C faiss apply --ignore-whitespace "../$p"; done
 
       - name: Configure Faiss
         working-directory: faiss
