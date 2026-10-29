@@ -158,6 +158,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          submodules: true
           fetch-depth: 0
 
       - name: Install Dependencies
@@ -726,8 +727,9 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
+          submodules: true
           fetch-depth: 0
 
       - name: Install Dependencies
@@ -1067,6 +1069,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          submodules: true
           fetch-depth: 0
 
       - name: Download Artifacts
