@@ -18,6 +18,8 @@ ENV CCACHE_MAXSIZE=10G
 WORKDIR /build
 
 COPY faiss ./faiss
+COPY patches/faiss ./patches/faiss
+RUN git apply --ignore-whitespace --directory=faiss patches/faiss/*.patch
 
 WORKDIR /build/faiss
 RUN --mount=type=cache,target=/cache/ccache \

@@ -14,6 +14,8 @@ RUN --mount=type=cache,id=apt,sharing=locked,target=/var/cache/apt \
 WORKDIR /build
 
 COPY faiss ./faiss
+COPY patches/faiss ./patches/faiss
+RUN git apply --ignore-whitespace --directory=faiss patches/faiss/*.patch
 
 WORKDIR /build/faiss
 RUN cmake -B build . \
