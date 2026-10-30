@@ -24,9 +24,6 @@ internal static partial class GpuNative
     internal static partial int faiss_StandardGpuResources_setDefaultStream(GpuResourcesProviderHandle res, int device, IntPtr stream);
 
     [LibraryImport(LibraryName)]
-    internal static partial int faiss_StandardGpuResources_setDefaultNullStreamAllDevices(GpuResourcesProviderHandle res);
-
-    [LibraryImport(LibraryName)]
     internal static partial int faiss_GpuResources_initializeForDevice(IntPtr res, int device);
 
     [LibraryImport(LibraryName)]
