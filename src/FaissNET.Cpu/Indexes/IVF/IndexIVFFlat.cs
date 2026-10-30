@@ -184,13 +184,15 @@ public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIn
 }
 
 /// <inheritdoc cref="GpuFlatFloatIndex{T}" />
-public class GpuIndexIVFFlat<T> : GpuFlatFloatIndex<GpuIndexIVFFlat<T>>, ITrainableFloatIndex, IIDMappedFloatIndex, IIDSequentialFloatIndex, IFromNativeIndexHandle<GpuIndexIVFFlat<T>>, IGpuIndex<IndexIVFFlat<T>> where T: class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
+public class GpuIndexIVFFlat<T> : GpuFlatFloatIndex<GpuIndexIVFFlat<T>>, ITrainableFloatIndex, IIDMappedFloatIndex, IIDSequentialFloatIndex, IFromNativeIndexHandle<GpuIndexIVFFlat<T>>, IGpuIndex<IndexIVFFlat<T>>, IGpuIVFIndex where T: class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
 {
     private GpuIndexIVFFlat(FaissIndexHandle handle) : base(handle)
     {
     }
 
     static GpuIndexIVFFlat<T> IFromNativeIndexHandle<GpuIndexIVFFlat<T>>.FromHandle(FaissIndexHandle handle) => new(handle);
+
+    bool IGpuIVFIndex.Uses32BitIds { get; set; }
 
     public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
@@ -205,6 +207,7 @@ public class GpuIndexIVFFlat<T> : GpuFlatFloatIndex<GpuIndexIVFFlat<T>>, ITraina
             throw new FaissUntrainedException();
         }
 
+        GpuIVFIDs.ThrowIfNot32Bit(this, xids);
         IDMappedFloatIndexImpl.Add(this, count, vectors, xids);
     }
 
