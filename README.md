@@ -63,6 +63,7 @@ winget install --id Microsoft.VCRedist.2015+.x64 --silent
 ```
 
 **Linux**
+Make sure you are on a system with glibc version 2.38 or greater.
 ```bash
 sudo apt-get install -y libopenblas0 libgomp1
 ```
@@ -83,14 +84,14 @@ dotnet add package Faiss.NET.Native
 #### CPU+GPU
 ##### CUDA
 ```bash
-dotnet add package Faiss.NET.Native.Gpu.Cuda # Linux only
+dotnet add package Faiss.NET.Gpu.Native.Cuda # Linux only
 dotnet add package Faiss.NET.Native.Windows
 dotnet add package Faiss.NET.Native.MacOS
 ```
 
 ##### ROCm
 ```bash
-dotnet add package Faiss.NET.Native.Gpu.Rocm # Linux x64 only
+dotnet add package Faiss.NET.Gpu.Native.Rocm # Linux x64 only
 dotnet add package Faiss.NET.Native.Windows
 dotnet add package Faiss.NET.Native.MacOS
 ```
