@@ -1,5 +1,6 @@
-using Faiss.Gpu.Interfaces;
+using Faiss.Gpu.Interop;
 using Faiss.Gpu.Interop.NativeMethods;
+using Faiss.Gpu.Interop.SafeHandles;
 using Faiss.Interop.Errors;
 
 namespace Faiss.Gpu.Resources;
@@ -8,15 +9,20 @@ namespace Faiss.Gpu.Resources;
 /// Provides scoped access to the native GPU resources obtained from a
 /// <see cref="GpuResourcesProvider"/>.
 /// </summary>
+/// <remarks>
+/// The native resources belong to the provider. Every member throws <see cref="ObjectDisposedException"/>
+/// once the provider has been disposed, and members that take a device id throw
+/// <see cref="ArgumentOutOfRangeException"/> for an id that names no visible GPU.
+/// </remarks>
 public ref struct GpuResources
 {
-    private readonly IGpuResourcesProvider _parent;
+    private readonly GpuResourcesProviderHandle _owner;
 
     private IntPtr Handle { get; }
 
-    internal GpuResources(IGpuResourcesProvider parent, IntPtr handle)
+    internal GpuResources(GpuResourcesProviderHandle owner, IntPtr handle)
     {
-        _parent = parent;
+        _owner = owner;
         Handle = handle;
     }
 
@@ -26,6 +32,8 @@ public ref struct GpuResources
     /// <param name="device">The target GPU device ID.</param>
     public void InitializeForDevice(int device)
     {
+        GpuDevice.ThrowIfInvalid(device);
+        using var lease = new SafeHandleLease(_owner);
         FaissErrorHandler.ThrowIfError(
             GpuNative.faiss_GpuResources_initializeForDevice(Handle, device)
         );
@@ -38,6 +46,8 @@ public ref struct GpuResources
     /// <returns>An opaque pointer to the native BLAS handle.</returns>
     public IntPtr GetBlasHandle(int device)
     {
+        GpuDevice.ThrowIfInvalid(device);
+        using var lease = new SafeHandleLease(_owner);
         FaissErrorHandler.ThrowIfError(
             GpuNative.faiss_GpuResources_getBlasHandle(Handle, device, out IntPtr handle)
         );
@@ -50,6 +60,7 @@ public ref struct GpuResources
     /// <returns>An opaque pointer to the native BLAS handle.</returns>
     public IntPtr GetBlasHandleCurrentDevice()
     {
+        using var lease = new SafeHandleLease(_owner);
         FaissErrorHandler.ThrowIfError(
             GpuNative.faiss_GpuResources_getBlasHandleCurrentDevice(Handle, out IntPtr handle)
         );
@@ -63,6 +74,8 @@ public ref struct GpuResources
     /// <returns>An opaque pointer to the native stream.</returns>
     public IntPtr GetDefaultStream(int device)
     {
+        GpuDevice.ThrowIfInvalid(device);
+        using var lease = new SafeHandleLease(_owner);
         FaissErrorHandler.ThrowIfError(
             GpuNative.faiss_GpuResources_getDefaultStream(Handle, device, out IntPtr stream)
         );
@@ -75,6 +88,7 @@ public ref struct GpuResources
     /// <returns>An opaque pointer to the native stream.</returns>
     public IntPtr GetDefaultStreamCurrentDevice()
     {
+        using var lease = new SafeHandleLease(_owner);
         FaissErrorHandler.ThrowIfError(
             GpuNative.faiss_GpuResources_getDefaultStreamCurrentDevice(Handle, out IntPtr stream)
         );
@@ -89,6 +103,7 @@ public ref struct GpuResources
     /// <param name="size">The size of the buffer in bytes.</param>
     public void GetPinnedMemory(out IntPtr ptr, out nuint size)
     {
+        using var lease = new SafeHandleLease(_owner);
         FaissErrorHandler.ThrowIfError(
             GpuNative.faiss_GpuResources_getPinnedMemory(Handle, out ptr, out size)
         );
@@ -101,6 +116,8 @@ public ref struct GpuResources
     /// <returns>An opaque pointer to the native stream.</returns>
     public IntPtr GetAsyncCopyStream(int device)
     {
+        GpuDevice.ThrowIfInvalid(device);
+        using var lease = new SafeHandleLease(_owner);
         FaissErrorHandler.ThrowIfError(
             GpuNative.faiss_GpuResources_getAsyncCopyStream(Handle, device, out IntPtr stream)
         );
@@ -113,6 +130,7 @@ public ref struct GpuResources
     /// <returns>An opaque pointer to the native stream.</returns>
     public IntPtr GetAsyncCopyStreamCurrentDevice()
     {
+        using var lease = new SafeHandleLease(_owner);
         FaissErrorHandler.ThrowIfError(
             GpuNative.faiss_GpuResources_getAsyncCopyStreamCurrentDevice(Handle, out IntPtr stream)
         );
@@ -125,6 +143,8 @@ public ref struct GpuResources
     /// <param name="device">The target GPU device ID.</param>
     public void SyncDefaultStream(int device)
     {
+        GpuDevice.ThrowIfInvalid(device);
+        using var lease = new SafeHandleLease(_owner);
         FaissErrorHandler.ThrowIfError(
             GpuNative.faiss_GpuResources_syncDefaultStream(Handle, device)
         );
@@ -135,6 +155,7 @@ public ref struct GpuResources
     /// </summary>
     public void SyncDefaultStreamCurrentDevice()
     {
+        using var lease = new SafeHandleLease(_owner);
         FaissErrorHandler.ThrowIfError(
             GpuNative.faiss_GpuResources_syncDefaultStreamCurrentDevice(Handle)
         );
