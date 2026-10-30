@@ -29,23 +29,23 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="runtimes\macos-x64\native\*.dylib"
+        <None Include="runtimes\osx-x64\native\*.dylib"
               Pack="true"
-              PackagePath="runtimes\macos-x64\native\" />
+              PackagePath="runtimes\osx-x64\native\" />
 
-        <None Include="runtimes\macos-arm64\native\*.dylib"
+        <None Include="runtimes\osx-arm64\native\*.dylib"
               Pack="true"
-              PackagePath="runtimes\macos-arm64\native\" />
+              PackagePath="runtimes\osx-arm64\native\" />
     </ItemGroup>
 
     <ItemGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64'">
-        <ContentWithTargetPath Include="runtimes\macos-x64\native\*.dylib"
+        <ContentWithTargetPath Include="runtimes\osx-x64\native\*.dylib"
                                TargetPath="%(Filename)%(Extension)"
                                CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64'">
-        <ContentWithTargetPath Include="runtimes\macos-arm64\native\*.dylib"
+        <ContentWithTargetPath Include="runtimes\osx-arm64\native\*.dylib"
                                TargetPath="%(Filename)%(Extension)"
                                CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
