@@ -127,13 +127,15 @@ public sealed class IndexIVFPQ : FloatIndex, IIVFIndex, IIDSequentialFloatIndex,
     bool IGpuClonableIndex<IndexIVFPQ, GpuIndexIVFPQ>.IsGpuClonable() => Metric is MetricType.L2 or MetricType.InnerProduct;
 }
 
-public class GpuIndexIVFPQ : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IGpuIndex<IndexIVFPQ>, IFromNativeIndexHandle<GpuIndexIVFPQ>
+public class GpuIndexIVFPQ : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IGpuIndex<IndexIVFPQ>, IFromNativeIndexHandle<GpuIndexIVFPQ>, IGpuIVFIndex
 {
     private GpuIndexIVFPQ(FaissIndexHandle handle) : base(handle)
     {
     }
 
     static GpuIndexIVFPQ IFromNativeIndexHandle<GpuIndexIVFPQ>.FromHandle(FaissIndexHandle handle) => new(handle);
+
+    bool IGpuIVFIndex.Uses32BitIds { get; set; }
 
     public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
@@ -156,6 +158,7 @@ public class GpuIndexIVFPQ : FloatIndex, ITrainableFloatIndex, IIDSequentialFloa
             throw new FaissUntrainedException();
         }
 
+        GpuIVFIDs.ThrowIfNot32Bit(this, xids);
         IDMappedFloatIndexImpl.Add(this, count, vectors, xids);
     }
 
