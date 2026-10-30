@@ -1,5 +1,6 @@
 using Faiss.Exceptions;
 using Faiss.Gpu.Interfaces;
+using Faiss.Gpu.Interop;
 using Faiss.Gpu.Interop.NativeMethods;
 using Faiss.Gpu.Interop.SafeHandles;
 using Faiss.Interop.Errors;
@@ -100,14 +101,16 @@ public sealed class GpuResourcesProvider : IGpuResourcesProvider, IDisposable
     /// A pointer to a CUDA/HIP stream. Use <see cref="IntPtr.Zero"/>
     /// to specify the default (null) stream.
     /// </param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="device"/> is negative or not below <see cref="FaissGpu.GetNumGpus"/>.
+    /// </exception>
     /// <exception cref="FaissException">
     /// Thrown when the native call fails.
     /// </exception>
     public void SetDefaultStream(int device, IntPtr stream)
     {
-        FaissErrorHandler.ThrowIfError(
-            GpuNative.faiss_StandardGpuResources_setDefaultStream(Handle, device, stream)
-        );
+        GpuDevice.ThrowIfInvalid(device);
+        SetDefaultStreamOnDevice(device, stream);
     }
 
     /// <summary>
@@ -118,8 +121,18 @@ public sealed class GpuResourcesProvider : IGpuResourcesProvider, IDisposable
     /// </exception>
     public void SetDefaultNullStreamAllDevices()
     {
+        var count = FaissGpu.GetNumGpus();
+        for (var device = 0; device < count; device++)
+        {
+            SetDefaultStreamOnDevice(device, IntPtr.Zero);
+        }
+    }
+
+    private void SetDefaultStreamOnDevice(int device, IntPtr stream)
+    {
+        using var scope = new DeviceScope(device);
         FaissErrorHandler.ThrowIfError(
-            GpuNative.faiss_StandardGpuResources_setDefaultNullStreamAllDevices(Handle)
+            GpuNative.faiss_StandardGpuResources_setDefaultStream(Handle, device, stream)
         );
     }
 
@@ -128,7 +141,8 @@ public sealed class GpuResourcesProvider : IGpuResourcesProvider, IDisposable
     /// </summary>
     /// <returns>
     /// A <see cref="GpuResources"/> that is valid only for the current
-    /// stack frame and guaranteed not to outlive this provider.
+    /// stack frame. Its members throw <see cref="ObjectDisposedException"/>
+    /// once this provider has been disposed.
     /// </returns>
     public GpuResources GetResources()
     {
@@ -136,7 +150,7 @@ public sealed class GpuResourcesProvider : IGpuResourcesProvider, IDisposable
             GpuNative.faiss_GpuResourcesProvider_getResources(Handle, out IntPtr resPtr)
         );
 
-        return new GpuResources(this, resPtr);
+        return new GpuResources(Handle, resPtr);
     }
 
     /// <summary>
