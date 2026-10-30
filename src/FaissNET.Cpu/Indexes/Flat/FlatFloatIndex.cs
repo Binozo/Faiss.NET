@@ -47,7 +47,7 @@ public abstract class CpuFlatFloatIndex<T> : FlatFloatIndex<T>, IIDSequentialFlo
 }
 
 /// <inheritdoc cref="GpuFlatFloatIndex{T}" />
-public abstract class GpuFlatFloatIndex<T> : FlatFloatIndex<T> where T : FloatIndex, INativeIndex, IFromNativeIndexHandle<T>
+public abstract class GpuFlatFloatIndex<T> : FlatFloatIndex<T>, IGpuIndex where T : FloatIndex, INativeIndex, IFromNativeIndexHandle<T>
 {
     internal GpuFlatFloatIndex(FaissIndexHandle handle) : base(handle) { }
 }
