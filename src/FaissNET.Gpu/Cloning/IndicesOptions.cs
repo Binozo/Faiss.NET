@@ -11,7 +11,8 @@ public enum IndicesOptions
     /// </summary>
     Cpu = 0,
     /// <summary>
-    /// No indices are stored. The GPU returns inverted-list offsets as the index.
+    /// No indices are stored. Search reports each result as its inverted list in the upper 32 bits and its
+    /// offset within that list in the lower 32 bits, and the index cannot be transferred back to the CPU.
     /// </summary>
     Ivf = 1,
     /// <summary>
