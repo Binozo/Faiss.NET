@@ -134,10 +134,17 @@ public class GpuClonerOptions : IDisposable
     /// Use <see cref="IndicesOptions.Cpu"/> to minimize GPU memory,
     /// or <see cref="IndicesOptions.Bit64"/> for full 64-bit index storage.
     /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="IndicesOptions"/> member.</exception>
     public IndicesOptions StorageMode
     {
         get => (IndicesOptions)GpuNative.faiss_GpuClonerOptions_indicesOptions(NativeHandle);
-        set => GpuNative.faiss_GpuClonerOptions_set_indicesOptions(NativeHandle, (int)value);
+        set
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"Not a defined {nameof(IndicesOptions)} value.");
+
+            GpuNative.faiss_GpuClonerOptions_set_indicesOptions(NativeHandle, (int)value);
+        }
     }
 
     /// <summary>
