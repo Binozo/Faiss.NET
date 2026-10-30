@@ -1,3 +1,4 @@
+using Faiss.Cpu.Indexes;
 using Faiss.Cpu.Search.Parameters;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
@@ -15,6 +16,9 @@ public interface IParamsFloatSearchIndex : IFloatIndex, INativeIndex
     /// <param name="parameters">Search options</param>
     /// <param name="distances">Out: count * k floats, needs to be allocated by user</param>
     /// <param name="labels">Out: count * k floats, needs to be allocated by user</param>
+    /// <exception cref="NotSupportedException">
+    /// <paramref name="parameters"/> carries an <c>IDSelector</c> on an GPU index which is ignored by Faiss.
+    /// </exception>
     public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, SearchParameters parameters, Span<float> distances, Span<long> labels);
 }
 
@@ -25,6 +29,10 @@ internal static class ParamsFloatSearchIndexImpl
         ArgumentNullException.ThrowIfNull(parameters);
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(k);
+        (index as FloatIndex)?.ThrowIfKUnsupported(k);
+
+        if (parameters.HasSelector && index is IGpuIndex)
+            throw new NotSupportedException("GPU indexes do not support IDSelector and thus it would be ignored causing an unfiltered result");
 
         long queryLength = checked(count * index.Dimensions);
         long resultLength = checked(count * k);
