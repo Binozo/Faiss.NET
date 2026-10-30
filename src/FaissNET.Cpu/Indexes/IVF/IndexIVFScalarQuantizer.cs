@@ -1,3 +1,4 @@
+using System.Numerics;
 using Faiss.Cpu.Indexes.Flat;
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Parameters;
@@ -126,6 +127,9 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
         or QuantizerType.QT_8bit_uniform or QuantizerType.QT_8bit_direct
         or QuantizerType.QT_4bit or QuantizerType.QT_4bit_uniform or QuantizerType.QT_6bit or QuantizerType.QT_fp16;
 
+    void IGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>>.OnClonedToGpu(INativeIndex gpuIndex) =>
+        ((GpuIndexIVFScalarQuantizer<T>)gpuIndex).QuantizerType = ScalarQuantizer.QuantizerType;
+
     public override void Dispose()
     {
         ScalarQuantizer.Dispose();
@@ -134,14 +138,42 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
 }
 
 /// <inheritdoc cref="GpuFlatFloatIndex{T}" />
+/// <remarks>
+/// With a per-dimension quantizer (<see cref="QuantizerType.QT_8bit"/>, <see cref="QuantizerType.QT_4bit"/>,
+/// <see cref="QuantizerType.QT_6bit"/>) the device scan keeps two floats per dimension next to its top-k queue in 48 KiB
+/// of shared memory. Searches that do not fit (any k above 512; smaller k once the dimension grows into the thousands)
+/// throw <see cref="ArgumentOutOfRangeException"/>: faiss would fail the kernel launch inside an assertion and abort.
+/// </remarks>
 public class GpuIndexIVFScalarQuantizer<T> : FloatIndex, ITrainableFloatIndex, IIDMappedFloatIndex, IIDSequentialFloatIndex, IParamsFloatSearchIndex, IFromNativeIndexHandle<GpuIndexIVFScalarQuantizer<T>>,
-    IGpuIndex<IndexIVFScalarQuantizer<T>> where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
+    IGpuIndex<IndexIVFScalarQuantizer<T>>, IGpuIVFIndex where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
 {
     internal GpuIndexIVFScalarQuantizer(FaissIndexHandle handle) : base(handle)
     {
     }
 
     static GpuIndexIVFScalarQuantizer<T> IFromNativeIndexHandle<GpuIndexIVFScalarQuantizer<T>>.FromHandle(FaissIndexHandle handle) => new(handle);
+
+    bool IGpuIVFIndex.Uses32BitIds { get; set; }
+
+    /// <summary>The quantizer of the CPU index this was transferred from.</summary>
+    internal QuantizerType? QuantizerType { get; set; }
+
+    internal override void ThrowIfKUnsupported(long k)
+    {
+        if (QuantizerType is not (Models.QuantizerType.QT_8bit or Models.QuantizerType.QT_4bit or Models.QuantizerType.QT_6bit))
+            return;
+
+        // ivfInterleavedScan: 128 threads (4 warps) each keep a queue of k rounded up to a power of two (at least 32)
+        // of float distances and 64-bit ids in static shared memory; the codec adds vmin and vdiff per dimension.
+        // Queues above 512 entries already fill the 48 KiB launch limit on their own.
+        const long sharedMemoryLimit = 48 * 1024;
+        var queue = Math.Max(32L, (long)BitOperations.RoundUpToPowerOf2((ulong)k));
+        var required = 4 * queue * (sizeof(float) + sizeof(long)) + 2L * sizeof(float) * Dimensions;
+
+        if (queue > 512 || required > sharedMemoryLimit)
+            throw new ArgumentOutOfRangeException(nameof(k), k,
+                $"A GPU {QuantizerType} scalar quantizer index with {Dimensions} dimensions cannot search for {k} neighbours: the device scan needs {required} bytes of shared memory, the limit is {sharedMemoryLimit}.");
+    }
 
     /// <inheritdoc />
     public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
@@ -157,6 +189,7 @@ public class GpuIndexIVFScalarQuantizer<T> : FloatIndex, ITrainableFloatIndex, I
             throw new FaissUntrainedException();
         }
 
+        GpuIVFIDs.ThrowIfNot32Bit(this, xids);
         IDMappedFloatIndexImpl.Add(this, count, vectors, xids);
     }
 
