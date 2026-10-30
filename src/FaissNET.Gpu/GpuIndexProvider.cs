@@ -1,6 +1,7 @@
 using Faiss.Cpu.Indexes;
 using Faiss.Exceptions;
 using Faiss.Gpu.Cloning;
+using Faiss.Gpu.Interop;
 using Faiss.Gpu.Interop.NativeMethods;
 using Faiss.Gpu.Resources;
 
@@ -26,8 +27,13 @@ public static class GpuIndexProvider
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="context"/> or <paramref name="cpuIndex"/> is <c>null</c>.
     /// </exception>
-    /// <exception cref="FaissException">
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="deviceId"/> is negative or not below <see cref="FaissGpu.GetNumGpus"/>.
+    /// </exception>
     /// <exception cref="FaissGpuCloningUnsupported">
+    /// Thrown when faiss cannot place this index, as configured, on a GPU.
+    /// </exception>
+    /// <exception cref="FaissException">
     /// Thrown when the native transfer operation fails.
     /// </exception>
     public static TGpu TransferToGpu<TCpu, TGpu>(GpuResourcesProvider context, IGpuClonableIndex<TCpu, TGpu> cpuIndex, int deviceId = 0)
@@ -35,11 +41,10 @@ public static class GpuIndexProvider
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(cpuIndex);
+        GpuDevice.ThrowIfInvalid(deviceId);
 
         if (!cpuIndex.IsGpuClonable())
-        {
             throw new FaissGpuCloningUnsupported();
-        }
 
         FaissErrorHandler.ThrowIfError(GpuNative.faiss_index_cpu_to_gpu(
             context.Handle,
@@ -49,7 +54,10 @@ public static class GpuIndexProvider
 
         // Currently there is no way of calling the c api to know on which device the index is on
         // It is only available in C++ and not wrapped in C, the user will have to keep track himself
-        return TGpu.FromPointer(gpuHandle);
+        // See PR #5516 (https://github.com/facebookresearch/faiss/pull/5516)
+        var gpuIndex = TGpu.FromPointer(gpuHandle);
+        cpuIndex.OnClonedToGpu(gpuIndex);
+        return gpuIndex;
     }
 
     /// <summary>
@@ -65,8 +73,18 @@ public static class GpuIndexProvider
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="context"/>, <paramref name="cpuIndex"/>, or <paramref name="options"/> is <c>null</c>.
     /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="deviceId"/> is negative or not below <see cref="FaissGpu.GetNumGpus"/>.
+    /// </exception>
+    /// <exception cref="FaissGpuCloningUnsupported">
+    /// Thrown when faiss cannot place this index, as configured, on a GPU.
+    /// </exception>
     /// <exception cref="FaissException">
     /// Thrown when the native transfer operation fails.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="options"/> asks for <see cref="IndicesOptions.Bit32"/> storage and the IVF
+    /// <paramref name="cpuIndex"/> holds an id outside the 32-bit range.
     /// </exception>
     public static TGpu TransferToGpu<TCpu, TGpu>(GpuResourcesProvider context, IGpuClonableIndex<TCpu, TGpu> cpuIndex, GpuClonerOptions options, int deviceId = 0)
         where TCpu : INativeIndex, IFromNativeIndexHandle<TCpu> where TGpu : FloatIndex, INativeIndex, IFromNativeIndexHandle<TGpu>//, IGpuIndex<TCpu>
@@ -74,11 +92,14 @@ public static class GpuIndexProvider
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(cpuIndex);
         ArgumentNullException.ThrowIfNull(options);
+        GpuDevice.ThrowIfInvalid(deviceId);
 
         if (!cpuIndex.IsGpuClonable())
         {
             throw new FaissGpuCloningUnsupported();
         }
+
+        Bit32Ids.ThrowIfSourceHoldsWideIds(cpuIndex, options);
 
         FaissErrorHandler.ThrowIfError(GpuNative.faiss_index_cpu_to_gpu_with_options(
             context.Handle,
@@ -87,7 +108,10 @@ public static class GpuIndexProvider
             options.NativeHandle,
             out IntPtr gpuHandle));
 
-        return TGpu.FromPointer(gpuHandle);
+        var gpuIndex = TGpu.FromPointer(gpuHandle);
+        cpuIndex.OnClonedToGpu(gpuIndex);
+        Bit32Ids.Mark(gpuIndex, options);
+        return gpuIndex;
     }
 
     /// <summary>
@@ -253,9 +277,7 @@ public static class GpuIndexProvider
     {
         ArgumentNullException.ThrowIfNull(gpuIndex);
 
-        FaissErrorHandler.ThrowIfError(GpuNative.faiss_index_gpu_to_cpu(
-            gpuIndex.Handle,
-            out IntPtr ptr));
+        FaissErrorHandler.ThrowIfError(GpuNative.faiss_index_gpu_to_cpu(gpuIndex.Handle, out IntPtr ptr));
 
         return T.FromPointer(ptr);
     }
