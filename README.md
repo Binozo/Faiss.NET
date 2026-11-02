@@ -18,22 +18,24 @@ Faiss.NET gives you near-native performance with clean, idiomatic C# wrappers wh
 - Faiss [v1.15.1](https://github.com/facebookresearch/faiss/releases/tag/v1.15.1)
 - .NET 9.0
 
-> [!IMPORTANT]
-> This library is under active development. Core indexes and functionality are usable, but the API may still evolve. Alpha stage soon.
+> [!NOTE]
+> BETA: This library is considered stable and ready for initial usage testwise.
 
 ## Development Roadmap
-About ~90% is done. 
-~~I am reworking the class hierarchy to make the api as elegant as possible. This includes preventing most of the footguns there are with faiss, including making the compiler enforce all the rules.~~
+~~About ~90% is done. 
+I am reworking the class hierarchy to make the api as elegant as possible. This includes preventing most of the footguns there are with faiss, including making the compiler enforce all the rules.~~
 
 ~~12.08.2026: The groundwork is almost finished. I still need to polish some rough edges like the `IDSelector` (internal stuff) but most of this library is basically complete, stable and usable.
 As soon as the PRs noted below get merged and I fix some minor stuff I will publish preview release 6. I am really happy with the progress and looking forward.~~
 
-01.09.2026: Feature set is basically complete (except the remaining features which are based on faiss PRs below). I am reworking the test suite.
+~~01.09.2026: Feature set is basically complete (except the remaining features which are based on faiss PRs below). I am reworking the test suite.~~
+
+02.11:2026: Library is stable. Waiting for faiss upstream to merge the missing PRs noted below.
 
 - [x] Adding bindings for `distances_c.h`
 - [x] Improving class hierarchy and generic constraints design to further prevent footguns (~ September 2026)
-- [ ] Adding more tests      (~ October 2026)
-- [ ] Adding example project (~ November 2026)
+- [x] Adding more tests      (~ October 2026)
+- [ ] Adding example project (~ December 2026)
 - [ ] Adding remaining functionality to IndexShards, IndexReplicas, IndexRefineFlat and GPU indexes (Waiting for faiss PRs to merge: [#5516](https://github.com/facebookresearch/faiss/pull/5516), [#5514](https://github.com/facebookresearch/faiss/pull/5514), [#5513](https://github.com/facebookresearch/faiss/pull/5513), [#5512](https://github.com/facebookresearch/faiss/pull/5512), [#5511](https://github.com/facebookresearch/faiss/pull/5511)) (~ December 2026)
 - [ ] v1.0 Release 🚀        (~ December 2026)
 
@@ -63,7 +65,9 @@ winget install --id Microsoft.VCRedist.2015+.x64 --silent
 ```
 
 **Linux**
-Make sure you are on a system with glibc version 2.38 or greater.
+
+##### Make sure you are on a system with glibc version 2.38 or greater.
+
 ```bash
 sudo apt-get install -y libopenblas0 libgomp1
 ```
@@ -167,6 +171,22 @@ index.Add([1f, 2f, 3f, 4f]);
 
 using var result = index.Search([1f, 2f, 3f, 4f], k: 1);
 ```
+
+### Ownership
+
+Composite indexes (`IndexIDMap`, `IndexIVFFlat`, `IndexPreTransform`, `IndexShards`, …) wrap other indexes. Who frees the wrapped index is decided once, at construction:
+
+- **`takeOwnership: true`** (or `ownQuantizer`, `ownSubIndex`, …): the composite frees it. Your original reference is closed immediately; use the composite's view instead (e.g. `IndexIDMap.SubIndex`), which is valid until the composite is disposed.
+- **`takeOwnership: false`**: you keep ownership and keep using your object. The composite keeps it alive while it needs it, so disposing yours early is safe.
+- **Clone, deserialization and the factory** return composites that own their parts; exposed parts are views.
+
+```csharp
+using var map = new IndexIDMap<IndexFlatL2>(new IndexFlatL2(dimensions: 4), takeOwnership: true);
+map.Add([new[] { 1f, 2f, 3f, 4f }], [42]);
+long count = map.SubIndex.TotalCount; // 1
+```
+
+Misuse fails with `ObjectDisposedException` instead of corrupting memory; nothing needs to be disposed in a particular order.
 
 ### GPU acceleration
 
