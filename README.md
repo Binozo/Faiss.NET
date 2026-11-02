@@ -22,8 +22,7 @@ Faiss.NET gives you near-native performance with clean, idiomatic C# wrappers wh
 > BETA: This library is considered stable and ready for initial usage testwise.
 
 ## Development Roadmap
-~~About ~90% is done. 
-I am reworking the class hierarchy to make the api as elegant as possible. This includes preventing most of the footguns there are with faiss, including making the compiler enforce all the rules.~~
+~~About 90% is done. I am reworking the class hierarchy to make the api as elegant as possible. This includes preventing most of the footguns there are with faiss, including making the compiler enforce all the rules.~~
 
 ~~12.08.2026: The groundwork is almost finished. I still need to polish some rough edges like the `IDSelector` (internal stuff) but most of this library is basically complete, stable and usable.
 As soon as the PRs noted below get merged and I fix some minor stuff I will publish preview release 6. I am really happy with the progress and looking forward.~~
