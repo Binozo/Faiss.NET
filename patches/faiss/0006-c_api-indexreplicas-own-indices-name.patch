@@ -1,0 +1,18 @@
+c_api: fix IndexReplicas own_indices getter/setter name mismatch
+
+Upstream: https://github.com/facebookresearch/faiss/pull/5511
+Remove once the faiss submodule includes this PR.
+
+diff --git a/c_api/IndexReplicas_c.h b/c_api/IndexReplicas_c.h
+index 179b18c866..44c9da5a47 100644
+--- a/c_api/IndexReplicas_c.h
++++ b/c_api/IndexReplicas_c.h
+@@ -22,7 +22,7 @@ extern "C" {
+ FAISS_DECLARE_CLASS_INHERITED(IndexReplicas, Index)
+ FAISS_DECLARE_DESTRUCTOR(IndexReplicas)
+ 
+-FAISS_DECLARE_GETTER_SETTER(IndexReplicas, int, own_fields)
++FAISS_DECLARE_GETTER_SETTER(IndexReplicas, int, own_indices)
+ 
+ int faiss_IndexReplicas_new(FaissIndexReplicas** p_index, idx_t d);
+ 

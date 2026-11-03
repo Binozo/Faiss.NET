@@ -1,0 +1,33 @@
+feat(IndexReplicas): Exported replica count in c_api
+
+Upstream: https://github.com/facebookresearch/faiss/pull/5512
+Remove once the faiss submodule includes this PR.
+
+diff --git a/c_api/IndexReplicas_c.cpp b/c_api/IndexReplicas_c.cpp
+index 37c78494d8..f78bb3c658 100644
+--- a/c_api/IndexReplicas_c.cpp
++++ b/c_api/IndexReplicas_c.cpp
+@@ -56,6 +56,10 @@ int faiss_IndexReplicas_remove_replica(
+     CATCH_AND_HANDLE
+ }
+ 
++int faiss_IndexReplicas_count(const FaissIndexReplicas* index) {
++    return reinterpret_cast<const IndexReplicas*>(index)->count();
++}
++
+ FaissIndex* faiss_IndexReplicas_at(FaissIndexReplicas* index, int i) {
+     auto replica = reinterpret_cast<IndexReplicas*>(index)->at(i);
+     return reinterpret_cast<FaissIndex*>(replica);
+diff --git a/c_api/IndexReplicas_c.h b/c_api/IndexReplicas_c.h
+index 179b18c866..e99b363fa5 100644
+--- a/c_api/IndexReplicas_c.h
++++ b/c_api/IndexReplicas_c.h
+@@ -39,6 +39,8 @@ int faiss_IndexReplicas_remove_replica(
+         FaissIndexReplicas* index,
+         FaissIndex* replica);
+ 
++int faiss_IndexReplicas_count(const FaissIndexReplicas* index);
++
+ FaissIndex* faiss_IndexReplicas_at(FaissIndexReplicas* index, int i);
+ 
+ #ifdef __cplusplus

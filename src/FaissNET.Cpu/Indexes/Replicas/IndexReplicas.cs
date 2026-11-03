@@ -13,8 +13,6 @@ internal readonly struct IndexReplicasRelease : IFaissRelease
 
 public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICpuFloatIndex, IFromNativeIndexHandle<IndexReplicas<T>> where T : FloatIndex, IFromNativeIndexHandle<T>, INativeIndex
 {
-    private readonly List<T> _replicas = new();
-
     public IndexReplicas(long dimensions, bool threaded = true, bool ownIndices = true) : this(CreateHandle(dimensions, threaded, ownIndices), ownIndices)
     {
     }
@@ -44,15 +42,18 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
         {
             throw new ArgumentException($"Replica dimensions ({replica.Dimensions}) must match squad dimensions ({Dimensions})");
         }
-        
-        // TODO: Don't use _replicas.Count for counting (won't work for IndexReplicas got from FromPointer) and use c api instead
-        // Waiting for PR #5512 (https://github.com/facebookresearch/faiss/pull/5512) to merge
-        if (_replicas.Count > 0 && replica is ITrainableFloatIndex trainable && trainable.IsTrained != IsTrained)
-            throw trainable.IsTrained
-                ? new ArgumentException("You can't pass a trained index to this untrained squad of indexes.", nameof(replica))
-                : new FaissUntrainedException();
 
-        // Decide who keeps the replica alive before native takes the pointer, so a refusal leaves nothing half-done.
+        if (Count > 0)
+        {
+            if (replica is ITrainableFloatIndex trainable && trainable.IsTrained != IsTrained)
+                throw trainable.IsTrained
+                    ? new ArgumentException("You can't pass a trained index to this untrained squad of indexes.", nameof(replica))
+                    : new FaissUntrainedException();
+
+            if (replica.TotalCount != TotalCount)
+                throw new ArgumentException($"Replica vector count ({replica.TotalCount}) must match squad vector count ({TotalCount})", nameof(replica));
+        }
+
         var owned = OwnIndices;
         var keepAlive = NativeHandle as FaissDependentIndexHandle<IndexReplicasRelease>;
 
@@ -65,8 +66,6 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
             replica.Handle.SetHandleAsInvalid();
         else
             keepAlive!.AddDependency(replica.Handle);
-
-        _replicas.Add(replica);
     }
 
     /// <summary>
@@ -82,9 +81,9 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
 
         // Native no longer references it, so stop keeping it alive.
         (NativeHandle as FaissDependentIndexHandle<IndexReplicasRelease>)?.RemoveDependency(replica.Handle);
-
-        _replicas.Remove(replica);
     }
+
+    public int Count => Native.faiss_IndexReplicas_count(NativeHandle);
 
     public bool OwnIndices
     {
@@ -122,12 +121,4 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
         => new(Wrap(handle, ownsHandle));
 
     static IndexReplicas<T> IFromNativeIndexHandle<IndexReplicas<T>>.FromHandle(FaissIndexHandle handle) => new(handle);
-
-    public override void Dispose()
-    {
-        _replicas.Clear();
-
-        base.Dispose();
-        GC.SuppressFinalize(this);
-    }
 }

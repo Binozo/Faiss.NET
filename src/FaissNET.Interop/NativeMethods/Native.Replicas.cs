@@ -18,6 +18,9 @@ internal static unsafe partial class Native
     internal static partial int faiss_IndexReplicas_remove_replica(FaissIndexHandle index, FaissIndexHandle replica);
 
     [LibraryImport(LibraryName)]
+    internal static partial int faiss_IndexReplicas_count(FaissIndexHandle index);
+
+    [LibraryImport(LibraryName)]
     internal static partial IntPtr faiss_IndexReplicas_at(FaissIndexHandle index, int i);
 
     [LibraryImport(LibraryName)]
