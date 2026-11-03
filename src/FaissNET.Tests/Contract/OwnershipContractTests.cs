@@ -33,12 +33,10 @@ public class OwnershipContractTests
         new OwnershipCase("IVFSQQuantizer",
             (child, own) => new IndexIVFScalarQuantizer<IndexFlatL2>(child, Dimensions, nlist: 2, QuantizerType.QT_8bit, ownQuantizer: own),
             p => ((IndexIVFScalarQuantizer<IndexFlatL2>)p).OwnQuantizer),
-        // Build path only as PR #5514 and #5511 is missing
         new OwnershipCase("RefineFlatBase",
             (child, own) => new IndexRefineFlat<IndexFlatL2>(child, ownBaseIndex: own),
             p => ((IndexRefineFlat<IndexFlatL2>)p).OwnBaseIndex),
-        new TheoryDataRow<OwnershipCase>(new OwnershipCase("Replicas", Replicate, p => ((IndexReplicas<IndexFlatL2>)p).OwnIndices))
-            { Skip = NativeSupport.ReplicasOwnIndices },
+        new OwnershipCase("Replicas", Replicate, p => ((IndexReplicas<IndexFlatL2>)p).OwnIndices),
     ];
 
     private static FloatIndex Shard(IndexFlatL2 child, bool own)
