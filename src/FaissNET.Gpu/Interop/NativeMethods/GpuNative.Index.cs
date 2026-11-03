@@ -15,6 +15,9 @@ internal static partial class GpuNative
     internal static partial int faiss_index_cpu_to_gpu_with_options(GpuResourcesProviderHandle provider, int device, FaissIndexHandle index, GpuClonerOptionsHandle options, out IntPtr p_out);
 
     [LibraryImport(LibraryName)]
+    internal static partial int faiss_GpuIndex_getDevice(FaissIndexHandle gpu_index);
+
+    [LibraryImport(LibraryName)]
     internal static partial int faiss_index_gpu_to_cpu(FaissIndexHandle gpu_index, out IntPtr p_out);
 
     [LibraryImport(LibraryName)]

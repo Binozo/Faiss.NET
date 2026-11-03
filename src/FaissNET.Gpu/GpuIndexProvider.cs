@@ -52,9 +52,6 @@ public static class GpuIndexProvider
             cpuIndex.Handle,
             out IntPtr gpuHandle));
 
-        // Currently there is no way of calling the c api to know on which device the index is on
-        // It is only available in C++ and not wrapped in C, the user will have to keep track himself
-        // See PR #5516 (https://github.com/facebookresearch/faiss/pull/5516)
         var gpuIndex = TGpu.FromPointer(gpuHandle);
         cpuIndex.OnClonedToGpu(gpuIndex);
         return gpuIndex;

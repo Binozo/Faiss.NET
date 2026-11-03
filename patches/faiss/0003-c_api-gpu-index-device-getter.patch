@@ -1,0 +1,30 @@
+c_api: Added gpu device getter for gpu indexes
+
+Upstream: https://github.com/facebookresearch/faiss/pull/5516
+Remove once the faiss submodule includes this PR.
+
+diff --git a/c_api/gpu/GpuIndex_c.cpp b/c_api/gpu/GpuIndex_c.cpp
+index 92d675a2e8..65953dfc2b 100644
+--- a/c_api/gpu/GpuIndex_c.cpp
++++ b/c_api/gpu/GpuIndex_c.cpp
+@@ -14,3 +14,7 @@
+ using faiss::gpu::GpuIndexConfig;
+ 
+ DEFINE_GETTER(GpuIndexConfig, int, device)
++
++int faiss_GpuIndex_getDevice(const FaissGpuIndex* index) {
++    return reinterpret_cast<const faiss::gpu::GpuIndex*>(index)->getDevice();
++}
+diff --git a/c_api/gpu/GpuIndex_c.h b/c_api/gpu/GpuIndex_c.h
+index 4b7aab061e..0c2b42bc3e 100644
+--- a/c_api/gpu/GpuIndex_c.h
++++ b/c_api/gpu/GpuIndex_c.h
+@@ -22,6 +22,8 @@ FAISS_DECLARE_GETTER(GpuIndexConfig, int, device)
+ 
+ FAISS_DECLARE_CLASS_INHERITED(GpuIndex, Index)
+ 
++int faiss_GpuIndex_getDevice(const FaissGpuIndex* index);
++
+ #ifdef __cplusplus
+ }
+ #endif
