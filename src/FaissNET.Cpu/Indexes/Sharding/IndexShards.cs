@@ -1,5 +1,6 @@
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Parameters;
+using Faiss.Exceptions;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
@@ -13,8 +14,6 @@ internal readonly struct IndexShardsRelease : IFaissRelease
 
 public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IFromNativeIndexHandle<IndexShards>
 {
-    private readonly List<INativeIndex> _shards = new();
-
     public IndexShards(int dimensions, bool threaded = true, bool successiveIds = true, bool ownIndices = true) : this(CreateHandle(dimensions, threaded, successiveIds, ownIndices), ownIndices)
     {
     }
@@ -39,6 +38,8 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
         get => Native.faiss_IndexShards_successive_ids(NativeHandle) != 0;
         private set => Native.faiss_IndexShards_set_successive_ids(NativeHandle, value);
     }
+
+    public int Count => Native.faiss_IndexShards_count(NativeHandle);
     
     /// <summary>
     /// Adds the index to the shards.
@@ -60,6 +61,11 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
         if (Dimensions != 0 && index.Dimensions != Dimensions)
             throw new ArgumentException($"Index dimensions ({index.Dimensions}) must match the shards' dimensions ({Dimensions}).", nameof(index));
 
+        if (Count > 0 && index is ITrainableFloatIndex trainable && trainable.IsTrained != IsTrained)
+            throw trainable.IsTrained
+                ? new ArgumentException("You can't add a trained index to untrained shards.", nameof(index))
+                : new FaissUntrainedException();
+
         var owned = OwnIndices;
         var keepAlive = NativeHandle as FaissDependentIndexHandle<IndexShardsRelease>;
 
@@ -72,8 +78,6 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
             index.Handle.SetHandleAsInvalid();
         else
             keepAlive!.AddDependency(index.Handle);
-
-        _shards.Add(index);
     }
     
     /// <summary>
@@ -90,11 +94,7 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
 
         // Native no longer references it, so stop keeping it alive.
         (NativeHandle as FaissDependentIndexHandle<IndexShardsRelease>)?.RemoveDependency(index.Handle);
-
-        _shards.Remove(index);
     }
-    
-    private INativeIndex this[int index] => _shards[index];
 
     public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
@@ -129,12 +129,4 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
         => new(Wrap(handle, ownsHandle));
 
     static IndexShards IFromNativeIndexHandle<IndexShards>.FromHandle(FaissIndexHandle handle) => new(handle);
-
-    public override void Dispose()
-    {
-        _shards.Clear();
-
-        base.Dispose();
-        GC.SuppressFinalize(this);
-    }
 }

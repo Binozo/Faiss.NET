@@ -77,4 +77,60 @@ public class IndexShardsTests
         shards.Add(4, Vectors.Random(seed: 893, count: 4, dimensions: Dimensions));
         Assert.Equal(4, shards.TotalCount);
     }
+
+    [Fact]
+    public void Count_FollowsAddAndRemove()
+    {
+        using var shards = new IndexShards(Dimensions, ownIndices: false);
+        using var first = new IndexFlatL2(Dimensions);
+        using var second = new IndexFlatL2(Dimensions);
+
+        Assert.Equal(0, shards.Count);
+
+        shards.AddIndex(first);
+        shards.AddIndex(second);
+        Assert.Equal(2, shards.Count);
+
+        shards.RemoveShard(first);
+        Assert.Equal(1, shards.Count);
+    }
+
+    [Fact]
+    public async Task TrainedStateMismatch_IsRejectedInBothDirections()
+    {
+        var train = Vectors.Random(seed: 894, count: 80, dimensions: Dimensions);
+
+        using var q1 = new IndexFlatL2(Dimensions);
+        using var q2 = new IndexFlatL2(Dimensions);
+        using var q3 = new IndexFlatL2(Dimensions);
+        using var q4 = new IndexFlatL2(Dimensions);
+
+        // Untrained shards, trained newcomer.
+        using (var shards = new IndexShards(Dimensions, ownIndices: false))
+        using (var untrained = new IndexIVFFlat<IndexFlatL2>(q1, Dimensions, nlist: 2))
+        using (var trained = new IndexIVFFlat<IndexFlatL2>(q2, Dimensions, nlist: 2))
+        {
+            shards.AddIndex(untrained);
+            await trained.TrainAsync(80, train);
+
+            Assert.Throws<ArgumentException>(() => shards.AddIndex(trained));
+            Assert.Equal(1, shards.Count);
+            Assert.False(shards.IsTrained);
+        }
+
+        // Trained shards, untrained newcomer.
+        using (var shards = new IndexShards(Dimensions, ownIndices: false))
+        using (var trained = new IndexIVFFlat<IndexFlatL2>(q3, Dimensions, nlist: 2))
+        using (var untrained = new IndexIVFFlat<IndexFlatL2>(q4, Dimensions, nlist: 2))
+        {
+            await trained.TrainAsync(80, train);
+            shards.AddIndex(trained);
+
+            Assert.Throws<FaissUntrainedException>(() => shards.AddIndex(untrained));
+            Assert.Equal(1, shards.Count);
+
+            shards.Add(4, train.AsSpan(0, 4 * Dimensions));
+            Assert.Equal(4, shards.TotalCount);
+        }
+    }
 }

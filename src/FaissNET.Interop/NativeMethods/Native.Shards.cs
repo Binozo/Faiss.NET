@@ -18,6 +18,9 @@ internal static unsafe partial class Native
     internal static partial int faiss_IndexShards_remove_shard(FaissIndexHandle index, FaissIndexHandle shard);
 
     [LibraryImport(LibraryName)]
+    internal static partial int faiss_IndexShards_count(FaissIndexHandle index);
+
+    [LibraryImport(LibraryName)]
     internal static partial IntPtr faiss_IndexShards_at(FaissIndexHandle index, int i);
 
     [LibraryImport(LibraryName)]
