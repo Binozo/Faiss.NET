@@ -225,14 +225,15 @@ results = searchResult.Length; // 1
 
 #### Supported CUDA GPUs
 
-| Compute Capability | Architecture    | Example GPUs                      |
-|--------------------|-----------------|-----------------------------------|
-| 75                 | Turing          | RTX 20-series, Tesla T4           |
-| 80                 | Ampere          | A100                              |
-| 86                 | Ampere          | RTX 30-series, A40, A10, A16, A30 |
-| 89                 | Ada Lovelace    | RTX 40-series, L40, L40S, L4      |
-| 90                 | Hopper          | H100, H200                        |
-| 120                | Blackwell       | RTX 50-series, B100, B200, GB200  |
+| Compute Capability | Architecture    | Example GPUs                          |
+|--------------------|-----------------|---------------------------------------|
+| 75                 | Turing          | RTX 20-series, Tesla T4               |
+| 80                 | Ampere          | A100                                  |
+| 86                 | Ampere          | RTX 30-series, A40, A10, A16, A30     |
+| 89                 | Ada Lovelace    | RTX 40-series, L40, L40S, L4          |
+| 90                 | Hopper          | H100, H200                            |
+| 100                | Blackwell       | B200, GB200, B300 (10.3)              |
+| 120                | Blackwell       | RTX 50-series, DGX Spark (GB10, 12.1) |
 
 #### Supported ROCm GPUs
 
