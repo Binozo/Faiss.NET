@@ -5,7 +5,7 @@ using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Search.Parameters;
 
-internal readonly struct SearchParametersHNSWRelease : IFaissRelease // TODO: Verify free by downcasting to SearchParameters
+internal readonly struct SearchParametersHNSWRelease : IFaissRelease
 {
     public static void Release(IntPtr handle) => Native.faiss_SearchParametersHNSW_free(handle);
 }
