@@ -2,6 +2,7 @@ using Faiss.Cpu.Indexes.Approximate;
 using Faiss.Cpu.Indexes.Flat;
 using Faiss.Cpu.Indexes.Mapped;
 using Faiss.Cpu.Indexes.Refine;
+using Faiss.Cpu.Serializer;
 using Faiss.Tests.Infrastructure;
 using Xunit;
 
@@ -135,5 +136,46 @@ public class IndexRefineFlatTests
 
         map.Add(Count, Data, [10, 11, 12, 13]);
         Assert.Equal(Count, map.SubIndex.TotalCount);
+    }
+
+    [Theory]
+    [InlineData(1f)]
+    [InlineData(4f)]
+    [InlineData(1000f)]
+    public void KFactor_SurvivesSerialization(float kFactor)
+    {
+        using var original = new IndexRefineFlat<IndexFlatL2>(new IndexFlatL2(Dimensions));
+        original.KFactor = kFactor;
+        original.Add(Count, Data);
+
+        using var stream = new MemoryStream();
+        IndexSerializer.Write(original, stream);
+        stream.Position = 0;
+
+        using var restored = IndexDeserializer.Read<IndexRefineFlat<IndexFlatL2>>(stream);
+
+        Assert.Equal(kFactor, restored.KFactor);
+    }
+
+    [Fact]
+    public void CloneAndDeserialize_DisposeWithoutDoubleFree()
+    {
+        for (var i = 0; i < 20; i++)
+        {
+            using var original = new IndexRefineFlat<IndexFlatL2>(new IndexFlatL2(Dimensions));
+            original.Add(Count, Data);
+
+            original.Clone().Dispose();
+
+            using var stream = new MemoryStream();
+            IndexSerializer.Write(original, stream);
+            stream.Position = 0;
+            IndexDeserializer.Read<IndexRefineFlat<IndexFlatL2>>(stream).Dispose();
+        }
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
     }
 }

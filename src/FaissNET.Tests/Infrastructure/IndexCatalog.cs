@@ -144,9 +144,14 @@ public static class IndexCatalog
             EnableReconstruct = i => ((IndexIVFScalarQuantizer<IndexFlatL2>)i).DirectMap = true,
         },
 
-        // TODO: Enable clone and deserialization as soon as PR #5514 https://github.com/facebookresearch/faiss/pull/5514 gets merged
         new("RefineFlatL2", 4, MetricType.L2, d => new IndexRefineFlat<IndexFlatL2>(new IndexFlatL2(d)),
-            IndexCapabilities.SequentialAdd | IndexCapabilities.Exact | IndexCapabilities.Reconstruct | IndexCapabilities.Codes | IndexCapabilities.RangeSearch),
+            IndexCapabilities.SequentialAdd | IndexCapabilities.Exact | IndexCapabilities.Reconstruct | IndexCapabilities.Codes | IndexCapabilities.RangeSearch |
+            IndexCapabilities.Clone | IndexCapabilities.Serialize)
+        {
+            CloneIndex = i => ((IndexRefineFlat<IndexFlatL2>)i).Clone(),
+            Deserialize = s => IndexDeserializer.Read<IndexRefineFlat<IndexFlatL2>>(s),
+            DeserializeFile = p => IndexDeserializer.Read<IndexRefineFlat<IndexFlatL2>>(p),
+        },
 
         new("SQ8", 8, MetricType.L2, d => new IndexScalarQuantizer(d, QuantizerType.QT_8bit),
             IndexCapabilities.SequentialAdd | IndexCapabilities.Train | IndexCapabilities.Clone | IndexCapabilities.Serialize | IndexCapabilities.SelectorSearch |
@@ -174,15 +179,9 @@ public static class IndexCatalog
 
         new("FactoryIDMapFlatL2", 4, MetricType.L2, d => IndexFactory.Create<GenericFloatIndex>("IDMap,Flat", d, MetricType.L2),
             IndexCapabilities.AddWithIds | IndexCapabilities.RemoveIds | IndexCapabilities.RemoveKeepsIds),
-    ];
 
-    private static readonly IndexCase[] PendingNativeSupport =
-    [
-        // TODO: Blocked until PR #5511 https://github.com/facebookresearch/faiss/pull/5511 gets merged
         new("ReplicasFlatL2", 4, MetricType.L2, Replicated, IndexCapabilities.SequentialAdd | IndexCapabilities.Exact | IndexCapabilities.Reconstruct),
     ];
-
-    public static TheoryData<IndexCase> PendingFloat { get; } = ToTheory(PendingNativeSupport);
 
     private static IndexShards Sharded(int dimensions)
     {

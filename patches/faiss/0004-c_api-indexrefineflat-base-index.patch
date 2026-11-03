@@ -1,0 +1,36 @@
+feat(IndexRefineFlat): Exported base index in c_api
+
+Upstream: https://github.com/facebookresearch/faiss/pull/5514
+Remove once the faiss submodule includes this PR.
+
+diff --git a/c_api/IndexFlat_c.cpp b/c_api/IndexFlat_c.cpp
+index 1a87cb817e..007fd1c12b 100644
+--- a/c_api/IndexFlat_c.cpp
++++ b/c_api/IndexFlat_c.cpp
+@@ -125,6 +125,11 @@ int faiss_IndexRefineFlat_new(
+ DEFINE_DESTRUCTOR(IndexRefineFlat)
+ DEFINE_INDEX_DOWNCAST(IndexRefineFlat)
+ 
++FaissIndex* faiss_IndexRefineFlat_base_index(FaissIndexRefineFlat* index) {
++    return reinterpret_cast<FaissIndex*>(
++            reinterpret_cast<faiss::IndexRefineFlat*>(index)->base_index);
++}
++
+ DEFINE_GETTER(IndexRefineFlat, int, own_fields)
+ DEFINE_SETTER(IndexRefineFlat, int, own_fields)
+ 
+diff --git a/c_api/IndexFlat_c.h b/c_api/IndexFlat_c.h
+index dbefb53908..e4b284fb98 100644
+--- a/c_api/IndexFlat_c.h
++++ b/c_api/IndexFlat_c.h
+@@ -100,6 +100,10 @@ int faiss_IndexRefineFlat_new(
+ FAISS_DECLARE_DESTRUCTOR(IndexRefineFlat)
+ FAISS_DECLARE_INDEX_DOWNCAST(IndexRefineFlat)
+ 
++/// Get a pointer to the base index.
++/// The returned pointer is borrowed, do not free.
++FaissIndex* faiss_IndexRefineFlat_base_index(FaissIndexRefineFlat* index);
++
+ FAISS_DECLARE_GETTER_SETTER(IndexRefineFlat, int, own_fields)
+ 
+ /// factor between k requested in search and the k requested from

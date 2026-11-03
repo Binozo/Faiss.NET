@@ -66,7 +66,7 @@ public class SerializableTypeCoverageTests
         AssertSameNeighbours(original, restored, vectors.AsSpan(0, Dimensions), k: 5);
     }
 
-    [Fact(Skip = NativeSupport.RefineFlatBaseIndex)]
+    [Fact]
     public void RefineFlat_StreamRoundtrip_RematerializesAsRefineFlat()
     {
         using var baseIndex = new IndexFlatL2(Dimensions);
