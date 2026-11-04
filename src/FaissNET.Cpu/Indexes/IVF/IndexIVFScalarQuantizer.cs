@@ -152,7 +152,7 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
 /// throw <see cref="ArgumentOutOfRangeException"/>: faiss would fail the kernel launch inside an assertion and abort.
 /// </remarks>
 public class GpuIndexIVFScalarQuantizer<T> : FloatIndex, ITrainableFloatIndex, IIDMappedFloatIndex, IIDSequentialFloatIndex, IParamsFloatSearchIndex, IFromNativeIndexHandle<GpuIndexIVFScalarQuantizer<T>>,
-    IGpuDeviceIndex<IndexIVFScalarQuantizer<T>>, IGpuIVFIndex where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
+    IGpuDeviceIndex<IndexIVFScalarQuantizer<T>>, IGpuIVFIndex, IGpuScalarQuantizerIndex where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
 {
     internal GpuIndexIVFScalarQuantizer(FaissIndexHandle handle) : base(handle)
     {
@@ -165,22 +165,13 @@ public class GpuIndexIVFScalarQuantizer<T> : FloatIndex, ITrainableFloatIndex, I
     /// <summary>The quantizer of the CPU index this was transferred from.</summary>
     internal QuantizerType? QuantizerType { get; set; }
 
-    internal override void ThrowIfKUnsupported(long k)
+    QuantizerType? IGpuScalarQuantizerIndex.QuantizerType
     {
-        if (QuantizerType is not (Models.QuantizerType.QT_8bit or Models.QuantizerType.QT_4bit or Models.QuantizerType.QT_6bit))
-            return;
-
-        // ivfInterleavedScan: 128 threads (4 warps) each keep a queue of k rounded up to a power of two (at least 32)
-        // of float distances and 64-bit ids in static shared memory; the codec adds vmin and vdiff per dimension.
-        // Queues above 512 entries already fill the 48 KiB launch limit on their own.
-        const long sharedMemoryLimit = 48 * 1024;
-        var queue = Math.Max(32L, (long)BitOperations.RoundUpToPowerOf2((ulong)k));
-        var required = 4 * queue * (sizeof(float) + sizeof(long)) + 2L * sizeof(float) * Dimensions;
-
-        if (queue > 512 || required > sharedMemoryLimit)
-            throw new ArgumentOutOfRangeException(nameof(k), k,
-                $"A GPU {QuantizerType} scalar quantizer index with {Dimensions} dimensions cannot search for {k} neighbours: the device scan needs {required} bytes of shared memory, the limit is {sharedMemoryLimit}.");
+        get => QuantizerType;
+        set => QuantizerType = value;
     }
+
+    internal override void ThrowIfKUnsupported(long k) => GpuScalarQuantizerLimits.ThrowIfKUnsupported(QuantizerType, Dimensions, k);
 
     /// <inheritdoc />
     public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
