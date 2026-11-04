@@ -1,3 +1,6 @@
+using System.Numerics;
+using Faiss.Models;
+
 namespace Faiss.Cpu.Interfaces;
 
 public interface IGpuIndex : INativeIndex
@@ -42,5 +45,38 @@ internal static class GpuIVFIDs
             if (id is < int.MinValue or > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(xids), id, "The index stores ids in 32 bits (IndicesOptions.Bit32); this id does not fit.");
         }
+    }
+}
+
+internal interface IGpuScalarQuantizerIndex : IGpuIndex
+{
+    QuantizerType? QuantizerType { get; set; }
+}
+
+internal static class GpuScalarQuantizerLimits
+{
+    /// <summary>Whether the device scan of <paramref name="quantizerType"/> keeps per-dimension ranges in shared memory.</summary>
+    public static bool LimitsK(QuantizerType? quantizerType) => quantizerType is QuantizerType.QT_8bit or QuantizerType.QT_4bit or QuantizerType.QT_6bit;
+
+    /// <summary>
+    /// The quantizer a squad keeps after <paramref name="member"/> joined.
+    /// A limiting one wins, since every limiting type shares the same launch bound.
+    /// </summary>
+    public static QuantizerType? Combine(QuantizerType? current, INativeIndex member) => LimitsK(current) ? current : (member as IGpuScalarQuantizerIndex)?.QuantizerType ?? current;
+
+    public static void ThrowIfKUnsupported(QuantizerType? quantizerType, long dimensions, long k)
+    {
+        if (!LimitsK(quantizerType))
+            return;
+
+        // ivfInterleavedScan: 128 threads (4 warps) each keep a queue of k rounded up to a power of two (at least 32)
+        // of float distances and 64-bit ids in static shared memory; the codec adds vmin and vdiff per dimension.
+        // Queues above 512 entries already fill the 48 KiB launch limit on their own.
+        const long sharedMemoryLimit = 48 * 1024;
+        var queue = Math.Max(32L, (long)BitOperations.RoundUpToPowerOf2((ulong)k));
+        var required = 4 * queue * (sizeof(float) + sizeof(long)) + 2L * sizeof(float) * dimensions;
+
+        if (queue > 512 || required > sharedMemoryLimit)
+            throw new ArgumentOutOfRangeException(nameof(k), k, $"A GPU {quantizerType} scalar quantizer index with {dimensions} dimensions cannot search for {k} neighbours: the device scan needs {required} bytes of shared memory, the limit is {sharedMemoryLimit}.");
     }
 }
