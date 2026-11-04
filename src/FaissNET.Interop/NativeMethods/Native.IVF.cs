@@ -29,6 +29,14 @@ internal static unsafe partial class Native
     
     [LibraryImport(LibraryName)]
     internal static partial void faiss_IndexIVF_set_own_fields(FaissIndexHandle index, [MarshalAs(UnmanagedType.Bool)] bool ownFields);
+
+    /// <remarks>Exported by <c>patches/faiss/0008-c_api-ivfpq-pq-settings.patch</c>.</remarks>
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_IndexIVF_by_residual(FaissIndexHandle index);
+
+    /// <remarks>Exported by <c>patches/faiss/0008-c_api-ivfpq-pq-settings.patch</c>.</remarks>
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_IndexIVFPQ_pq_settings(FaissIndexHandle index, out nuint m, out nuint nbits, out int polysemousHt);
     
     [LibraryImport(LibraryName)]
     internal static partial IntPtr faiss_IndexIVF_quantizer(FaissIndexHandle index);

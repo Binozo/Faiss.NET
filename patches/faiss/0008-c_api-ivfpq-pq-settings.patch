@@ -1,0 +1,76 @@
+c_api: Exported IVF by_residual and IndexIVFPQ product quantizer settings
+
+Lets the managed layer reject IndexIVFPQ configurations the GPU cloner refuses
+(pq.nbits != 8, by_residual == false, polysemous codes, unsupported M) before
+calling faiss: a sharded multi-GPU clone throws inside an OpenMP region, which
+terminates the process.
+
+diff --git a/c_api/IndexIVF_c.cpp b/c_api/IndexIVF_c.cpp
+index 0cab7ea01..863e45525 100644
+--- a/c_api/IndexIVF_c.cpp
++++ b/c_api/IndexIVF_c.cpp
+@@ -9,6 +9,8 @@
+ 
+ #include "IndexIVF_c.h"
+ #include <faiss/IndexIVF.h>
++#include <faiss/IndexIVFPQ.h>
++#include <faiss/impl/FaissAssert.h>
+ #include "Clustering_c.h"
+ #include "Index_c.h"
+ #include "impl/AuxIndexStructures_c.h"
+@@ -88,6 +90,25 @@ DEFINE_GETTER(IndexIVF, char, quantizer_trains_alone)
+ DEFINE_GETTER(IndexIVF, int, own_fields)
+ DEFINE_SETTER(IndexIVF, int, own_fields)
+ 
++/// whether the residual to the coarse centroid is encoded instead of the vector
++DEFINE_GETTER(IndexIVF, int, by_residual)
++
++int faiss_IndexIVFPQ_pq_settings(
++        const FaissIndex* index,
++        size_t* p_M,
++        size_t* p_nbits,
++        int* p_polysemous_ht) {
++    try {
++        auto ivfpq = dynamic_cast<const faiss::IndexIVFPQ*>(
++                reinterpret_cast<const faiss::Index*>(index));
++        FAISS_THROW_IF_NOT_MSG(ivfpq, "index is not an IndexIVFPQ");
++        *p_M = ivfpq->pq.M;
++        *p_nbits = ivfpq->pq.nbits;
++        *p_polysemous_ht = ivfpq->polysemous_ht;
++    }
++    CATCH_AND_HANDLE
++}
++
+ using faiss::IndexIVF;
+ 
+ int faiss_IndexIVF_merge_from(
+diff --git a/c_api/IndexIVF_c.h b/c_api/IndexIVF_c.h
+index 288daa1a6..aa7c8a31a 100644
+--- a/c_api/IndexIVF_c.h
++++ b/c_api/IndexIVF_c.h
+@@ -77,6 +77,25 @@ FAISS_DECLARE_GETTER(IndexIVF, char, quantizer_trains_alone)
+ /// whether object owns the quantizer
+ FAISS_DECLARE_GETTER_SETTER(IndexIVF, int, own_fields)
+ 
++/// whether the residual to the coarse centroid is encoded instead of the vector
++FAISS_DECLARE_GETTER(IndexIVF, int, by_residual)
++
++/** read the product quantizer settings of an IndexIVFPQ
++ *
++ * Fails if index is not an IndexIVFPQ.
++ *
++ * @param index          the IndexIVFPQ
++ * @param p_M            output: number of sub-quantizers
++ * @param p_nbits        output: bits per sub-quantizer code
++ * @param p_polysemous_ht output: Hamming threshold for polysemous filtering
++ *                       (0 = disabled)
++ */
++int faiss_IndexIVFPQ_pq_settings(
++        const FaissIndex* index,
++        size_t* p_M,
++        size_t* p_nbits,
++        int* p_polysemous_ht);
++
+ /** moves the entries from another dataset to self. On output,
+  * other is empty. add_id is added to all moved ids (for
+  * sequential ids, this would be this->ntotal */
