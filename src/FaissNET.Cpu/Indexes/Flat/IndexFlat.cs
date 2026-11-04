@@ -38,7 +38,11 @@ public sealed class IndexFlat : CpuFlatFloatIndex<IndexFlat>, IFromNativeIndexHa
 
     static IndexFlat IFromNativeIndexHandle<IndexFlat>.FromHandle(FaissIndexHandle handle) => new(handle);
 
-    bool IGpuClonableIndex<IndexFlat, GpuIndexFlat>.IsGpuClonable() => Metric is MetricType.L2 or MetricType.InnerProduct;
+    bool IGpuClonableIndex<IndexFlat, GpuIndexFlat>.IsGpuClonable() => IsGpuClonable;
+
+    bool IMultiGpuClonableIndex<IndexFlat, GpuIndexFlat>.IsMultiGpuClonable() => IsGpuClonable;
+    
+    private bool IsGpuClonable => Metric is MetricType.L2 or MetricType.InnerProduct;
 }
 
 /// <inheritdoc cref="GpuFlatFloatIndex{T}" />
