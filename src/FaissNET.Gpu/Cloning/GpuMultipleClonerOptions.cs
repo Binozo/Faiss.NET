@@ -54,6 +54,12 @@ public sealed class GpuMultipleClonerOptions : GpuClonerOptions
     public GpuShardType ShardType
     {
         get => (GpuShardType)GpuNative.faiss_GpuMultipleClonerOptions_shard_type(NativeHandle);
-        set => GpuNative.faiss_GpuMultipleClonerOptions_set_shard_type(NativeHandle, (int)value);
+        set
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"Unknown {nameof(GpuShardType)}.");
+
+            GpuNative.faiss_GpuMultipleClonerOptions_set_shard_type(NativeHandle, (int)value);
+        }
     }
 }
