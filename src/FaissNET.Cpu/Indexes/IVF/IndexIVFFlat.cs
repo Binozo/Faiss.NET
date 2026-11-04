@@ -36,7 +36,7 @@ public enum QuantizerTrainMode : sbyte
 /// the closest <see cref="Nprobe"/> clusters are scanned.
 /// </summary>
 /// <inheritdoc cref="CpuFlatFloatIndex{T}" />
-public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIndex, ITrainableFloatIndex, IIDMappedFloatIndex, ISerializableFloatIndex, IFromNativeIndexHandle<IndexIVFFlat<T>>, IGpuClonableIndex<IndexIVFFlat<T>, GpuIndexIVFFlat<T>> where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
+public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIndex, ITrainableFloatIndex, IIDMappedFloatIndex, ISerializableFloatIndex, IFromNativeIndexHandle<IndexIVFFlat<T>>, IGpuClonableIndex<IndexIVFFlat<T>, GpuIndexIVFFlat<T>>, IMultiGpuClonableIndex<IndexIVFFlat<T>, GpuIndexIVFFlat<T>> where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
 {
     /// <param name="quantizer">The coarse quantizer.</param>
     /// <param name="ownQuantizer">
@@ -180,7 +180,11 @@ public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIn
     static IndexIVFFlat<T> IFromNativeIndexHandle<IndexIVFFlat<T>>.FromPointer(IntPtr handle, bool ownsHandle)
         => new(Wrap(handle, ownsHandle));
 
-    bool IGpuClonableIndex<IndexIVFFlat<T>, GpuIndexIVFFlat<T>>.IsGpuClonable() => Metric is MetricType.L2 or MetricType.InnerProduct;
+    bool IGpuClonableIndex<IndexIVFFlat<T>, GpuIndexIVFFlat<T>>.IsGpuClonable() => IsGpuClonable;
+
+    bool IMultiGpuClonableIndex<IndexIVFFlat<T>, GpuIndexIVFFlat<T>>.IsMultiGpuClonable() => IsGpuClonable;
+
+    private bool IsGpuClonable => Metric is MetricType.L2 or MetricType.InnerProduct;
 }
 
 /// <inheritdoc cref="GpuFlatFloatIndex{T}" />
