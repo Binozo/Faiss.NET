@@ -127,7 +127,7 @@ public sealed class IndexIVFPQ : FloatIndex, IIVFIndex, IIDSequentialFloatIndex,
     bool IGpuClonableIndex<IndexIVFPQ, GpuIndexIVFPQ>.IsGpuClonable() => Metric is MetricType.L2 or MetricType.InnerProduct;
 }
 
-public class GpuIndexIVFPQ : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IGpuIndex<IndexIVFPQ>, IFromNativeIndexHandle<GpuIndexIVFPQ>, IGpuIVFIndex
+public class GpuIndexIVFPQ : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IGpuDeviceIndex<IndexIVFPQ>, IFromNativeIndexHandle<GpuIndexIVFPQ>, IGpuIVFIndex
 {
     private GpuIndexIVFPQ(FaissIndexHandle handle) : base(handle)
     {
