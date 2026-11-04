@@ -10,7 +10,7 @@ namespace Faiss.Cpu.Indexes.Flat;
 /// Base flat index.
 /// </summary>
 /// <inheritdoc cref="CpuFlatFloatIndex{T}" />
-public sealed class IndexFlat : CpuFlatFloatIndex<IndexFlat>, IFromNativeIndexHandle<IndexFlat>, ISerializableFloatIndex, IGpuClonableIndex<IndexFlat, GpuIndexFlat>
+public sealed class IndexFlat : CpuFlatFloatIndex<IndexFlat>, IFromNativeIndexHandle<IndexFlat>, ISerializableFloatIndex, IGpuClonableIndex<IndexFlat, GpuIndexFlat>, IMultiGpuClonableIndex<IndexFlat, GpuIndexFlat>
 {
     public IndexFlat() : base(CreateHandle())
     {
@@ -42,7 +42,7 @@ public sealed class IndexFlat : CpuFlatFloatIndex<IndexFlat>, IFromNativeIndexHa
 }
 
 /// <inheritdoc cref="GpuFlatFloatIndex{T}" />
-public class GpuIndexFlat : GpuFlatFloatIndex<GpuIndexFlat>, IFromNativeIndexHandle<GpuIndexFlat>, IGpuIndex<IndexFlat>
+public class GpuIndexFlat : GpuFlatFloatIndex<GpuIndexFlat>, IFromNativeIndexHandle<GpuIndexFlat>, IGpuDeviceIndex<IndexFlat>
 {
     private GpuIndexFlat(FaissIndexHandle handle) : base(handle)
     {

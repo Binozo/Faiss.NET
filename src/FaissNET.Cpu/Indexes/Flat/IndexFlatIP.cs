@@ -45,7 +45,7 @@ public class IndexFlatIP : CpuFlatFloatIndex<IndexFlatIP>, IFromNativeIndexHandl
 }
 
 /// <inheritdoc cref="GpuFlatFloatIndex{T}" />
-public class GpuIndexFlatIP : GpuFlatFloatIndex<GpuIndexFlatIP>, IFromNativeIndexHandle<GpuIndexFlatIP>, IGpuIndex<IndexFlatIP>
+public class GpuIndexFlatIP : GpuFlatFloatIndex<GpuIndexFlatIP>, IFromNativeIndexHandle<GpuIndexFlatIP>, IGpuDeviceIndex<IndexFlatIP>
 {
     private GpuIndexFlatIP(FaissIndexHandle handle) : base(handle)
     {
