@@ -50,9 +50,9 @@ public class GenericFloatIndex : FloatIndex, ITrainableFloatIndex, IIDSequential
     public GenericFloatIndex Clone() => ClonableFloatIndexImpl<GenericFloatIndex>.Clone(this);
 }
 
-public class GpuGenericFloatIndex : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IReconstructFloatIndex, IGpuIndex<GenericFloatIndex>, IFromNativeIndexHandle<GpuGenericFloatIndex>
+public class GpuGenericFloatIndex : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IReconstructFloatIndex, IGpuDeviceIndex<GenericFloatIndex>, IFromNativeIndexHandle<GpuGenericFloatIndex>
 {
-    private GpuGenericFloatIndex(FaissIndexHandle handle) : base(handle)
+    internal GpuGenericFloatIndex(FaissIndexHandle handle) : base(handle)
     {
     }
     
