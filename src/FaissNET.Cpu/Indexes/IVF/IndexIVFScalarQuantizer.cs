@@ -16,7 +16,7 @@ internal readonly struct IndexIVFScalarQuantizerRelease : IFaissRelease
 }
 
 public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScalarQuantizer<T>>, IIVFIndex, ITrainableFloatIndex, IIDMappedFloatIndex, ISerializableFloatIndex, IFromNativeIndexHandle<IndexIVFScalarQuantizer<T>>,
-    IGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>>, IListNumberPrefixedCodes where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
+    IGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>>, IMultiGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>>, IListNumberPrefixedCodes where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
 {
     public readonly ScalarQuantizer ScalarQuantizer;
 
@@ -123,12 +123,19 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
 
     static IndexIVFScalarQuantizer<T> IFromNativeIndexHandle<IndexIVFScalarQuantizer<T>>.FromHandle(FaissIndexHandle handle) => new(handle);
 
-    bool IGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>>.IsGpuClonable() => Metric is MetricType.L2 or MetricType.InnerProduct && ScalarQuantizer.QuantizerType is QuantizerType.QT_8bit
+    bool IGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>>.IsGpuClonable() => IsGpuClonable;
+
+    bool IMultiGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>>.IsMultiGpuClonable() => IsGpuClonable;
+
+    private bool IsGpuClonable => Metric is MetricType.L2 or MetricType.InnerProduct && ScalarQuantizer.QuantizerType is QuantizerType.QT_8bit
         or QuantizerType.QT_8bit_uniform or QuantizerType.QT_8bit_direct
         or QuantizerType.QT_4bit or QuantizerType.QT_4bit_uniform or QuantizerType.QT_6bit or QuantizerType.QT_fp16;
 
     void IGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>>.OnClonedToGpu(INativeIndex gpuIndex) =>
-        ((GpuIndexIVFScalarQuantizer<T>)gpuIndex).QuantizerType = ScalarQuantizer.QuantizerType;
+        ((IGpuScalarQuantizerIndex)gpuIndex).QuantizerType = ScalarQuantizer.QuantizerType;
+
+    void IMultiGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>>.OnClonedToGpu(INativeIndex gpuIndex) =>
+        ((IGpuScalarQuantizerIndex)gpuIndex).QuantizerType = ScalarQuantizer.QuantizerType;
 
     public override void Dispose()
     {
