@@ -44,7 +44,7 @@ public sealed class GpuMultipleClonerOptions : GpuClonerOptions
     public bool Shard
     {
         get => GpuNative.faiss_GpuMultipleClonerOptions_shard(NativeHandle) != 0;
-        set => GpuNative.faiss_GpuMultipleClonerOptions_set_shard(NativeHandle, value ? 1 : 0);
+        internal set => GpuNative.faiss_GpuMultipleClonerOptions_set_shard(NativeHandle, value ? 1 : 0);
     }
 
     /// <summary>
