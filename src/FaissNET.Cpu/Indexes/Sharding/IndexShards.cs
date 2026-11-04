@@ -1,3 +1,4 @@
+using Faiss.Cpu.Indexes.Factory;
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Parameters;
 using Faiss.Exceptions;
@@ -19,7 +20,7 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
     }
 
     /// <param name="ownIndices">Override the ownership. Keep <see langword="null"/> when wrapping if you want to keep default faiss behavior.</param>
-    private IndexShards(FaissIndexHandle handle, bool? ownIndices = null) : base(handle)
+    internal IndexShards(FaissIndexHandle handle, bool? ownIndices = null) : base(handle)
     {
         if (ownIndices is bool own)
         {
@@ -40,6 +41,17 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
     }
 
     public int Count => Native.faiss_IndexShards_count(NativeHandle);
+
+    public INativeIndex this[int index]
+    {
+        get
+        {
+            if (index < 0 || index >= Count)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            return new GenericFloatIndex(new FaissBorrowedIndexHandle(Native.faiss_IndexShards_at(NativeHandle, index), NativeHandle));
+        }
+    }
     
     /// <summary>
     /// Adds the index to the shards.
