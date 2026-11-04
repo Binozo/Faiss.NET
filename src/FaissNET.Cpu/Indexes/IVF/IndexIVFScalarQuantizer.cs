@@ -145,7 +145,7 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
 /// throw <see cref="ArgumentOutOfRangeException"/>: faiss would fail the kernel launch inside an assertion and abort.
 /// </remarks>
 public class GpuIndexIVFScalarQuantizer<T> : FloatIndex, ITrainableFloatIndex, IIDMappedFloatIndex, IIDSequentialFloatIndex, IParamsFloatSearchIndex, IFromNativeIndexHandle<GpuIndexIVFScalarQuantizer<T>>,
-    IGpuIndex<IndexIVFScalarQuantizer<T>>, IGpuIVFIndex where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
+    IGpuDeviceIndex<IndexIVFScalarQuantizer<T>>, IGpuIVFIndex where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
 {
     internal GpuIndexIVFScalarQuantizer(FaissIndexHandle handle) : base(handle)
     {

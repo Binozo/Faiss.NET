@@ -184,7 +184,7 @@ public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIn
 }
 
 /// <inheritdoc cref="GpuFlatFloatIndex{T}" />
-public class GpuIndexIVFFlat<T> : GpuFlatFloatIndex<GpuIndexIVFFlat<T>>, ITrainableFloatIndex, IIDMappedFloatIndex, IIDSequentialFloatIndex, IFromNativeIndexHandle<GpuIndexIVFFlat<T>>, IGpuIndex<IndexIVFFlat<T>>, IGpuIVFIndex where T: class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
+public class GpuIndexIVFFlat<T> : GpuFlatFloatIndex<GpuIndexIVFFlat<T>>, ITrainableFloatIndex, IIDMappedFloatIndex, IIDSequentialFloatIndex, IFromNativeIndexHandle<GpuIndexIVFFlat<T>>, IGpuDeviceIndex<IndexIVFFlat<T>>, IGpuIVFIndex where T: class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
 {
     private GpuIndexIVFFlat(FaissIndexHandle handle) : base(handle)
     {
