@@ -8,6 +8,19 @@ public interface IGpuIndex<T> : IGpuIndex where T : INativeIndex, IFromNativeInd
 {
 }
 
+public interface IGpuDeviceIndex : IGpuIndex
+{
+}
+
+public interface IGpuDeviceIndex<T> : IGpuDeviceIndex, IGpuIndex<T> where T : INativeIndex, IFromNativeIndexHandle<T>
+{
+}
+
+public interface IGpuDevicesSquadIndex<T> : IGpuIndex<T> where T : INativeIndex, IFromNativeIndexHandle<T>
+{
+    public int[] DeviceIds { get; }
+}
+
 internal interface IGpuIVFIndex : IGpuIndex
 {
     /// <summary>
