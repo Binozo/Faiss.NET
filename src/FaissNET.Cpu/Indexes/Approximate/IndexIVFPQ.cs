@@ -5,6 +5,7 @@ using Faiss.Cpu.Search.Parameters;
 using Faiss.Cpu.Search.Range;
 using Faiss.Cpu.Selectors;
 using Faiss.Exceptions;
+using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
 using Faiss.Interop.SafeHandles;
 using Faiss.Models;
@@ -15,7 +16,7 @@ namespace Faiss.Cpu.Indexes.Approximate;
 /// IVF + Product Quantization index.
 /// </summary>
 public sealed class IndexIVFPQ : FloatIndex, IIVFIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IRangeSearchFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex,
-    ICodeFloatIndex, ITrainableFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IGpuClonableIndex<IndexIVFPQ, GpuIndexIVFPQ>, IClonableFloatIndex<IndexIVFPQ>, IFromNativeIndexHandle<IndexIVFPQ>, IKeyLayout,
+    ICodeFloatIndex, ITrainableFloatIndex, ICpuFloatIndex, ISerializableFloatIndex, IGpuClonableIndex<IndexIVFPQ, GpuIndexIVFPQ>, IMultiGpuClonableIndex<IndexIVFPQ, GpuIndexIVFPQ>, IClonableFloatIndex<IndexIVFPQ>, IFromNativeIndexHandle<IndexIVFPQ>, IKeyLayout,
     IListNumberPrefixedCodes
 {
     public IndexIVFPQ(int dimensions, int n = 4096, int m = 16, int? subQuantizer = null, bool polysemy = false, MetricType metricType = MetricType.L2) : this(
@@ -124,7 +125,36 @@ public sealed class IndexIVFPQ : FloatIndex, IIVFIndex, IIDSequentialFloatIndex,
 
     public IndexIVFPQ Clone() => ClonableFloatIndexImpl<IndexIVFPQ>.Clone(this);
 
-    bool IGpuClonableIndex<IndexIVFPQ, GpuIndexIVFPQ>.IsGpuClonable() => Metric is MetricType.L2 or MetricType.InnerProduct;
+    bool IGpuClonableIndex<IndexIVFPQ, GpuIndexIVFPQ>.IsGpuClonable() => IsGpuClonable;
+
+    bool IMultiGpuClonableIndex<IndexIVFPQ, GpuIndexIVFPQ>.IsMultiGpuClonable() => IsGpuClonable;
+
+    /// <summary>Number of sub-quantizers (M) of the product quantizer.</summary>
+    internal int SubQuantizerCount
+    {
+        get
+        {
+            FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVFPQ_pq_settings(NativeHandle, out var m, out _, out _));
+            return (int)m;
+        }
+    }
+
+    private bool IsGpuClonable
+    {
+        get
+        {
+            if (Metric is not (MetricType.L2 or MetricType.InnerProduct))
+                return false;
+
+            FaissErrorHandler.ThrowIfError(Native.faiss_IndexIVFPQ_pq_settings(NativeHandle, out var m, out var nbits, out var polysemousHt));
+
+            // IVFPQ outside cuVS supports 8-bit codes, residual encoding, no polysemous filtering and a supported number of sub-quantizers.
+            return nbits == 8
+                   && polysemousHt == 0
+                   && Native.faiss_IndexIVF_by_residual(NativeHandle) != 0
+                   && m is 1 or 2 or 3 or 4 or 8 or 12 or 16 or 20 or 24 or 28 or 32 or 40 or 48 or 56 or 64 or 96;
+        }
+    }
 }
 
 public class GpuIndexIVFPQ : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IGpuDeviceIndex<IndexIVFPQ>, IFromNativeIndexHandle<GpuIndexIVFPQ>, IGpuIVFIndex
