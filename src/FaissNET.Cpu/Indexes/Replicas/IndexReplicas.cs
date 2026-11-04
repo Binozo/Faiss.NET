@@ -18,7 +18,7 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
     }
 
     /// <param name="ownIndices">Override the ownership. Keep <see langword="null"/> when wrapping if you want to keep default faiss behavior.</param>
-    private IndexReplicas(FaissIndexHandle handle, bool? ownIndices = null) : base(handle)
+    protected internal IndexReplicas(FaissIndexHandle handle, bool? ownIndices = null) : base(handle)
     {
         if (ownIndices is bool own)
         {
@@ -84,6 +84,17 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
     }
 
     public int Count => Native.faiss_IndexReplicas_count(NativeHandle);
+
+    public T this[int index]
+    {
+        get
+        {
+            if (index < 0 || index >= Count)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            return T.FromBorrowed(Native.faiss_IndexReplicas_at(NativeHandle, index), NativeHandle);
+        }
+    }
 
     public bool OwnIndices
     {
