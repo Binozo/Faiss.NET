@@ -1,4 +1,5 @@
 using Faiss.Cpu.Indexes.Flat;
+using Faiss.Cpu.Indexes.IVF;
 using Faiss.Cpu.Interfaces;
 using Faiss.Exceptions;
 using Faiss.Gpu.Cloning;
@@ -110,6 +111,19 @@ public class GpuClonerOptionsContractTests
         Assert.Equal(type, options.ShardType);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(3)]
+    [InlineData(5)]
+    public void ShardType_UndefinedValue_ThrowsAndKeepsPrevious(int value)
+    {
+        using var options = new GpuMultipleClonerOptions { ShardType = GpuShardType.IdRange };
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => options.ShardType = (GpuShardType)value);
+
+        Assert.Equal(GpuShardType.IdRange, options.ShardType);
+    }
+
     [Fact]
     public void Disposed_ThrowsObjectDisposed()
     {
@@ -208,6 +222,46 @@ public class GpuClonerOptionsContractTests
             list => Assert.Equal(Enumerable.Range(0, list.Count()).Select(i => (long)i), list.Select(d => d.Offset).Order()));
 
         Assert.Throws<FaissNativeException>(() => c.ToCpu(gpu).Dispose());
+    }
+
+    /// <summary>
+    /// Every IVF shard reports (list, offset) labels for its own part of the same lists and faiss merges them untranslated,
+    /// so labels from different shards collide. Replicas hold identical lists, so their labels stay meaningful.
+    /// </summary>
+    [Fact]
+    public async Task StorageMode_Ivf_ShardedIvf_ThrowsAndReplicatedKeepsListAndOffset()
+    {
+        var stored = Vectors.Random(seed: 1, count: Stored, dimensions: 8);
+        using var cpu = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(8), 8, nlist: 4, ownQuantizer: true) { Nprobe = 4 };
+        await cpu.TrainAsync(256, Vectors.Random(seed: 98, count: 256, dimensions: 8));
+        cpu.Add(Stored, stored);
+        using var first = new GpuResourcesProvider();
+        using var second = new GpuResourcesProvider();
+        using var options = new GpuMultipleClonerOptions { StorageMode = IndicesOptions.Ivf };
+
+        var sharded = Assert.Throws<ArgumentException>(() => GpuIndexProvider.TransferToGpuSharded([first, second], [0, 0], cpu, options));
+        Assert.Equal("options", sharded.ParamName);
+
+        using var replicas = GpuIndexProvider.TransferToGpuReplicated([first, second], [0, 0], cpu, options);
+        var decoded = SearchAssert.StoredLabels(replicas, Stored).Select(label => (List: label >> 32, Offset: label & uint.MaxValue)).ToArray();
+        Assert.Equal(Stored, decoded.Distinct().Count());
+        Assert.All(decoded, d => Assert.InRange(d.List, 0, 3));
+    }
+
+    /// <summary>A flat index has no inverted lists and ignores <see cref="GpuClonerOptions.StorageMode"/>.</summary>
+    [Fact]
+    public void StorageMode_Ivf_ShardedFlat_Transfers()
+    {
+        var stored = Vectors.Random(seed: 1, count: Stored, dimensions: 8);
+        using var cpu = new IndexFlatL2(8);
+        cpu.Add(Stored, stored);
+        using var first = new GpuResourcesProvider();
+        using var second = new GpuResourcesProvider();
+        using var options = new GpuMultipleClonerOptions { StorageMode = IndicesOptions.Ivf };
+
+        using var shards = GpuIndexProvider.TransferToGpuSharded([first, second], [0, 0], cpu, options);
+
+        Assert.Equal(Enumerable.Range(0, Stored).Select(i => (long)i), SearchAssert.StoredLabels(shards, Stored));
     }
 
     [Theory]
