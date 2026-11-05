@@ -24,6 +24,9 @@ internal static unsafe partial class Native
     [LibraryImport(LibraryName)]
     internal static partial int faiss_Index_is_trained(FaissIndexHandle index);
 
+    [LibraryImport(LibraryName, EntryPoint = "faiss_Index_is_trained")]
+    internal static partial int faiss_Index_is_trained_ptr(IntPtr index);
+
     [LibraryImport(LibraryName)]
     internal static partial MetricType faiss_Index_metric_type(FaissIndexHandle index);
 

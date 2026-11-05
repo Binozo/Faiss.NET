@@ -55,6 +55,18 @@ internal static unsafe partial class Native
     internal static partial QuantizerType faiss_ScalarQuantizer_qtype(FaissScalarQuantizerHandle index);
 
     [LibraryImport(LibraryName)]
+    internal static partial IntPtr faiss_IndexFlat_cast(IntPtr index);
+
+    [LibraryImport(LibraryName)]
+    internal static partial IntPtr faiss_IndexScalarQuantizer_cast(IntPtr index);
+
+    [LibraryImport(LibraryName, EntryPoint = "faiss_IndexScalarQuantizer_sq")]
+    internal static partial IntPtr faiss_IndexScalarQuantizer_sq_ptr(IntPtr index);
+
+    [LibraryImport(LibraryName, EntryPoint = "faiss_ScalarQuantizer_qtype")]
+    internal static partial QuantizerType faiss_ScalarQuantizer_qtype_ptr(IntPtr sq);
+
+    [LibraryImport(LibraryName)]
     internal static partial nuint faiss_ScalarQuantizer_bits(FaissScalarQuantizerHandle index);
 
     [LibraryImport(LibraryName)]
