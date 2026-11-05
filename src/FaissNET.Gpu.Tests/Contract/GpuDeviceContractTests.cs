@@ -1,4 +1,6 @@
+using Faiss.Cpu.Indexes.Flat;
 using Faiss.Cpu.Interfaces;
+using Faiss.Gpu.Indexes;
 using Faiss.Gpu.Cloning;
 using Faiss.Gpu.Resources;
 using Faiss.Gpu.Tests.Infrastructure;
@@ -93,6 +95,82 @@ public class GpuDeviceContractTests
         Assert.Equal("deviceId", withOptions.ParamName);
         using var valid = c.ToGpu(provider, cpu, 0);
         Assert.Equal(4, valid.TotalCount);
+    }
+
+    [Fact]
+    public void MultiGpu_DeviceIds_FollowRequestedOrder()
+    {
+        Assert.SkipWhen(FaissGpu.GetNumGpus() < 2, "Needs two GPUs.");
+        using var cpu = new IndexFlatL2(4);
+        cpu.Add(4, Vectors.Random(seed: 1, count: 4, dimensions: 4));
+        using var first = new GpuResourcesProvider();
+        using var second = new GpuResourcesProvider();
+
+        var shards = GpuIndexProvider.TransferToGpuSharded([first, second], [1, 0], cpu);
+        var replicas = GpuIndexProvider.TransferToGpuReplicated([first, second], [1, 0], cpu);
+
+        Assert.Equal([1, 0], shards.DeviceIds);
+        Assert.Equal([1, 0], replicas.DeviceIds);
+
+        shards.Dispose();
+        replicas.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => shards.DeviceIds);
+        Assert.Throws<ObjectDisposedException>(() => replicas.DeviceIds);
+    }
+
+    [Fact]
+    public void MultiGpu_ShardIndexer_ReturnsTypedDeviceViews()
+    {
+        var last = FaissGpu.GetNumGpus() - 1;
+        using var cpu = new IndexFlatL2(4);
+        cpu.Add(4, Vectors.Random(seed: 1, count: 4, dimensions: 4));
+        using var first = new GpuResourcesProvider();
+        using var second = new GpuResourcesProvider();
+        var shards = GpuIndexProvider.TransferToGpuSharded([first, second], [0, last], cpu);
+
+        var view = Assert.IsType<GpuIndexFlatL2>(shards[1]);
+        Assert.Same(view, ((Faiss.Cpu.Indexes.Sharding.IndexShards)shards)[1]);
+        Assert.Equal(2, view.TotalCount);
+        Assert.Equal(last, view.DeviceId);
+
+        shards.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => view.TotalCount);
+    }
+
+    [Fact]
+    public void MultiGpu_Reset_KeepsSquadTrainedAndAcceptsTrainedMembers()
+    {
+        var c = GpuIndexCatalog.Get("IVFFlatL2");
+        using var cpu = (Faiss.Cpu.Indexes.IVF.IndexIVFFlat<IndexFlatL2>)c.CreatePopulatedCpuIndex(Vectors.Random(seed: 1, count: Stored, dimensions: c.Dimensions));
+        using var empty = cpu.Clone();
+        empty.Reset();
+        using var first = new GpuResourcesProvider();
+        using var second = new GpuResourcesProvider();
+        using var third = new GpuResourcesProvider();
+        using var shards = GpuIndexProvider.TransferToGpuSharded([first, second], [0, 0], cpu);
+        using var replicas = GpuIndexProvider.TransferToGpuReplicated([first, second], [0, 0], cpu);
+
+        shards.Reset();
+        replicas.Reset();
+
+        Assert.True(shards.IsTrained);
+        Assert.True(replicas.IsTrained);
+
+        // Owned by the shards once added
+        shards.AddIndex(GpuIndexProvider.TransferToGpu(third, empty));
+        Assert.Equal(3, shards.Count);
+
+        // The reset members still take vectors: IVF shards number them from the shards' count, replicas sequentially.
+        var added = Vectors.Random(seed: 5, count: 9, dimensions: c.Dimensions);
+        shards.Add(9, added);
+        replicas.Add(9, added);
+
+        Assert.Equal(9, shards.TotalCount);
+        Assert.Equal([9L, 9L], [replicas[0].TotalCount, replicas[1].TotalCount]);
+        var (_, shardLabels) = SearchAssert.Search(shards, added, 1);
+        var (_, replicaLabels) = SearchAssert.Search(replicas, added, 1);
+        Assert.Equal(Enumerable.Range(0, 9).Select(i => (long)i), shardLabels);
+        Assert.Equal(Enumerable.Range(0, 9).Select(i => (long)i), replicaLabels);
     }
 
     private static TheoryData<GpuIndexCase, int> OnEveryDevice(GpuCapabilities caps)
