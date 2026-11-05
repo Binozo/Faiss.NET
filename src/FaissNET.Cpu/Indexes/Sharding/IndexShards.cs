@@ -15,6 +15,10 @@ internal readonly struct IndexShardsRelease : IFaissRelease
 
 public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IFromNativeIndexHandle<IndexShards>
 {
+    private readonly Dictionary<IntPtr, INativeIndex> _views = [];
+    private readonly Lock _viewsLock = new();
+    private bool _viewsClosed;
+
     public IndexShards(int dimensions, bool threaded = true, bool successiveIds = true, bool ownIndices = true) : this(CreateHandle(dimensions, threaded, successiveIds, ownIndices), ownIndices)
     {
     }
@@ -42,6 +46,12 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
 
     public int Count => Native.faiss_IndexShards_count(NativeHandle);
 
+    /// <summary>A view of shard <paramref name="index"/>.</summary>
+    /// <remarks>
+    /// This squad disposes it when it is disposed or the replica is removed, so
+    /// disposing it yourself is optional (a disposed view is replaced on the next access).
+    /// Add, reset and train through this squad is not recommended as writing through a view leaves their bookkeeping out of date.
+    /// </remarks>
     public INativeIndex this[int index]
     {
         get
@@ -49,9 +59,21 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
             if (index < 0 || index >= Count)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            return new GenericFloatIndex(new FaissBorrowedIndexHandle(Native.faiss_IndexShards_at(NativeHandle, index), NativeHandle));
+            var member = Native.faiss_IndexShards_at(NativeHandle, index);
+
+            lock (_viewsLock)
+            {
+                ObjectDisposedException.ThrowIf(_viewsClosed, this);
+
+                if (_views.TryGetValue(member, out var view) && !view.Handle.IsClosed)
+                    return view;
+
+                return _views[member] = CreateView(member);
+            }
         }
     }
+
+    private protected virtual INativeIndex CreateView(IntPtr member) => new GenericFloatIndex(new FaissBorrowedIndexHandle(member, NativeHandle));
     
     /// <summary>
     /// Adds the index to the shards.
@@ -66,7 +88,7 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
     /// This instance neither owns its shards nor can keep them alive: it is a view of shards built with
     /// <c>ownIndices: false</c>. Add through the original instance instead.
     /// </exception>
-    public void AddIndex(INativeIndex index)
+    public virtual void AddIndex(INativeIndex index)
     {
         OwnershipGuard.RequireIndependent(index, nameof(index));
 
@@ -102,19 +124,56 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
         if (OwnIndices)
             throw new InvalidOperationException("This index can't be removed while its ownership is taken by its parent index.");
 
+        var member = index.Handle.DangerousGetHandle();
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexShards_remove_shard(NativeHandle, index.Handle));
 
         // Native no longer references it, so stop keeping it alive.
         (NativeHandle as FaissDependentIndexHandle<IndexShardsRelease>)?.RemoveDependency(index.Handle);
+
+        lock (_viewsLock)
+        {
+            if (_views.Remove(member, out var view))
+                view.Dispose();
+        }
     }
 
-    public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
+    /// <summary>Whether this squad holds at least one shard and every shard is trained.</summary>
+    public bool IsTrained
+    {
+        get
+        {
+            // We need to read from the replicas themselves as faiss clears its own flag on <see cref="FloatIndex.Reset"/>
+            // although the replicas stay trained (ThreadedIndex::reset) and only restores it on the next add or train.
+
+            var added = false;
+            NativeHandle.DangerousAddRef(ref added);
+            try
+            {
+                var count = Native.faiss_IndexShards_count(NativeHandle);
+                if (count == 0)
+                    return false;
+
+                for (var i = 0; i < count; i++)
+                {
+                    if (Native.faiss_Index_is_trained_ptr(Native.faiss_IndexShards_at(NativeHandle, i)) == 0)
+                        return false;
+                }
+
+                return true;
+            }
+            finally
+            {
+                if (added)
+                    NativeHandle.DangerousRelease();
+            }
+        }
+    }
 
     public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
     public void Add(long count, ReadOnlySpan<float> vectors) => IDSequentialFloatIndexImpl.Add(this, count, vectors);
 
-    public void Add(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids)
+    public virtual void Add(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids)
     {
         if (SuccessiveIDs)
             throw new InvalidOperationException($"Can't add custom IDs to an index with {nameof(SuccessiveIDs)} enabled.");
@@ -123,6 +182,21 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
     }
 
     public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, SearchParameters parameters, Span<float> distances, Span<long> labels) => ParamsFloatSearchIndexImpl.SearchWithParams(this, count, queryVectors, k, parameters, distances, labels);
+
+    public override void Dispose()
+    {
+        lock (_viewsLock)
+        {
+            _viewsClosed = true;
+
+            foreach (var view in _views.Values)
+                view.Dispose();
+
+            _views.Clear();
+        }
+
+        base.Dispose();
+    }
 
     private static FaissIndexHandle CreateHandle(int dimensions, bool threaded, bool successiveIDs, bool ownIndices)
     {
