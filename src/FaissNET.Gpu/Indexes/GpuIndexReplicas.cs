@@ -21,15 +21,26 @@ public class GpuIndexReplicas<TGpu, TCpu> : IndexReplicas<TGpu>, IGpuDevicesSqua
     internal static GpuIndexReplicas<TGpu, TCpu> FromPointer(IntPtr handle) => new(new FaissIndexHandle<IndexReplicasRelease>(handle, ownsHandle: true));
     
     public int[] DeviceIds {
+    /// <summary>The device of every replica, in replica order.</summary>
+    public int[] DeviceIds
+    {
         get
         {
-            var deviceIds = new int[Count];
-            for (int i = 0; i < deviceIds.Length; i++)
+            var added = false;
+            NativeHandle.DangerousAddRef(ref added);
+            try
             {
-                deviceIds[i] = base[i].DeviceId;
-            }
+                var deviceIds = new int[Count];
+                for (var i = 0; i < deviceIds.Length; i++)
+                    deviceIds[i] = GpuNative.faiss_GpuIndex_getDevice_ptr(Native.faiss_IndexReplicas_at(NativeHandle, i));
 
-            return deviceIds;
+                return deviceIds;
+            }
+            finally
+            {
+                if (added)
+                    NativeHandle.DangerousRelease();
+            }
         }
     }
 }
