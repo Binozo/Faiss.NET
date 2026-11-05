@@ -133,4 +133,157 @@ public class IndexShardsTests
             Assert.Equal(4, shards.TotalCount);
         }
     }
+
+    [Fact]
+    public void Indexer_ReturnsOneViewPerShard()
+    {
+        using var shards = new IndexShards(Dimensions);
+        shards.AddIndex(Populated(count: 3, seed: 895));
+        shards.AddIndex(Populated(count: 1, seed: 896));
+
+        Assert.Same(shards[0], shards[0]);
+        Assert.NotSame(shards[0], shards[1]);
+        Assert.Equal(3, shards[0].TotalCount);
+        Assert.Equal(1, shards[1].TotalCount);
+        Assert.Throws<ArgumentOutOfRangeException>(() => shards[-1]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => shards[2]);
+    }
+
+    [Fact]
+    public void Indexer_ViewDisposedByCaller_IsReplacedAndShardsKeepWorking()
+    {
+        using var shards = new IndexShards(Dimensions);
+        shards.AddIndex(Populated(count: 3, seed: 897));
+
+        var first = shards[0];
+        first.Dispose();
+        var second = shards[0];
+
+        Assert.NotSame(first, second);
+        Assert.Equal(3, second.TotalCount);
+        Assert.Equal(3, shards.TotalCount);
+    }
+
+    [Fact]
+    public void Dispose_DisposesViewsHeldByTheCaller()
+    {
+        var shards = new IndexShards(Dimensions);
+        shards.AddIndex(Populated(count: 3, seed: 898));
+        var view = shards[0];
+
+        shards.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => view.TotalCount);
+        Assert.Throws<ObjectDisposedException>(() => shards[0]);
+    }
+
+    [Fact]
+    public void RemoveShard_DisposesTheViewOfTheRemovedShard()
+    {
+        using var shards = new IndexShards(Dimensions, ownIndices: false);
+        var removed = Populated(count: 3, seed: 899);
+        using var kept = Populated(count: 1, seed: 900);
+        shards.AddIndex(removed);
+        shards.AddIndex(kept);
+        var removedView = shards[0];
+        var keptView = shards[1];
+
+        shards.RemoveShard(removed);
+        removed.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => removedView.TotalCount);
+        Assert.Same(keptView, shards[0]);
+        Assert.Equal(1, keptView.TotalCount);
+    }
+
+    /// <summary>faiss clears the shards' own trained flag on reset although every shard stays trained.</summary>
+    [Fact]
+    public async Task Reset_KeepsShardsTrainedAndAcceptsTrainedShards()
+    {
+        using var shards = new IndexShards(Dimensions);
+        shards.AddIndex(await TrainedIvf(seed: 901));
+        shards.Add(4, Vectors.Random(seed: 902, count: 4, dimensions: Dimensions));
+
+        shards.Reset();
+
+        Assert.Equal(0, shards.TotalCount);
+        Assert.True(shards.IsTrained);
+        shards.AddIndex(await TrainedIvf(seed: 903));
+        Assert.Equal(2, shards.Count);
+
+        shards.Add(4, Vectors.Random(seed: 904, count: 4, dimensions: Dimensions));
+        Assert.Equal(4, shards.TotalCount);
+    }
+
+    [Fact]
+    public async Task Reset_StillRejectsUntrainedShards()
+    {
+        using var shards = new IndexShards(Dimensions, ownIndices: false);
+        using var trained = await TrainedIvf(seed: 905);
+        using var untrained = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), Dimensions, nlist: 2, ownQuantizer: true);
+        shards.AddIndex(trained);
+
+        shards.Reset();
+
+        Assert.Throws<FaissUntrainedException>(() => shards.AddIndex(untrained));
+        Assert.Equal(1, shards.Count);
+    }
+
+    [Fact]
+    public void IsTrained_IsFalseWithoutShards()
+    {
+        using var shards = new IndexShards(Dimensions);
+
+        Assert.False(shards.IsTrained);
+    }
+
+    [Fact]
+    public async Task IsTrained_FollowsTheShards()
+    {
+        using var ivfShards = new IndexShards(Dimensions);
+        ivfShards.AddIndex(new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), Dimensions, nlist: 2, ownQuantizer: true));
+        using var flatShards = new IndexShards(Dimensions);
+        flatShards.AddIndex(new IndexFlatL2(Dimensions));
+
+        Assert.False(ivfShards.IsTrained);
+        Assert.True(flatShards.IsTrained);
+
+        await ivfShards.TrainAsync(64, Vectors.Random(seed: 906, count: 64, dimensions: Dimensions));
+
+        Assert.True(ivfShards.IsTrained);
+    }
+
+    [Fact]
+    public void RemoveShard_LastOne_LeavesShardsUntrainedAndShiftsTheIndexer()
+    {
+        using var shards = new IndexShards(Dimensions, ownIndices: false);
+        using var first = Populated(count: 2, seed: 907);
+        using var second = Populated(count: 3, seed: 908);
+        shards.AddIndex(first);
+        shards.AddIndex(second);
+
+        shards.RemoveShard(first);
+
+        Assert.Equal(3, shards[0].TotalCount);
+        Assert.Throws<ArgumentOutOfRangeException>(() => shards[1]);
+
+        shards.RemoveShard(second);
+
+        Assert.Equal(0, shards.Count);
+        Assert.False(shards.IsTrained);
+    }
+
+    private static async Task<IndexIVFFlat<IndexFlatL2>> TrainedIvf(int seed)
+    {
+        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), Dimensions, nlist: 2, ownQuantizer: true);
+        await index.TrainAsync(64, Vectors.Random(seed, 64, Dimensions));
+        return index;
+    }
+
+    private static IndexFlatL2 Populated(int count, int seed)
+    {
+        var index = new IndexFlatL2(Dimensions);
+        index.Add(count, Vectors.Random(seed, count, Dimensions));
+        return index;
+    }
 }
