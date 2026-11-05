@@ -11,8 +11,24 @@ internal static class ShardedClone
     /// <summary>Above this many sub-quantizers the float32 lookup tables of a device IVFPQ exceed 48 KiB of shared memory.</summary>
     private const int MaxFloat32LookupSubQuantizers = 48;
 
+    /// <summary>
+    /// <c>GPU_MAX_SELECTION_K</c> of the CUDA builds (<c>DeviceDefs.cuh</c>).
+    /// </summary>
+    /// <remarks>
+    /// Some ROCm targets may use 1024 which is not covered here.
+    /// </remarks>
+    private const int MaxDeviceNprobe = 2048;
+
     public static void ThrowIfUnsupported(INativeIndex cpuIndex, GpuMultipleClonerOptions options, int shardCount)
     {
+        // INDICES_IVF reports (list << 32 | offset) instead of ids. IVF shards hold disjoint parts of the same lists and their
+        // labels are merged untranslated (successive_ids = false), so equal labels from different shards cannot be told apart.
+        if (options.StorageMode == IndicesOptions.Ivf && cpuIndex is IIVFIndex)
+            throw new ArgumentException($"{nameof(IndicesOptions)}.{nameof(IndicesOptions.Ivf)} cannot be sharded: every shard reports (list, offset) labels that collide with the other shards'. Use {nameof(IndicesOptions.Cpu)} or a 32/64-bit mode, or a replicated transfer.", nameof(options));
+
+        if (cpuIndex is IIVFIndex { Nprobe: <= 0 or > MaxDeviceNprobe } source)
+            throw new FaissGpuCloningUnsupported($"A GPU IVF index supports an nprobe between 1 and {MaxDeviceNprobe}; the index has {source.Nprobe}. Lower {nameof(IIVFIndex.Nprobe)} before sharding.");
+
         if (cpuIndex is IndexIVFPQ ivfpq && !options.UseFloat16 && ivfpq.SubQuantizerCount > MaxFloat32LookupSubQuantizers)
             throw new FaissGpuCloningUnsupported($"An IndexIVFPQ with more than {MaxFloat32LookupSubQuantizers} sub-quantizers needs {nameof(GpuClonerOptions.UseFloat16)} lookup tables on the GPU.");
 
@@ -48,9 +64,9 @@ internal static class ShardedClone
                 if (id < 0 || id >= total)
                     throw NotSequential(id, nameof(cpuIndex));
 
+                // floor(id * n / total) never overshoots. Its range starts at or below id.
+                // It can undershoot when total is not a multiple of n, so step up to the range that holds id.
                 var shard = (int)(id * shardCount / total);
-                while (id < Start(shard, total, shardCount))
-                    shard--;
                 while (id >= Start(shard + 1, total, shardCount))
                     shard++;
 
