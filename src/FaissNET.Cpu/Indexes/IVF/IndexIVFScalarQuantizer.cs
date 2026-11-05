@@ -129,7 +129,9 @@ public sealed class IndexIVFScalarQuantizer<T> : CpuFlatFloatIndex<IndexIVFScala
 
     private bool IsGpuClonable => Metric is MetricType.L2 or MetricType.InnerProduct && ScalarQuantizer.QuantizerType is QuantizerType.QT_8bit
         or QuantizerType.QT_8bit_uniform or QuantizerType.QT_8bit_direct
-        or QuantizerType.QT_4bit or QuantizerType.QT_4bit_uniform or QuantizerType.QT_6bit or QuantizerType.QT_fp16;
+        or QuantizerType.QT_4bit or QuantizerType.QT_4bit_uniform or QuantizerType.QT_6bit or QuantizerType.QT_fp16
+        && GpuScalarQuantizerLimits.FitsDevice(ScalarQuantizer.QuantizerType, Dimensions)
+        && GpuCoarseQuantizer.IsSupported(this);
 
     void IGpuClonableIndex<IndexIVFScalarQuantizer<T>, GpuIndexIVFScalarQuantizer<T>>.OnClonedToGpu(INativeIndex gpuIndex) =>
         ((IGpuScalarQuantizerIndex)gpuIndex).QuantizerType = ScalarQuantizer.QuantizerType;
