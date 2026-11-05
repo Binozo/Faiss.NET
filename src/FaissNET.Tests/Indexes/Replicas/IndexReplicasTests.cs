@@ -230,4 +230,155 @@ public class IndexReplicasTests
             Assert.Throws<FaissUntrainedException>(() => squad.AddReplica(untrained));
         }
     }
+
+    [Fact]
+    public void Indexer_ReturnsOneViewPerReplica()
+    {
+        const int dimensions = 4;
+        using var replicas = new IndexReplicas<IndexFlatL2>(dimensions);
+        replicas.AddReplica(new IndexFlatL2(dimensions));
+        replicas.AddReplica(new IndexFlatL2(dimensions));
+        replicas.Add(VectorCount, Vectors.Random(seed: 60, count: VectorCount, dimensions: dimensions));
+
+        Assert.Same(replicas[0], replicas[0]);
+        Assert.NotSame(replicas[0], replicas[1]);
+        Assert.Equal(VectorCount, replicas[1].TotalCount);
+        Assert.Throws<ArgumentOutOfRangeException>(() => replicas[-1]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => replicas[2]);
+    }
+
+    [Fact]
+    public void Indexer_ViewDisposedByCaller_IsReplacedAndSquadKeepsWorking()
+    {
+        const int dimensions = 4;
+        using var replicas = new IndexReplicas<IndexFlatL2>(dimensions);
+        replicas.AddReplica(new IndexFlatL2(dimensions));
+        replicas.Add(VectorCount, Vectors.Random(seed: 61, count: VectorCount, dimensions: dimensions));
+
+        var first = replicas[0];
+        first.Dispose();
+        var second = replicas[0];
+
+        Assert.NotSame(first, second);
+        Assert.Equal(VectorCount, second.TotalCount);
+        Assert.Equal(VectorCount, replicas.TotalCount);
+    }
+
+    [Fact]
+    public void Dispose_DisposesViewsHeldByTheCaller()
+    {
+        const int dimensions = 4;
+        var replicas = new IndexReplicas<IndexFlatL2>(dimensions);
+        replicas.AddReplica(new IndexFlatL2(dimensions));
+        var view = replicas[0];
+
+        replicas.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => view.TotalCount);
+        Assert.Throws<ObjectDisposedException>(() => replicas[0]);
+    }
+
+    [Fact]
+    public void RemoveReplica_DisposesTheViewOfTheRemovedReplica()
+    {
+        const int dimensions = 4;
+        using var replicas = new IndexReplicas<IndexFlatL2>(dimensions, ownIndices: false);
+        var removed = new IndexFlatL2(dimensions);
+        using var kept = new IndexFlatL2(dimensions);
+        replicas.AddReplica(removed);
+        replicas.AddReplica(kept);
+        var removedView = replicas[0];
+        var keptView = replicas[1];
+
+        replicas.RemoveReplica(removed);
+        removed.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => removedView.TotalCount);
+        Assert.Same(keptView, replicas[0]);
+    }
+
+    /// <summary>faiss clears the squad's own trained flag on reset although every replica stays trained.</summary>
+    [Fact]
+    public async Task Reset_KeepsReplicasTrainedAndAcceptsTrainedReplicas()
+    {
+        const int dimensions = 4;
+        using var replicas = new IndexReplicas<IndexIVFFlat<IndexFlatL2>>(dimensions);
+        replicas.AddReplica(await TrainedIvf(dimensions, seed: 910));
+        replicas.Add(4, Vectors.Random(seed: 911, count: 4, dimensions: dimensions));
+
+        replicas.Reset();
+
+        Assert.Equal(0, replicas.TotalCount);
+        Assert.True(replicas.IsTrained);
+        replicas.AddReplica(await TrainedIvf(dimensions, seed: 912));
+        Assert.Equal(2, replicas.Count);
+    }
+
+    [Fact]
+    public async Task Reset_StillRejectsUntrainedReplicas()
+    {
+        const int dimensions = 4;
+        using var replicas = new IndexReplicas<IndexIVFFlat<IndexFlatL2>>(dimensions, ownIndices: false);
+        using var trained = await TrainedIvf(dimensions, seed: 913);
+        using var untrained = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(dimensions), dimensions, nlist: 2, ownQuantizer: true);
+        replicas.AddReplica(trained);
+
+        replicas.Reset();
+
+        Assert.Throws<FaissUntrainedException>(() => replicas.AddReplica(untrained));
+        Assert.Equal(1, replicas.Count);
+    }
+
+    [Fact]
+    public void IsTrained_IsFalseWithoutReplicas()
+    {
+        using var replicas = new IndexReplicas<IndexFlatL2>(4);
+
+        Assert.False(replicas.IsTrained);
+    }
+
+    [Fact]
+    public async Task IsTrained_FollowsTheReplicas()
+    {
+        const int dimensions = 4;
+        using var replicas = new IndexReplicas<IndexIVFFlat<IndexFlatL2>>(dimensions);
+        replicas.AddReplica(new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(dimensions), dimensions, nlist: 2, ownQuantizer: true));
+
+        Assert.False(replicas.IsTrained);
+
+        await replicas.TrainAsync(64, Vectors.Random(seed: 914, count: 64, dimensions: dimensions));
+
+        Assert.True(replicas.IsTrained);
+        Assert.True(replicas[0].IsTrained);
+    }
+
+    [Fact]
+    public void RemoveReplica_LastOne_LeavesSquadUntrainedAndShiftsTheIndexer()
+    {
+        const int dimensions = 4;
+        using var replicas = new IndexReplicas<IndexFlatL2>(dimensions, ownIndices: false);
+        using var first = new IndexFlatL2(dimensions);
+        using var second = new IndexFlatL2(dimensions);
+        replicas.AddReplica(first);
+        replicas.AddReplica(second);
+        var secondView = replicas[1];
+
+        replicas.RemoveReplica(first);
+
+        Assert.True(replicas.IsTrained);
+        Assert.Same(secondView, replicas[0]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => replicas[1]);
+
+        replicas.RemoveReplica(second);
+
+        Assert.Equal(0, replicas.Count);
+        Assert.False(replicas.IsTrained);
+    }
+
+    private static async Task<IndexIVFFlat<IndexFlatL2>> TrainedIvf(int dimensions, int seed)
+    {
+        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(dimensions), dimensions, nlist: 2, ownQuantizer: true);
+        await index.TrainAsync(64, Vectors.Random(seed, 64, dimensions));
+        return index;
+    }
 }
