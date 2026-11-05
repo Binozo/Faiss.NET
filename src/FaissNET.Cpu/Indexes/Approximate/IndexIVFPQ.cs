@@ -152,7 +152,8 @@ public sealed class IndexIVFPQ : FloatIndex, IIVFIndex, IIDSequentialFloatIndex,
             return nbits == 8
                    && polysemousHt == 0
                    && Native.faiss_IndexIVF_by_residual(NativeHandle) != 0
-                   && m is 1 or 2 or 3 or 4 or 8 or 12 or 16 or 20 or 24 or 28 or 32 or 40 or 48 or 56 or 64 or 96;
+                   && m is 1 or 2 or 3 or 4 or 8 or 12 or 16 or 20 or 24 or 28 or 32 or 40 or 48 or 56 or 64 or 96
+                   && GpuCoarseQuantizer.IsSupported(this);
         }
     }
 }
