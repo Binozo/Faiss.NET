@@ -19,6 +19,20 @@ public class GpuIndexShards<TGpu, TCpu> : IndexShards, IGpuDevicesSquadIndex<TCp
     internal static GpuIndexShards<TGpu, TCpu> FromPointer(IntPtr handle) => new(new FaissIndexHandle<IndexShardsRelease>(handle, ownsHandle: true));
     
     public int[] DeviceIds {
+
+    /// <inheritdoc cref="IndexShards.this[int]"/>
+    public new TGpu this[int index] => (TGpu)base[index];
+
+    private protected override INativeIndex CreateView(IntPtr member) => TGpu.FromBorrowed(member, NativeHandle);
+
+    public override void AddIndex(INativeIndex index)
+    {
+        if (index is not TGpu)
+            throw new ArgumentException($"Only {typeof(TGpu).Name} shards can be added.", nameof(index));
+
+        base.AddIndex(index);
+        QuantizerType = GpuScalarQuantizerLimits.Combine(QuantizerType, index);
+    }
         get
         {
             var deviceIds = new int[Count];
