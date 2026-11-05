@@ -13,6 +13,10 @@ internal readonly struct IndexReplicasRelease : IFaissRelease
 
 public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICpuFloatIndex, IFromNativeIndexHandle<IndexReplicas<T>> where T : FloatIndex, IFromNativeIndexHandle<T>, INativeIndex
 {
+    private readonly Dictionary<IntPtr, T> _views = [];
+    private readonly Lock _viewsLock = new();
+    private bool _viewsClosed;
+
     public IndexReplicas(long dimensions, bool threaded = true, bool ownIndices = true) : this(CreateHandle(dimensions, threaded, ownIndices), ownIndices)
     {
     }
@@ -34,7 +38,7 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
     /// This instance neither owns its replicas nor can keep them alive: it is a view of a squad built with
     /// <c>ownIndices: false</c>. Add through the original instance instead.
     /// </exception>
-    public void AddReplica(T replica)
+    public virtual void AddReplica(T replica)
     {
         OwnershipGuard.RequireIndependent(replica, nameof(replica));
 
@@ -77,14 +81,27 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
         if (OwnIndices)
             throw new InvalidOperationException("This index can't be removed while its ownership is taken by its parent index.");
 
+        var member = replica.Handle.DangerousGetHandle();
         FaissErrorHandler.ThrowIfError(Native.faiss_IndexReplicas_remove_replica(NativeHandle, replica.Handle));
 
         // Native no longer references it, so stop keeping it alive.
         (NativeHandle as FaissDependentIndexHandle<IndexReplicasRelease>)?.RemoveDependency(replica.Handle);
+
+        lock (_viewsLock)
+        {
+            if (_views.Remove(member, out var view))
+                view.Dispose();
+        }
     }
 
     public int Count => Native.faiss_IndexReplicas_count(NativeHandle);
 
+    /// <summary>A view of replica <paramref name="index"/>.</summary>
+    /// <remarks>
+    /// This squad disposes it when it is disposed or the replica is removed, so
+    /// disposing it yourself is optional (a disposed view is replaced on the next access).
+    /// Add, reset and train through this squad is not recommended as writing through a view makes the replicas diverge.
+    /// </remarks>
     public T this[int index]
     {
         get
@@ -92,7 +109,17 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
             if (index < 0 || index >= Count)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            return T.FromBorrowed(Native.faiss_IndexReplicas_at(NativeHandle, index), NativeHandle);
+            var member = Native.faiss_IndexReplicas_at(NativeHandle, index);
+
+            lock (_viewsLock)
+            {
+                ObjectDisposedException.ThrowIf(_viewsClosed, this);
+
+                if (_views.TryGetValue(member, out var view) && !view.Handle.IsClosed)
+                    return view;
+
+                return _views[member] = T.FromBorrowed(member, NativeHandle);
+            }
         }
     }
 
@@ -102,7 +129,37 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
         private set => Native.faiss_IndexReplicas_set_own_indices(NativeHandle, value);
     }
 
-    public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
+    /// <summary>Whether this squad holds at least one replica and every replica is trained.</summary>
+    public bool IsTrained
+    {
+        get
+        {
+            // We need to read from the replicas themselves as faiss clears its own flag on <see cref="FloatIndex.Reset"/>
+            // although the replicas stay trained (ThreadedIndex::reset) and only restores it on the next add or train.
+
+            var added = false;
+            NativeHandle.DangerousAddRef(ref added);
+            try
+            {
+                var count = Native.faiss_IndexReplicas_count(NativeHandle);
+                if (count == 0)
+                    return false;
+
+                for (var i = 0; i < count; i++)
+                {
+                    if (Native.faiss_Index_is_trained_ptr(Native.faiss_IndexReplicas_at(NativeHandle, i)) == 0)
+                        return false;
+                }
+
+                return true;
+            }
+            finally
+            {
+                if (added)
+                    NativeHandle.DangerousRelease();
+            }
+        }
+    }
 
     public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
@@ -115,6 +172,21 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
     public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVector, residualVector, key);
 
     public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVectors, residualVectors, keys);
+
+    public override void Dispose()
+    {
+        lock (_viewsLock)
+        {
+            _viewsClosed = true;
+
+            foreach (var view in _views.Values)
+                view.Dispose();
+
+            _views.Clear();
+        }
+
+        base.Dispose();
+    }
 
     private static FaissIndexHandle CreateHandle(long dimensions, bool threaded, bool ownIndices)
     {
