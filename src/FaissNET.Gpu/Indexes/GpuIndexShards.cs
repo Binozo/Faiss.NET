@@ -33,16 +33,26 @@ public class GpuIndexShards<TGpu, TCpu> : IndexShards, IGpuDevicesSquadIndex<TCp
         base.AddIndex(index);
         QuantizerType = GpuScalarQuantizerLimits.Combine(QuantizerType, index);
     }
+    /// <summary>The device of every shard, in shard order.</summary>
+    public int[] DeviceIds
+    {
         get
         {
-            var deviceIds = new int[Count];
-            for (int i = 0; i < deviceIds.Length; i++)
+            var added = false;
+            NativeHandle.DangerousAddRef(ref added);
+            try
             {
-                GpuGenericFloatIndex baseIndex = new GpuGenericFloatIndex(new FaissBorrowedIndexHandle(Native.faiss_IndexShards_at(NativeHandle, i),  NativeHandle));
-                deviceIds[i] = baseIndex.DeviceId;
-            }
+                var deviceIds = new int[Count];
+                for (var i = 0; i < deviceIds.Length; i++)
+                    deviceIds[i] = GpuNative.faiss_GpuIndex_getDevice_ptr(Native.faiss_IndexShards_at(NativeHandle, i));
 
-            return deviceIds;
+                return deviceIds;
+            }
+            finally
+            {
+                if (added)
+                    NativeHandle.DangerousRelease();
+            }
         }
     }
 }
