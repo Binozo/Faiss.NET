@@ -55,6 +55,22 @@ internal interface IGpuScalarQuantizerIndex : IGpuIndex
 
 internal static class GpuScalarQuantizerLimits
 {
+    /// <summary>
+    /// Device QT_8bit and QT_4bit IVF scalar quantizers need fewer dimensions than this (GpuIndexIVFScalarQuantizer::verifySQSettings_).
+    /// </summary>
+    /// <remarks>
+    /// The codec keeps vmin and vdiff, two floats, per dimension in shared memory, and faiss requires
+    /// d &lt; getMaxSharedMemPerBlock(device) / (2 * sizeof(float)). getMaxSharedMemPerBlock returns
+    /// cudaDeviceProp::sharedMemPerBlock, which is 48 KiB on every CUDA device: 49152 / 8 = 6144.
+    /// faiss checks this while it builds the device index, which a sharded transfer does inside an OpenMP region where
+    /// the throw terminates the process, so it is checked up front.
+    /// </remarks>
+    public const int MaxPerDimensionCodecDimensions = 49152 / (2 * sizeof(float));
+
+    /// <summary>Whether faiss can build a device index for this codec at all.</summary>
+    public static bool FitsDevice(QuantizerType quantizerType, long dimensions) =>
+        quantizerType is not (QuantizerType.QT_8bit or QuantizerType.QT_4bit) || dimensions < MaxPerDimensionCodecDimensions;
+
     /// <summary>Whether the device scan of <paramref name="quantizerType"/> keeps per-dimension ranges in shared memory.</summary>
     public static bool LimitsK(QuantizerType? quantizerType) => quantizerType is QuantizerType.QT_8bit or QuantizerType.QT_4bit or QuantizerType.QT_6bit;
 
