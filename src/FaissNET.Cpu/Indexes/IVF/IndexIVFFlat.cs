@@ -184,7 +184,7 @@ public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIn
 
     bool IMultiGpuClonableIndex<IndexIVFFlat<T>, GpuIndexIVFFlat<T>>.IsMultiGpuClonable() => IsGpuClonable;
 
-    private bool IsGpuClonable => Metric is MetricType.L2 or MetricType.InnerProduct;
+    private bool IsGpuClonable => Metric is MetricType.L2 or MetricType.InnerProduct && GpuCoarseQuantizer.IsSupported(this);
 }
 
 /// <inheritdoc cref="GpuFlatFloatIndex{T}" />
