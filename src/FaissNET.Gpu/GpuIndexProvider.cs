@@ -93,9 +93,7 @@ public static class GpuIndexProvider
         GpuDevice.ThrowIfInvalid(deviceId);
 
         if (!cpuIndex.IsGpuClonable())
-        {
             throw new FaissGpuCloningUnsupported();
-        }
 
         Bit32Ids.ThrowIfSourceHoldsWideIds(cpuIndex, options);
 
@@ -134,6 +132,18 @@ public static class GpuIndexProvider
     }
 
     /// <inheritdoc cref="TransferToGpuMultiple"/>
+    /// <remarks>
+    /// The index is split across the devices. Every device holds a part of the vectors and a search merges their results.
+    /// <para>
+    /// <b>Warning:</b> faiss builds the shards in parallel inside an OpenMP region, where a native error cannot reach the caller
+    /// and terminates the process instead. Every condition that can be checked in advance is rejected before faiss is called
+    /// (<see cref="FaissGpuCloningUnsupported"/>, <see cref="ArgumentException"/>), but runtime failures cannot be:
+    /// running out of device memory (or pinned host memory) while a shard is built kills the process. Leave headroom on every
+    /// target device. When memory is tight, prefer <see cref="TransferToGpuReplicated{TCpu, TGpu}"/> or
+    /// <see cref="TransferToGpu{TCpu, TGpu}(GpuResourcesProvider, IGpuClonableIndex{TCpu, TGpu}, int)"/>, which report the same failure as a
+    /// <see cref="FaissNativeException"/>.
+    /// </para>
+    /// </remarks>
     public static GpuIndexShards<TGpu, TCpu> TransferToGpuSharded<TCpu, TGpu>(GpuResourcesProvider[] contexts, int[] deviceIds, IMultiGpuClonableIndex<TCpu, TGpu> cpuIndex, GpuMultipleClonerOptions? options = null)
         where TCpu : INativeIndex, IFromNativeIndexHandle<TCpu>
         where TGpu : FloatIndex, INativeIndex, IFromNativeIndexHandle<TGpu>, IGpuDeviceIndex<TCpu>
@@ -176,7 +186,7 @@ public static class GpuIndexProvider
     /// <returns>A pointer to the index spanning the specified devices.</returns>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="contexts"/>, <paramref name="deviceIds"/>,
-    /// <paramref name="cpuIndex"/>, or <paramref name="options"/> is <c>null</c>.
+    /// or <paramref name="cpuIndex"/> is <c>null</c>.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="contexts"/> and <paramref name="deviceIds"/>
@@ -185,7 +195,7 @@ public static class GpuIndexProvider
     /// <exception cref="FaissException">
     /// Thrown when the native transfer operation fails.
     /// </exception>
-    private static IntPtr TransferToGpuMultiple<TCpu, TGpu>(GpuResourcesProvider[] contexts, int[] deviceIds, IMultiGpuClonableIndex<TCpu, TGpu> cpuIndex, GpuMultipleClonerOptions? options = null)
+    private static IntPtr TransferToGpuMultiple<TCpu, TGpu>(GpuResourcesProvider[] contexts, int[] deviceIds, IMultiGpuClonableIndex<TCpu, TGpu> cpuIndex, GpuMultipleClonerOptions options)
         where TCpu : INativeIndex, IFromNativeIndexHandle<TCpu> where TGpu : FloatIndex, INativeIndex, IFromNativeIndexHandle<TGpu>, IGpuIndex<TCpu>
     {
         ArgumentNullException.ThrowIfNull(contexts);
@@ -197,24 +207,39 @@ public static class GpuIndexProvider
         if(deviceIds.Length < 2)
             throw new ArgumentException("At least two target devices must be specified.", nameof(deviceIds));
 
+        foreach (var context in contexts)
+            ArgumentNullException.ThrowIfNull(context, nameof(contexts));
+
+        if (contexts.Distinct(ReferenceEqualityComparer.Instance).Count() != contexts.Length)
+            throw new ArgumentException("Every target device needs its own GpuResourcesProvider; the same instance appears more than once.", nameof(contexts));
+
         if (!cpuIndex.IsMultiGpuClonable())
             throw new FaissGpuCloningUnsupported();
 
+        Bit32Ids.ThrowIfSourceHoldsWideIds(cpuIndex, options);
+
+        if (options.Shard)
+            ShardedClone.ThrowIfUnsupported(cpuIndex, options, deviceIds.Length);
+
         int count = contexts.Length;
+        bool[] addedRefs = new bool[count];
         IntPtr[] providerPointers = new IntPtr[count];
 
-        for (int i = 0; i < count; i++)
+        try
         {
-            providerPointers[i] = contexts[i].Handle.DangerousGetHandle();
-        }
-
-        unsafe
-        {
-            fixed (IntPtr* pProviders = providerPointers)
-            fixed (int* pDevices = deviceIds)
+            for (int i = 0; i < count; i++)
             {
-                IntPtr gpuHandle;
-                if(options != null)
+                GpuDevice.ThrowIfInvalid(deviceIds[i], nameof(deviceIds));
+
+                contexts[i].Handle.DangerousAddRef(ref addedRefs[i]);
+                providerPointers[i] = contexts[i].Handle.DangerousGetHandle();
+            }
+
+            unsafe
+            {
+                fixed (IntPtr* pProviders = providerPointers)
+                fixed (int* pDevices = deviceIds)
+                {
                     FaissErrorHandler.ThrowIfError(
                         GpuNative.faiss_index_cpu_to_gpu_multiple_with_options(
                             pProviders,
@@ -223,19 +248,19 @@ public static class GpuIndexProvider
                             (nuint)count,
                             cpuIndex.Handle,
                             options.NativeHandle,
-                            out gpuHandle)
-                    );
-                else
-                    FaissErrorHandler.ThrowIfError(
-                        GpuNative.faiss_index_cpu_to_gpu_multiple(
-                            pProviders,
-                            pDevices,
-                            (nuint)count,
-                            cpuIndex.Handle,
-                            out gpuHandle)
+                            out IntPtr gpuHandle)
                     );
 
-                return gpuHandle;
+                    return gpuHandle;
+                }
+            }
+        }
+        finally
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (addedRefs[i])
+                    contexts[i].Handle.DangerousRelease();
             }
         }
     }
