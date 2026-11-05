@@ -113,13 +113,24 @@ public static class GpuIndexProvider
     }
 
     /// <inheritdoc cref="TransferToGpuMultiple"/>
-    public static GpuIndexReplicas<TGpu, TCpu> TransferToGpuReplicated<TCpu, TGpu>(GpuResourcesProvider[] contexts, int[] deviceIds, IMultiGpuClonableIndex<TCpu, TGpu> cpuIndex, GpuClonerOptions? options = null)
+    public static GpuIndexReplicas<TGpu, TCpu> TransferToGpuReplicated<TCpu, TGpu>(GpuResourcesProvider[] contexts, int[] deviceIds, IMultiGpuClonableIndex<TCpu, TGpu> cpuIndex, GpuMultipleClonerOptions? options = null)
         where TCpu : INativeIndex, IFromNativeIndexHandle<TCpu>
         where TGpu : FloatIndex, INativeIndex, IFromNativeIndexHandle<TGpu>, IGpuDeviceIndex<TCpu>
     {
-        GpuMultipleClonerOptions? multiOptions = (GpuMultipleClonerOptions?)options;
-        multiOptions?.Shard = false;
-        return GpuIndexReplicas<TGpu, TCpu>.FromPointer(TransferToGpuMultiple(contexts, deviceIds, cpuIndex, multiOptions));
+        GpuMultipleClonerOptions multiOptions = options ?? new GpuMultipleClonerOptions();
+
+        try
+        {
+            multiOptions.Shard = false;
+            var gpuIndex = GpuIndexReplicas<TGpu, TCpu>.FromPointer(TransferToGpuMultiple(contexts, deviceIds, cpuIndex, multiOptions));
+            cpuIndex.OnClonedToGpu(gpuIndex);
+            return gpuIndex;
+        }
+        finally
+        {
+            if(options == null)
+                multiOptions.Dispose();
+        }
     }
 
     /// <inheritdoc cref="TransferToGpuMultiple"/>
@@ -127,8 +138,21 @@ public static class GpuIndexProvider
         where TCpu : INativeIndex, IFromNativeIndexHandle<TCpu>
         where TGpu : FloatIndex, INativeIndex, IFromNativeIndexHandle<TGpu>, IGpuDeviceIndex<TCpu>
     {
-        options?.Shard = true;
-        return GpuIndexShards<TGpu, TCpu>.FromPointer(TransferToGpuMultiple(contexts, deviceIds, cpuIndex, options));
+        GpuMultipleClonerOptions multiOptions = options ?? new GpuMultipleClonerOptions();
+        
+        try
+        {
+            multiOptions.Shard = true;
+            var gpuIndex = GpuIndexShards<TGpu, TCpu>.FromPointer(TransferToGpuMultiple(contexts, deviceIds, cpuIndex, multiOptions));
+            cpuIndex.OnClonedToGpu(gpuIndex);
+            Bit32Ids.Mark(gpuIndex, multiOptions);
+            return gpuIndex;
+        }
+        finally
+        {
+            if(options == null)
+                multiOptions.Dispose();
+        }
     }
 
     /// <summary>
