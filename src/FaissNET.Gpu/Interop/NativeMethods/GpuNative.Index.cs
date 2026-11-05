@@ -17,6 +17,9 @@ internal static partial class GpuNative
     [LibraryImport(LibraryName)]
     internal static partial int faiss_GpuIndex_getDevice(FaissIndexHandle gpu_index);
 
+    [LibraryImport(LibraryName, EntryPoint = "faiss_GpuIndex_getDevice")]
+    internal static partial int faiss_GpuIndex_getDevice_ptr(IntPtr gpuIndex);
+
     [LibraryImport(LibraryName)]
     internal static partial int faiss_index_gpu_to_cpu(FaissIndexHandle gpu_index, out IntPtr p_out);
 
