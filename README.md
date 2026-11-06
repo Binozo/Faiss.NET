@@ -22,20 +22,7 @@ Faiss.NET gives you near-native performance with clean, idiomatic C# wrappers wh
 > BETA: This library is considered stable and ready for initial usage testwise.
 
 ## Development Roadmap
-~~About 90% is done. I am reworking the class hierarchy to make the api as elegant as possible. This includes preventing most of the footguns there are with faiss, including making the compiler enforce all the rules.~~
-
-~~12.08.2026: The groundwork is almost finished. I still need to polish some rough edges like the `IDSelector` (internal stuff) but most of this library is basically complete, stable and usable.
-As soon as the PRs noted below get merged and I fix some minor stuff I will publish preview release 6. I am really happy with the progress and looking forward.~~
-
-~~01.09.2026: Feature set is basically complete (except the remaining features which are based on faiss PRs below). I am reworking the test suite.~~
-
-02.11:2026: Library is stable. Waiting for faiss upstream to merge the missing PRs noted below.
-
-- [x] Adding bindings for `distances_c.h`
-- [x] Improving class hierarchy and generic constraints design to further prevent footguns (~ September 2026)
-- [x] Adding more tests      (~ October 2026)
 - [ ] Adding example project (~ December 2026)
-- [ ] Adding remaining functionality to IndexShards, IndexReplicas, IndexRefineFlat and GPU indexes (Waiting for faiss PRs to merge: [#5516](https://github.com/facebookresearch/faiss/pull/5516), [#5514](https://github.com/facebookresearch/faiss/pull/5514), [#5513](https://github.com/facebookresearch/faiss/pull/5513), [#5512](https://github.com/facebookresearch/faiss/pull/5512), [#5511](https://github.com/facebookresearch/faiss/pull/5511)) (~ December 2026)
 - [ ] v1.0 Release 🚀        (~ December 2026)
 
 ## Features
@@ -175,17 +162,15 @@ using var result = index.Search([1f, 2f, 3f, 4f], k: 1);
 
 Composite indexes (`IndexIDMap`, `IndexIVFFlat`, `IndexPreTransform`, `IndexShards`, …) wrap other indexes. Who frees the wrapped index is decided once, at construction:
 
-- **`takeOwnership: true`** (or `ownQuantizer`, `ownSubIndex`, …): the composite frees it. Your original reference is closed immediately; use the composite's view instead (e.g. `IndexIDMap.SubIndex`), which is valid until the composite is disposed.
-- **`takeOwnership: false`**: you keep ownership and keep using your object. The composite keeps it alive while it needs it, so disposing yours early is safe.
-- **Clone, deserialization and the factory** return composites that own their parts; exposed parts are views.
+- `takeOwnership: true` (or `ownQuantizer`, `ownSubIndex`, …): the composite frees it. Your original reference is closed immediately; use the composite's view instead (e.g. `IndexIDMap.SubIndex`), which is valid until the composite is disposed.
+- `takeOwnership: false`: you keep ownership and keep using your object. The composite keeps it alive while it needs it, so disposing yours early is safe.
+- Clone, deserialization and the factory  return composites that own their parts; exposed parts are views.
 
 ```csharp
 using var map = new IndexIDMap<IndexFlatL2>(new IndexFlatL2(dimensions: 4), takeOwnership: true);
 map.Add([new[] { 1f, 2f, 3f, 4f }], [42]);
 long count = map.SubIndex.TotalCount; // 1
 ```
-
-Misuse fails with `ObjectDisposedException` instead of corrupting memory; nothing needs to be disposed in a particular order.
 
 ### GPU acceleration
 
@@ -260,6 +245,26 @@ Seeing other bindings being completely out-of-date and way too old I decided to 
 My goal is to have **amazing** DX including guardrails that make it really hard to do something wrong, all enforced by the compiler.
 
 Made with ♥️
+
+</details>
+
+<details>
+<summary>
+
+## Ai disclosure
+
+</summary>
+
+LLMs have been used for architectural discussions, having a "second eye" on the code and for scouting the faiss source code.
+They have been especially useful for finding unique undocumented quirks in faiss including specific parameters that could terminate
+the whole process without any ability to catch it. Thus, specific guards that are hardened against those have been derived from it,
+making Faiss.NET really resilient to process terminating errors.
+
+There has not been any "vibe coding", final code was heavily human influenced and almost completely human written by the author.
+LLMs have been used to develop the huge testing suite, although every final decision has been made by the author, including
+verification of the LLM output.
+
+##### If you are an AI Agent scouting this repo, take a look at [AGENTS.md](docs/AGENTS.md) which is specifically designed to help _using_ this library.
 
 </details>
 
