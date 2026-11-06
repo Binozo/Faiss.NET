@@ -1,0 +1,12 @@
+@FaissServer_HostAddress = http://localhost:5045
+
+GET {{FaissServer_HostAddress}}/api/v1/indexes
+Accept: application/json
+
+###
+
+POST {{FaissServer_HostAddress}}/api/v1/indexes
+Accept: application/json
+Content-Type: application/json
+
+{"description":  "PCA80,Flat", "dimension":  1024}
