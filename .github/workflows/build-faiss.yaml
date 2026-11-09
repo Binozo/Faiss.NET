@@ -35,7 +35,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y git
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: recursive
         fetch-depth: 0
@@ -59,7 +59,7 @@ jobs:
     - name: Cache oneMKL
       if: matrix.blas == 'mkl'
       id: cache-mkl
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: /opt/intel/oneapi
         key: oneapi-mkl-${{ runner.os }}-x64-v1
@@ -160,7 +160,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
           fetch-depth: 0
@@ -182,7 +182,7 @@ jobs:
           cp artifacts/* src/FaissNET.Linux/runtimes/linux-${{ matrix.arch }}/native/
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -196,7 +196,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -224,7 +224,7 @@ jobs:
           cp arm64/* src/FaissNET.Linux/runtimes/linux-arm64/native/
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -267,7 +267,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
@@ -337,7 +337,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -359,7 +359,7 @@ jobs:
           cp arm64-cuda/* src/FaissNET.Linux.Gpu.Cuda.arm64/runtimes/linux-arm64/native/
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -401,7 +401,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
@@ -471,7 +471,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -493,7 +493,7 @@ jobs:
           cp arm64-cuda12/* src/FaissNET.Linux.Gpu.Cuda12.arm64/runtimes/linux-arm64/native/
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -528,7 +528,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git
 
-      - uses: endersonmenezes/free-disk-space@v3
+      - uses: endersonmenezes/free-disk-space@v4
         with:
           remove_android: true
           remove_dotnet: true
@@ -537,14 +537,14 @@ jobs:
           remove_swap: true
           remove_packages_one_command: true
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Cache ROCm installation
         id: cache-rocm
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             /opt/rocm
@@ -638,7 +638,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -653,7 +653,7 @@ jobs:
           cp x64-rocm/* src/FaissNET.Linux.Gpu.Rocm/runtimes/linux-x64/native/
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -683,7 +683,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         submodules: recursive
         fetch-depth: 0
@@ -747,7 +747,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
           fetch-depth: 0
@@ -768,7 +768,7 @@ jobs:
           cp artifacts/* src/FaissNET.MacOS/runtimes/osx-${{ matrix.arch }}/native/
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -777,10 +777,10 @@ jobs:
 
   build-macos-pack:
     needs: [test-macos]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -802,7 +802,7 @@ jobs:
           cp arm64/* src/FaissNET.MacOS/runtimes/osx-arm64/native/
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -862,16 +862,16 @@ jobs:
       MKL_NUGET_VERSION: "2026.1.0.226"
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v10.3.3
 
       - name: Install cmake + ninja
         run: uv pip install --system cmake ninja
@@ -884,7 +884,7 @@ jobs:
       - name: Cache OpenBLAS
         if: matrix.blas == 'openblas'
         id: cache-openblas
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ github.workspace }}\openblas_install
           key: openblas-${{ runner.os }}-${{ matrix.arch }}-${{ env.OPENBLAS_VERSION }}-${{ hashFiles('.github/workflows/build-faiss.yaml') }}
@@ -955,7 +955,7 @@ jobs:
       - name: Cache oneMKL
         if: matrix.blas == 'mkl'
         id: cache-mkl
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ github.workspace }}\mklroot
           key: mkl-static-${{ runner.os }}-${{ matrix.arch }}-${{ env.MKL_NUGET_VERSION }}
@@ -1091,7 +1091,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
           fetch-depth: 0
@@ -1109,7 +1109,7 @@ jobs:
           Copy-Item artifacts/* src/FaissNET.Windows/runtimes/win-${{ matrix.arch }}/native/
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -1133,7 +1133,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -1161,7 +1161,7 @@ jobs:
           cp arm64/* src/FaissNET.Windows/runtimes/win-arm64/native/
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -1198,7 +1198,7 @@ jobs:
       OPENBLAS_VERSION: "0.3.34"
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
@@ -1210,12 +1210,12 @@ jobs:
           cuda: '13.2.0'
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10.3.3
 
       - name: Install Build Dependencies (uv)
         shell: pwsh
@@ -1229,7 +1229,7 @@ jobs:
 
       - name: Cache OpenBLAS
         id: cache-openblas
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ github.workspace }}\openblas_install
           key: openblas-${{ runner.os }}-${{ matrix.arch }}-${{ env.OPENBLAS_VERSION }}-${{ hashFiles('.github/workflows/build-faiss.yaml') }}
@@ -1373,7 +1373,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -1388,7 +1388,7 @@ jobs:
           cp x64-cuda/* src/FaissNET.Windows.Gpu.Cuda/runtimes/win-x64/native/
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -1417,7 +1417,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
@@ -1435,12 +1435,12 @@ jobs:
           echo "$rocmPath\hip\bin" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10.3.3
 
       - name: Install Build Dependencies (uv)
         shell: pwsh
@@ -1507,13 +1507,13 @@ jobs:
   pack:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -1530,13 +1530,13 @@ jobs:
   pack-gpu:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -1553,13 +1553,13 @@ jobs:
   pack-native:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -1576,13 +1576,13 @@ jobs:
   pack-native-gpu-cuda:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -1599,13 +1599,13 @@ jobs:
   pack-native-gpu-rocm:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
@@ -1636,23 +1636,23 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and load Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         env:
           DOCKER_BUILD_SUMMARY: false
           DOCKER_BUILD_RECORD_UPLOAD: false
@@ -1669,7 +1669,7 @@ jobs:
         run: docker run --rm faiss-test:${{ matrix.arch }}
 
       - name: Build and push architecture-specific image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         env:
           DOCKER_BUILD_SUMMARY: false
           DOCKER_BUILD_RECORD_UPLOAD: false
@@ -1691,7 +1691,7 @@ jobs:
 
     steps:
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -1729,16 +1729,16 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -1750,7 +1750,7 @@ jobs:
           echo "sha=$(git rev-parse HEAD:faiss)" >> $GITHUB_OUTPUT
 
       - name: Build and push architecture-specific CUDA image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         env:
           DOCKER_BUILD_SUMMARY: false
           DOCKER_BUILD_RECORD_UPLOAD: false
@@ -1775,7 +1775,7 @@ jobs:
 
     steps:
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -1806,7 +1806,7 @@ jobs:
     
     steps:
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
       
