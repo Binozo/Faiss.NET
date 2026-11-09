@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup>
+    <Version>1.0.0-preview.9</Version>
+
+    <!-- Used for local library development -->
+    <FaissNativeVersion>1.0.0-preview.9</FaissNativeVersion>
+    <FaissNativeSource>nuget</FaissNativeSource>
+
+    <FaissSkipNativeDownload Condition="'$(FaissSkipNativeDownload)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or '$(CI)' == 'true')">true</FaissSkipNativeDownload>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>Binozo</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>Copyright (c) 2026 Noah Czaplewski</Copyright>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/Binozo/Faiss.NET</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/Binozo/Faiss.NET</PackageProjectUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+</Project>

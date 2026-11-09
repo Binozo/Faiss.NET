@@ -7,23 +7,9 @@
         <NoWarn>$(NoWarn);NU5128</NoWarn>
 
         <PackageId>Faiss.NET.Gpu.Native.Cuda.Windows</PackageId>
-        <Version>1.0.0-preview.9</Version>
-        <Authors>Binozo</Authors>
         <Description>Native Windows (x64) CUDA binaries for the Faiss.NET GPU extension. Requires an NVIDIA GPU.</Description>
         <PackageTags>faiss vector search similarity-search machine-learning ai knn hnsw embeddings windows gpu cuda nvidia x64</PackageTags>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Copyright>Copyright (c) 2026 Noah Czaplewski</Copyright>
-
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <RepositoryUrl>https://github.com/Binozo/Faiss.NET</RepositoryUrl>
-        <RepositoryType>git</RepositoryType>
-        <PackageProjectUrl>https://github.com/Binozo/Faiss.NET</PackageProjectUrl>
     </PropertyGroup>
-
-    <ItemGroup>
-        <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
-        <None Include="..\..\LICENSE" Pack="true" PackagePath="\"/>
-    </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\FaissNET.Gpu\Faiss.Gpu.csproj" />
