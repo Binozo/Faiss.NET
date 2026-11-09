@@ -42,7 +42,6 @@
   <Folder Name="/CI/">
     <File Path=".github/workflows/build-faiss.yaml" />
 
-    <File Path="scripts/download-binaries.py" />
     <File Path="Dockerfile" />
     <File Path="Dockerfile.blas" />
     <File Path="Dockerfile.cuda" />

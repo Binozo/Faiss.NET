@@ -1,0 +1,67 @@
+<Project>
+  <PropertyGroup Condition="'$(FaissNativePackageId)' == '' and '$(FaissNativeDownload)' == 'true'">
+    <FaissNativePackageId>$(PackageId)</FaissNativePackageId>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(FaissNativePackageId)' != ''">
+    <FaissNativeGitHubRepo Condition="'$(FaissNativeGitHubRepo)' == ''">Binozo/Faiss.NET</FaissNativeGitHubRepo>
+    <FaissNativeGitHubTag Condition="'$(FaissNativeGitHubTag)' == ''">v$(FaissNativeVersion)</FaissNativeGitHubTag>
+    <_FaissNupkg>$(FaissNativePackageId).$(FaissNativeVersion).nupkg</_FaissNupkg>
+
+    <FaissNativeUrl Condition="'$(FaissNativeUrl)' == '' and '$(FaissNativeSource)' == 'nuget'">https://api.nuget.org/v3-flatcontainer/$(FaissNativePackageId.ToLowerInvariant())/$(FaissNativeVersion.ToLowerInvariant())/$(_FaissNupkg.ToLowerInvariant())</FaissNativeUrl>
+    <FaissNativeUrl Condition="'$(FaissNativeUrl)' == '' and '$(FaissNativeSource)' == 'github'">https://github.com/$(FaissNativeGitHubRepo)/releases/download/$(FaissNativeGitHubTag)/$(_FaissNupkg)</FaissNativeUrl>
+
+    <_FaissRuntimesDir>$(MSBuildProjectDirectory)/runtimes/</_FaissRuntimesDir>
+    <_FaissMarker>$(_FaissRuntimesDir)downloaded.version</_FaissMarker>
+  </PropertyGroup>
+
+  <Target Name="FaissFetchNatives"
+          BeforeTargets="CollectPackageReferences;BeforeBuild"
+          Condition="'$(FaissNativePackageId)' != '' and '$(FaissSkipNativeDownload)' != 'true' and '$(DesignTimeBuild)' != 'true'">
+
+    <ReadLinesFromFile File="$(_FaissMarker)" Condition="Exists('$(_FaissMarker)')">
+      <Output TaskParameter="Lines" PropertyName="_FaissHaveVersion" />
+    </ReadLinesFromFile>
+
+    <ItemGroup>
+      <_FaissExisting Include="$(_FaissRuntimesDir)*/native/**"
+                      Exclude="$(_FaissRuntimesDir)**/.*" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_FaissNeed>false</_FaissNeed>
+      <_FaissNeed Condition="!Exists('$(_FaissMarker)') and '@(_FaissExisting)' == ''">true</_FaissNeed>
+      <_FaissNeed Condition="Exists('$(_FaissMarker)') and '$(_FaissHaveVersion)' != '$(FaissNativeVersion)'">true</_FaissNeed>
+      <_FaissTmp>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'faiss-natives', '$([System.Guid]::NewGuid().ToString("N"))'))</_FaissTmp>
+    </PropertyGroup>
+
+    <Message Condition="'$(_FaissNeed)' == 'true'" Importance="high"
+             Text="Faiss.NET: fetching natives $(_FaissNupkg) from $(FaissNativeUrl)" />
+
+    <DownloadFile Condition="'$(_FaissNeed)' == 'true'"
+                  SourceUrl="$(FaissNativeUrl)" DestinationFolder="$(_FaissTmp)"
+                  DestinationFileName="pkg.zip" Retries="3" />
+
+    <Unzip Condition="'$(_FaissNeed)' == 'true'"
+           SourceFiles="$(_FaissTmp)pkg.zip" DestinationFolder="$(_FaissTmp)x/" />
+
+    <ItemGroup Condition="'$(_FaissNeed)' == 'true'">
+      <_FaissNew Include="$(_FaissTmp)x/runtimes/*/native/**" />
+      <_FaissOld Include="@(_FaissExisting)" Condition="Exists('$(_FaissMarker)')" />
+    </ItemGroup>
+
+    <Error Condition="'$(_FaissNeed)' == 'true' and '@(_FaissNew)' == ''"
+           Text="Faiss.NET: $(_FaissNupkg) contains no runtimes/*/native files." />
+
+    <Delete Condition="'$(_FaissNeed)' == 'true'" Files="@(_FaissOld)" />
+    <Copy Condition="'$(_FaissNeed)' == 'true'"
+          SourceFiles="@(_FaissNew)"
+          DestinationFiles="@(_FaissNew->'$(_FaissRuntimesDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+    <WriteLinesToFile Condition="'$(_FaissNeed)' == 'true'"
+                      File="$(_FaissMarker)" Lines="$(FaissNativeVersion)" Overwrite="true" />
+    <RemoveDir Condition="'$(_FaissNeed)' == 'true'" Directories="$(_FaissTmp)" ContinueOnError="true" />
+
+    <Warning Condition="'$(_FaissNeed)' == 'true' and '$(MSBuildIsRestoring)' != 'true'"
+             Text="Faiss.NET: natives were downloaded during build (restore was skipped). Build once more so they are copied to bin/." />
+  </Target>
+</Project>
