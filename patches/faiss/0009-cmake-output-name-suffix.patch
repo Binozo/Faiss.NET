@@ -1,0 +1,43 @@
+cmake: opt-in FAISS_OUTPUT_NAME_SUFFIX for library output names
+
+Lets the MKL variant coexist with the default (OpenBLAS) one in the same
+runtimes/<rid>/native directory: -DFAISS_OUTPUT_NAME_SUFFIX=.mkl links
+faiss.mkl + faiss_c.mkl (faiss_c.mkl importing faiss.mkl by that name).
+Unset (the default) changes nothing, so every other build is unaffected.
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 15b612e7f..53599e3bd 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -150,6 +150,31 @@ if(FAISS_ENABLE_C_API)
+   add_subdirectory(c_api)
+ endif()
+ 
++# Optional suffix for library output names (faiss -> faiss.mkl, ...) so a
++# variant build can share a directory with the default one. Renaming at link
++# time keeps import tables, DT_NEEDED and SONAME entries consistent.
++set(FAISS_OUTPUT_NAME_SUFFIX "" CACHE STRING
++  "Suffix appended to library output names, e.g. .mkl")
++if(FAISS_OUTPUT_NAME_SUFFIX)
++  foreach(_tgt IN ITEMS faiss faiss_avx2 faiss_avx512 faiss_avx512_spr faiss_sve)
++    set_target_properties(${_tgt} PROPERTIES
++      OUTPUT_NAME "${_tgt}${FAISS_OUTPUT_NAME_SUFFIX}")
++  endforeach()
++
++  if(FAISS_ENABLE_C_API)
++    # The C API library is "faiss_c<suffix>" at every SIMD level (Faiss.NET
++    # probes exactly that name). Only the FAISS_OPT_LEVEL target may claim it:
++    # the others are still defined (EXCLUDE_FROM_ALL), and two targets sharing
++    # an OUTPUT_NAME fail with "multiple rules generate ...".
++    set(_faiss_c_target faiss_c)
++    if(FAISS_OPT_LEVEL MATCHES "^(avx2|avx512|avx512_spr|sve)$")
++      set(_faiss_c_target faiss_c_${FAISS_OPT_LEVEL})
++    endif()
++    set_target_properties(${_faiss_c_target} PROPERTIES
++      OUTPUT_NAME "faiss_c${FAISS_OUTPUT_NAME_SUFFIX}")
++  endif()
++endif()
++
+ if(FAISS_ENABLE_EXTRAS)
+   add_subdirectory(demos)
+   add_subdirectory(benchs)

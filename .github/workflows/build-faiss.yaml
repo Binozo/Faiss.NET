@@ -986,7 +986,6 @@ jobs:
         shell: pwsh
         run: |
           $root = "${{ github.workspace }}\mklroot".Replace('\', '/')
-          $inject = "${{ github.workspace }}\scripts\faiss-mkl-output-names.cmake".Replace('\', '/')
           echo "MKLROOT=$root" | Out-File $env:GITHUB_ENV -Append
 
           # Static sequential MKL + output rename (faiss_c.mkl.dll / faiss.mkl.dll)
@@ -995,7 +994,7 @@ jobs:
             "-DFAISS_ENABLE_MKL=ON",
             "-DBLA_VENDOR=Intel10_64lp_seq",
             "-DBLA_STATIC=ON",
-            "-DCMAKE_PROJECT_faiss_INCLUDE=$inject"
+            "-DFAISS_OUTPUT_NAME_SUFFIX=.mkl"
           ) -join '|'
           echo "BLAS_CMAKE_FLAGS=$flags" | Out-File $env:GITHUB_ENV -Append
 
@@ -1044,7 +1043,7 @@ jobs:
           New-Item artifacts -ItemType Directory -Force | Out-Null
 
           if ("${{ matrix.blas }}" -eq "mkl") {
-            # MKL is statically linked; outputs are renamed by the CMake inject
+            # MKL is statically linked; outputs are renamed via FAISS_OUTPUT_NAME_SUFFIX
             # (faiss_c.mkl.dll imports faiss.mkl.dll by that name)
             Get-ChildItem faiss/build -Recurse -Include faiss_c.mkl.dll, faiss.mkl.dll |
                 Copy-Item -Destination artifacts/
