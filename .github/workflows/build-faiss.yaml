@@ -1212,11 +1212,11 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Install CUDA Toolkit 13.2
-        uses: Jimver/cuda-toolkit@v0.2.30
+      - name: Install CUDA Toolkit 13.3.0
+        uses: Jimver/cuda-toolkit@v0.2.36
         id: cuda-toolkit
         with:
-          cuda: '13.2.0'
+          cuda: '13.3.0'
 
       - name: Setup Python
         uses: actions/setup-python@v7
