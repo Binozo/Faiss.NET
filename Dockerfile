@@ -34,7 +34,7 @@ RUN cmake -B build . \
 
 RUN make -C build -j $(nproc) faiss_c
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0-noble AS test
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS test
 
 ARG TARGETARCH
 
