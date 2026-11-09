@@ -16,15 +16,15 @@ jobs:
       matrix:
         include:
           - arch: x64
-            runner: ubuntu-22.04
+            runner: ubuntu-24.04
             opt_level: dd
             blas: openblas
           - arch: x64
-            runner: ubuntu-22.04
+            runner: ubuntu-24.04
             opt_level: dd
             blas: mkl
           - arch: arm64
-            runner: ubuntu-22.04-arm
+            runner: ubuntu-24.04-arm
             opt_level: dd
             blas: openblas
     runs-on: ${{ matrix.runner }}
@@ -42,7 +42,8 @@ jobs:
 
     - name: Install Build Dependencies
       run: |
-        sudo apt-get install -y cmake g++
+        # Ubuntu 22.04's default GCC 11 lacks -mavx512fp16 (faiss dd SPR kernels)
+        sudo apt-get install -y cmake g++-12
 
     - name: Install OpenBLAS
       if: matrix.blas == 'openblas'
@@ -88,12 +89,16 @@ jobs:
     - name: Configure Faiss
       working-directory: faiss
       run: |
+        # No LTO: GCC 12 LTO merges all static initializers into one function compiled with a
+        # SIMD TU's flags (e.g. AVX-512), so libfaiss.so SIGILLs on load on CPUs lacking them
         cmake -B build . \
+          -DCMAKE_C_COMPILER=gcc-12 \
+          -DCMAKE_CXX_COMPILER=g++-12 \
           -DFAISS_ENABLE_C_API=ON \
           -DBUILD_SHARED_LIBS=ON \
           -DFAISS_ENABLE_GPU=OFF \
           -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
-          -DFAISS_USE_LTO=ON \
+          -DFAISS_USE_LTO=OFF \
           ${BLAS_CMAKE_FLAGS:--DFAISS_ENABLE_MKL=OFF} \
           -DFAISS_ENABLE_PYTHON=OFF \
           -DBUILD_TESTING=OFF \
@@ -149,13 +154,13 @@ jobs:
       matrix:
         include:
           - arch: x64
-            runner: ubuntu-22.04
+            runner: ubuntu-24.04
             blas: openblas
           - arch: x64
-            runner: ubuntu-22.04
+            runner: ubuntu-24.04
             blas: mkl
           - arch: arm64
-            runner: ubuntu-22.04-arm
+            runner: ubuntu-24.04-arm
             blas: openblas
     runs-on: ${{ matrix.runner }}
 
@@ -194,7 +199,7 @@ jobs:
 
   build-linux-pack:
     needs: [test-linux]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v7
@@ -248,11 +253,11 @@ jobs:
       matrix:
         include:
           - arch: x64
-            runner: ubuntu-22.04
+            runner: ubuntu-24.04
             cuda_arch: x86_64
             opt_level: dd
           - arch: arm64
-            runner: ubuntu-22.04-arm
+            runner: ubuntu-24.04-arm
             cuda_arch: sbsa
             opt_level: dd
     runs-on: ${{ matrix.runner }}
@@ -276,13 +281,14 @@ jobs:
 
       - name: Install CUDA Repository
         run: |
-          wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/${{ matrix.cuda_arch }}/cuda-keyring_1.1-1_all.deb
+          wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/${{ matrix.cuda_arch }}/cuda-keyring_1.1-1_all.deb
           sudo dpkg -i cuda-keyring_1.1-1_all.deb
           sudo apt-get update
 
       - name: Install Build Dependencies
         run: |
-          sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev \
+          # Ubuntu 22.04's default GCC 11 lacks -mavx512fp16 (faiss dd SPR kernels)
+          sudo apt-get install -y cmake g++-12 libopenblas-dev liblapack-dev \
             cuda-nvcc-13-2 cuda-cudart-dev-13-2 cuda-profiler-api-13-2 libcublas-dev-13-2 libcurand-dev-13-2
 
       - name: Setup ccache
@@ -298,7 +304,11 @@ jobs:
       - name: Configure Faiss
         working-directory: faiss
         run: |
+          # No LTO with GCC 12, see build-linux
           cmake -B build . \
+            -DCMAKE_C_COMPILER=gcc-12 \
+            -DCMAKE_CXX_COMPILER=g++-12 \
+            -DCMAKE_CUDA_HOST_COMPILER=g++-12 \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache \
@@ -306,7 +316,7 @@ jobs:
             -DBUILD_SHARED_LIBS=ON \
             -DFAISS_ENABLE_GPU=ON \
             -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
-            -DFAISS_USE_LTO=ON \
+            -DFAISS_USE_LTO=OFF \
             -DFAISS_ENABLE_MKL=OFF \
             -DFAISS_ENABLE_PYTHON=OFF \
             -DBUILD_TESTING=OFF \
@@ -336,7 +346,7 @@ jobs:
 
   build-linux-cuda-pack:
     needs: [build-linux-cuda]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v7
@@ -383,11 +393,11 @@ jobs:
       matrix:
         include:
           - arch: x64
-            runner: ubuntu-22.04
+            runner: ubuntu-24.04
             cuda_arch: x86_64
             opt_level: dd
           - arch: arm64
-            runner: ubuntu-22.04-arm
+            runner: ubuntu-24.04-arm
             cuda_arch: sbsa
             opt_level: dd
     runs-on: ${{ matrix.runner }}
@@ -411,13 +421,14 @@ jobs:
 
       - name: Install CUDA Repository
         run: |
-          wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/${{ matrix.cuda_arch }}/cuda-keyring_1.1-1_all.deb
+          wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/${{ matrix.cuda_arch }}/cuda-keyring_1.1-1_all.deb
           sudo dpkg -i cuda-keyring_1.1-1_all.deb
           sudo apt-get update
 
       - name: Install Build Dependencies
         run: |
-          sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev \
+          # Ubuntu 22.04's default GCC 11 lacks -mavx512fp16 (faiss dd SPR kernels)
+          sudo apt-get install -y cmake g++-12 libopenblas-dev liblapack-dev \
             cuda-nvcc-12-8 cuda-cudart-dev-12-8 cuda-profiler-api-12-8 libcublas-dev-12-8 libcurand-dev-12-8
 
       - name: Setup ccache
@@ -433,7 +444,11 @@ jobs:
       - name: Configure Faiss
         working-directory: faiss
         run: |
+          # No LTO with GCC 12, see build-linux
           cmake -B build . \
+            -DCMAKE_C_COMPILER=gcc-12 \
+            -DCMAKE_CXX_COMPILER=g++-12 \
+            -DCMAKE_CUDA_HOST_COMPILER=g++-12 \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache \
@@ -441,7 +456,7 @@ jobs:
             -DBUILD_SHARED_LIBS=ON \
             -DFAISS_ENABLE_GPU=ON \
             -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
-            -DFAISS_USE_LTO=ON \
+            -DFAISS_USE_LTO=OFF \
             -DFAISS_ENABLE_MKL=OFF \
             -DFAISS_ENABLE_PYTHON=OFF \
             -DBUILD_TESTING=OFF \
@@ -471,7 +486,7 @@ jobs:
 
   build-linux-cuda12-pack:
     needs: [build-linux-cuda12]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v7
@@ -521,7 +536,7 @@ jobs:
       matrix:
         include:
           - arch: x64
-            runner: ubuntu-22.04
+            runner: ubuntu-24.04
             opt_level: dd
             rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1031;gfx1032;gfx1100;gfx1101;gfx1102;gfx1200;gfx1201
     runs-on: ${{ matrix.runner }}
@@ -569,7 +584,7 @@ jobs:
             zlib1g libzstd1 libnuma1 libelf-dev pkg-config libdrm-dev \
             libtinfo-dev libbz2-1.0 libsqlite3-0 libgomp1 build-essential
 
-          wget https://repo.radeon.com/amdgpu-install/7.2/ubuntu/noble/amdgpu-install_7.2.70200-1_all.deb
+          wget https://repo.radeon.com/amdgpu-install/7.2/ubuntu/jammy/amdgpu-install_7.2.70200-1_all.deb
           sudo dpkg -i amdgpu-install_7.2.70200-1_all.deb
 
           # Rewrite the dead amdgpu/7.2 repo to the real one (30.30)
@@ -585,7 +600,8 @@ jobs:
 
       - name: Install Build Dependencies
         run: |
-          sudo apt-get install -y cmake g++ libopenblas-dev liblapack-dev hip-dev
+          # Ubuntu 22.04's default GCC 11 lacks -mavx512fp16 (faiss dd SPR kernels)
+          sudo apt-get install -y cmake g++-12 libopenblas-dev liblapack-dev hip-dev
 
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
@@ -600,7 +616,10 @@ jobs:
       - name: Configure Faiss
         working-directory: faiss
         run: |
+          # No LTO with GCC 12, see build-linux
           cmake -B build . \
+            -DCMAKE_C_COMPILER=gcc-12 \
+            -DCMAKE_CXX_COMPILER=g++-12 \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_HIP_COMPILER_LAUNCHER=ccache \
@@ -609,7 +628,7 @@ jobs:
             -DFAISS_ENABLE_GPU=ON \
             -DFAISS_ENABLE_ROCM=ON \
             -DFAISS_OPT_LEVEL=${{ matrix.opt_level }} \
-            -DFAISS_USE_LTO=ON \
+            -DFAISS_USE_LTO=OFF \
             -DFAISS_ENABLE_MKL=OFF \
             -DFAISS_ENABLE_PYTHON=OFF \
             -DBUILD_TESTING=OFF \
@@ -639,7 +658,7 @@ jobs:
 
   build-linux-rocm-pack:
     needs: [build-linux-rocm]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v7
@@ -783,7 +802,7 @@ jobs:
 
   build-macos-pack:
     needs: [test-macos]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v7
@@ -1137,7 +1156,7 @@ jobs:
 
   build-windows-pack:
     needs: [test-windows]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v7
@@ -1378,7 +1397,7 @@ jobs:
 
   build-windows-cuda-pack:
     needs: [build-windows-cuda]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v7
@@ -1514,7 +1533,7 @@ jobs:
           path: artifacts/*
 
   pack:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1538,7 +1557,7 @@ jobs:
           path: 'nupkg/*.nupkg'
 
   pack-gpu:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1562,7 +1581,7 @@ jobs:
           path: 'nupkg/*.nupkg'
 
   pack-native:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1586,7 +1605,7 @@ jobs:
           path: 'nupkg/*.nupkg'
 
   pack-native-gpu-cuda:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1610,7 +1629,7 @@ jobs:
           path: 'nupkg/*.nupkg'
 
   pack-native-gpu-rocm:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -1638,10 +1657,10 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            runner: ubuntu-22.04
+            runner: ubuntu-24.04
             docker_platform: linux/amd64
           - arch: arm64
-            runner: ubuntu-22.04-arm
+            runner: ubuntu-24.04-arm
             docker_platform: linux/arm64
     runs-on: ${{ matrix.runner }}
 
@@ -1697,7 +1716,7 @@ jobs:
 
   docker-manifest:
     needs: build-docker
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     permissions:
       packages: write
@@ -1731,10 +1750,10 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            runner: ubuntu-22.04
+            runner: ubuntu-24.04
             docker_platform: linux/amd64
           - arch: arm64
-            runner: ubuntu-22.04-arm
+            runner: ubuntu-24.04-arm
             docker_platform: linux/arm64
     runs-on: ${{ matrix.runner }}
 
@@ -1781,7 +1800,7 @@ jobs:
 
   docker-cuda-manifest:
     needs: build-docker-cuda
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     permissions:
       packages: write
@@ -1812,7 +1831,7 @@ jobs:
 
   publish-github-packages:
     needs: [pack, pack-gpu, pack-native, pack-native-gpu-cuda, pack-native-gpu-rocm, build-linux-pack, build-linux-cuda-pack, build-linux-cuda12-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack, docker-manifest]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     
     permissions:
       packages: write
@@ -1841,7 +1860,7 @@ jobs:
           
   create-release:
     needs: [publish-github-packages]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: startsWith(github.ref, 'refs/tags/')
 
     permissions:
@@ -1864,7 +1883,7 @@ jobs:
   publish-nuget-packages:
     #needs: [create-release]
     needs: [publish-github-packages]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     permissions:
       id-token: write
