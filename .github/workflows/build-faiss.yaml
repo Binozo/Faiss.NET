@@ -184,7 +184,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Run Tests
         env:
@@ -226,7 +227,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Pack NuGet Package
         run: |
@@ -361,7 +363,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Pack NuGet Packages
         run: |
@@ -495,7 +498,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Pack NuGet Packages
         run: |
@@ -655,7 +659,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Pack NuGet Package
         run: |
@@ -770,7 +775,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Run Tests
         run: dotnet test src/FaissNET.Tests/Faiss.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true --blame-crash
@@ -804,7 +810,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Pack NuGet Package
         run: |
@@ -1111,7 +1118,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Run Tests
         env:
@@ -1163,7 +1171,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Pack NuGet Package
         run: |
@@ -1390,7 +1399,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Pack NuGet Package
         run: |
@@ -1515,7 +1525,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Pack NuGet Package
         run: |
@@ -1538,7 +1549,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Pack NuGet Package
         run: |
@@ -1561,7 +1573,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Pack NuGet Package
         run: |
@@ -1584,7 +1597,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Pack NuGet Package
         run: |
@@ -1607,7 +1621,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
 
       - name: Pack NuGet Package
         run: |
@@ -1808,7 +1823,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
+          dotnet-channel: LTS
       
       - name: Download all NuGet Artifacts
         uses: actions/download-artifact@v8
