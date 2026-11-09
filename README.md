@@ -51,9 +51,6 @@ winget install --id Microsoft.VCRedist.2015+.x64 --silent
 ```
 
 **Linux**
-
-##### Make sure you are on a system with glibc version 2.38 or greater.
-
 ```bash
 sudo apt-get install -y libopenblas0 libgomp1
 ```

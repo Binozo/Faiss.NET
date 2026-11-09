@@ -16,15 +16,15 @@ jobs:
       matrix:
         include:
           - arch: x64
-            runner: ubuntu-24.04
+            runner: ubuntu-22.04
             opt_level: dd
             blas: openblas
           - arch: x64
-            runner: ubuntu-24.04
+            runner: ubuntu-22.04
             opt_level: dd
             blas: mkl
           - arch: arm64
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-22.04-arm
             opt_level: dd
             blas: openblas
     runs-on: ${{ matrix.runner }}
@@ -149,13 +149,13 @@ jobs:
       matrix:
         include:
           - arch: x64
-            runner: ubuntu-24.04
+            runner: ubuntu-22.04
             blas: openblas
           - arch: x64
-            runner: ubuntu-24.04
+            runner: ubuntu-22.04
             blas: mkl
           - arch: arm64
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-22.04-arm
             blas: openblas
     runs-on: ${{ matrix.runner }}
 
@@ -193,7 +193,7 @@ jobs:
 
   build-linux-pack:
     needs: [test-linux]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v6
@@ -246,11 +246,11 @@ jobs:
       matrix:
         include:
           - arch: x64
-            runner: ubuntu-24.04
+            runner: ubuntu-22.04
             cuda_arch: x86_64
             opt_level: dd
           - arch: arm64
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-22.04-arm
             cuda_arch: sbsa
             opt_level: dd
     runs-on: ${{ matrix.runner }}
@@ -334,7 +334,7 @@ jobs:
 
   build-linux-cuda-pack:
     needs: [build-linux-cuda]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v6
@@ -380,11 +380,11 @@ jobs:
       matrix:
         include:
           - arch: x64
-            runner: ubuntu-24.04
+            runner: ubuntu-22.04
             cuda_arch: x86_64
             opt_level: dd
           - arch: arm64
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-22.04-arm
             cuda_arch: sbsa
             opt_level: dd
     runs-on: ${{ matrix.runner }}
@@ -468,7 +468,7 @@ jobs:
 
   build-linux-cuda12-pack:
     needs: [build-linux-cuda12]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v6
@@ -517,7 +517,7 @@ jobs:
       matrix:
         include:
           - arch: x64
-            runner: ubuntu-24.04
+            runner: ubuntu-22.04
             opt_level: dd
             rocm_arch: gfx90a;gfx942;gfx950;gfx1030;gfx1031;gfx1032;gfx1100;gfx1101;gfx1102;gfx1200;gfx1201
     runs-on: ${{ matrix.runner }}
@@ -635,7 +635,7 @@ jobs:
 
   build-linux-rocm-pack:
     needs: [build-linux-rocm]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v6
@@ -1130,7 +1130,7 @@ jobs:
 
   build-windows-pack:
     needs: [test-windows]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v6
@@ -1370,7 +1370,7 @@ jobs:
 
   build-windows-cuda-pack:
     needs: [build-windows-cuda]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v6
@@ -1505,7 +1505,7 @@ jobs:
           path: artifacts/*
 
   pack:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v6
         with:
@@ -1528,7 +1528,7 @@ jobs:
           path: 'nupkg/*.nupkg'
 
   pack-gpu:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v6
         with:
@@ -1551,7 +1551,7 @@ jobs:
           path: 'nupkg/*.nupkg'
 
   pack-native:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v6
         with:
@@ -1574,7 +1574,7 @@ jobs:
           path: 'nupkg/*.nupkg'
 
   pack-native-gpu-cuda:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v6
         with:
@@ -1597,7 +1597,7 @@ jobs:
           path: 'nupkg/*.nupkg'
 
   pack-native-gpu-rocm:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v6
         with:
@@ -1624,10 +1624,10 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            runner: ubuntu-24.04
+            runner: ubuntu-22.04
             docker_platform: linux/amd64
           - arch: arm64
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-22.04-arm
             docker_platform: linux/arm64
     runs-on: ${{ matrix.runner }}
 
@@ -1683,7 +1683,7 @@ jobs:
 
   docker-manifest:
     needs: build-docker
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     permissions:
       packages: write
@@ -1717,10 +1717,10 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            runner: ubuntu-24.04
+            runner: ubuntu-22.04
             docker_platform: linux/amd64
           - arch: arm64
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-22.04-arm
             docker_platform: linux/arm64
     runs-on: ${{ matrix.runner }}
 
@@ -1767,7 +1767,7 @@ jobs:
 
   docker-cuda-manifest:
     needs: build-docker-cuda
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     permissions:
       packages: write
@@ -1798,7 +1798,7 @@ jobs:
 
   publish-github-packages:
     needs: [pack, pack-gpu, pack-native, pack-native-gpu-cuda, pack-native-gpu-rocm, build-linux-pack, build-linux-cuda-pack, build-linux-cuda12-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack, docker-manifest]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     
     permissions:
       packages: write
@@ -1826,7 +1826,7 @@ jobs:
           
   create-release:
     needs: [publish-github-packages]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     if: startsWith(github.ref, 'refs/tags/')
 
     permissions:
@@ -1849,7 +1849,7 @@ jobs:
   publish-nuget-packages:
     #needs: [create-release]
     needs: [publish-github-packages]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     permissions:
       id-token: write
