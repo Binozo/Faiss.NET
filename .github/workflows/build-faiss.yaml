@@ -1793,7 +1793,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-cuda-amd64 \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-cuda-arm64
 
-  build-rocm-cuda:
+  build-docker-rocm:
     strategy:
       matrix:
         include:
