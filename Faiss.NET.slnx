@@ -10,6 +10,8 @@
   <Project Path="src/FaissNET.Cpu/Faiss.Cpu.csproj" />
 
   <Project Path="src/FaissNET.Tests/Faiss.Tests.csproj" />
+
+  <Project Path="src/FaissNET.VectorData/Faiss.VectorData.csproj" />
   
   <Folder Name="/Native/">
     <Project Path="src/FaissNET.Linux/Faiss.Linux.csproj" />
