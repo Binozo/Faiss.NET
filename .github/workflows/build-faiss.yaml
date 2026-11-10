@@ -1863,7 +1863,7 @@ jobs:
         run: |
           docker buildx imagetools create \
             --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-rocm \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-rocm-amd6
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-rocm-amd64
 
       - name: Create latest tag manifest
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
