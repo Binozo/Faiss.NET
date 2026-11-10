@@ -1863,16 +1863,14 @@ jobs:
         run: |
           docker buildx imagetools create \
             --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-rocm \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-rocm-amd64 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-rocm-arm64
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-rocm-amd6
 
       - name: Create latest tag manifest
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         run: |
           docker buildx imagetools create \
             --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-rocm \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-rocm-amd64 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-rocm-arm64
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-rocm-amd64
 
   publish-github-packages:
     needs: [pack, pack-gpu, pack-native, pack-native-gpu-cuda, pack-native-gpu-rocm, build-linux-pack, build-linux-cuda-pack, build-linux-cuda12-pack, build-linux-rocm-pack, build-macos-pack, build-windows-pack, docker-manifest]
