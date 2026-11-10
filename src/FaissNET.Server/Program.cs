@@ -36,8 +36,6 @@ else
     app.UseExceptionHandler();
 }
 
-app.UseHttpsRedirection();
-
 app.MapIndexEndpoints();
 
 app.Run();
