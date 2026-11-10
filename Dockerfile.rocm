@@ -1,0 +1,91 @@
+FROM rocm/dev-ubuntu-24.04:7.2.3-complete AS faiss-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cmake \
+    g++ \
+    make \
+    libopenblas-dev \
+    liblapack-dev \
+    git \
+    hipify-clang \
+    && rm -rf /var/lib/apt/lists/* 
+
+ENV PATH="$PATH:/opt/rocm/bin"
+
+WORKDIR /build
+
+COPY faiss ./faiss
+COPY patches/faiss ./patches/faiss
+RUN git apply --ignore-whitespace --directory=faiss patches/faiss/*.patch
+
+WORKDIR /build/faiss
+RUN cmake -B build . \
+        -DFAISS_ENABLE_C_API=ON \
+        -DBUILD_SHARED_LIBS=ON \
+        -DFAISS_ENABLE_GPU=ON \
+        -DFAISS_ENABLE_ROCM=ON \
+        -DFAISS_OPT_LEVEL=dd \
+        -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang \
+        -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
+        -DFAISS_USE_LTO=ON \
+        -DFAISS_ENABLE_MKL=OFF \
+        -DFAISS_ENABLE_PYTHON=OFF \
+        -DBUILD_TESTING=OFF \
+        -DFAISS_ENABLE_EXTRAS=OFF \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+        -DCMAKE_INSTALL_RPATH='$ORIGIN' \
+        -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx942;gfx950;gfx1030;gfx1031;gfx1032;gfx1100;gfx1101;gfx1102;gfx1200;gfx1201"
+
+RUN make -C build -j $(nproc) faiss_c
+
+FROM rocm/dev-ubuntu-24.04:7.2.3-complete AS build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libicu74 \
+    && rm -rf /var/lib/apt/lists/* 
+
+ENV DOTNET_ROOT=/usr/share/dotnet
+ENV PATH="$PATH:/usr/share/dotnet"
+
+COPY --from=mcr.microsoft.com/dotnet/sdk:11.0-resolute-aot /usr/share/dotnet /usr/share/dotnet
+RUN ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
+
+ARG TARGETARCH
+WORKDIR /server
+
+COPY src/FaissNET.Linux/Faiss.Linux.csproj src/FaissNET.Linux/
+COPY src/FaissNET.Native/Faiss.Native.csproj src/FaissNET.Native/
+
+COPY src/FaissNET.Core/Faiss.csproj src/FaissNET.Core/
+COPY src/FaissNET.Interop/Faiss.Interop.csproj src/FaissNET.Interop/
+COPY src/FaissNET.Cpu/Faiss.Cpu.csproj src/FaissNET.Cpu/
+
+COPY src/FaissNET.Server/Faiss.Server.csproj src/FaissNET.Server/
+RUN dotnet restore src/FaissNET.Server/Faiss.Server.csproj -a $TARGETARCH
+
+COPY src/FaissNET.Linux/ src/FaissNET.Linux/
+COPY src/FaissNET.Native/ src/FaissNET.Native/
+
+COPY src/FaissNET.Core/ src/FaissNET.Core/
+COPY src/FaissNET.Interop/ src/FaissNET.Interop/
+COPY src/FaissNET.Cpu/ src/FaissNET.Cpu/
+
+COPY src/FaissNET.Server/ src/FaissNET.Server/
+
+RUN dotnet publish src/FaissNET.Server/Faiss.Server.csproj -c Release -a $TARGETARCH -p:FaissRuntime=Linux -p:FaissBackend=Rocm -p:ContinuousIntegrationBuild=true --no-restore -o /server/app
+
+FROM rocm/dev-ubuntu-24.04:7.2.1 AS final
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends hipblas libopenblas0-pthread \
+ && rm -rf /var/lib/apt/lists/* 
+
+WORKDIR /app
+COPY --from=build /server/app .
+COPY --from=faiss-builder /build/faiss/build/c_api/libfaiss_c.so /build/faiss/build/faiss/libfaiss.so /opt/rocm/lib/llvm/lib/libomp.so ./
+
+VOLUME /app/data
+
+ENV ASPNETCORE_HTTP_PORTS=8080
+EXPOSE 8080
+ENTRYPOINT ["./FaissNET.Server"]
