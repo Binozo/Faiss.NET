@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.idea/
+**/*.user
+**/*.http
+**/appsettings.Development.json
+**/*.so
+**/*.dll
+**/*.dylib
