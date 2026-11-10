@@ -248,7 +248,7 @@ Made with ♥️
 <details>
 <summary>
 
-## Ai disclosure
+## AI disclosure
 
 </summary>
 
