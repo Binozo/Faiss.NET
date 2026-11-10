@@ -42,9 +42,10 @@
   <Folder Name="/CI/">
     <File Path=".github/workflows/build-faiss.yaml" />
 
+    <File Path=".dockerignore" />
     <File Path="Dockerfile" />
-    <File Path="Dockerfile.blas" />
     <File Path="Dockerfile.cuda" />
+    <File Path="Dockerfile.rocm" />
   </Folder>
 
   <Project Path="src\FaissNET.Server\Faiss.Server.csproj" />

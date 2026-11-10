@@ -1,15 +1,12 @@
-FROM ubuntu:24.04 AS faiss-builder
+FROM alpine:3.24 AS faiss-builder
 
-RUN --mount=type=cache,id=apt,sharing=locked,target=/var/cache/apt \
-    --mount=type=cache,id=apt,sharing=locked,target=/var/lib/apt \
-    apt-get update && apt-get install -y --no-install-recommends \
+RUN apk add --no-cache \
     cmake \
     g++ \
     make \
-    libopenblas-dev \
-    liblapack-dev \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+    openblas-dev \
+    lapack-dev \
+    git
 
 WORKDIR /build
 
@@ -34,34 +31,42 @@ RUN cmake -B build . \
 
 RUN make -C build -j $(nproc) faiss_c
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS test
-
+FROM mcr.microsoft.com/dotnet/sdk:11.0-alpine-aot AS build
 ARG TARGETARCH
+WORKDIR /server
 
-RUN --mount=type=cache,id=apt,sharing=locked,target=/var/cache/apt \
-    --mount=type=cache,id=apt,sharing=locked,target=/var/lib/apt \
-    apt-get update && apt-get install -y --no-install-recommends \
-    libopenblas0 \
-    libgomp1 \
-    && rm -rf /var/lib/apt/lists/*
+COPY src/FaissNET.Linux/Faiss.Linux.csproj src/FaissNET.Linux/
+COPY src/FaissNET.Native/Faiss.Native.csproj src/FaissNET.Native/
+
+COPY src/FaissNET.Core/Faiss.csproj src/FaissNET.Core/
+COPY src/FaissNET.Interop/Faiss.Interop.csproj src/FaissNET.Interop/
+COPY src/FaissNET.Cpu/Faiss.Cpu.csproj src/FaissNET.Cpu/
+
+COPY src/FaissNET.Server/Faiss.Server.csproj src/FaissNET.Server/
+RUN dotnet restore src/FaissNET.Server/Faiss.Server.csproj -a $TARGETARCH
+
+COPY src/FaissNET.Linux/ src/FaissNET.Linux/
+COPY src/FaissNET.Native/ src/FaissNET.Native/
+
+COPY src/FaissNET.Core/ src/FaissNET.Core/
+COPY src/FaissNET.Interop/ src/FaissNET.Interop/
+COPY src/FaissNET.Cpu/ src/FaissNET.Cpu/
+
+COPY src/FaissNET.Server/ src/FaissNET.Server/
+
+RUN dotnet publish src/FaissNET.Server/Faiss.Server.csproj -c Release -a $TARGETARCH -p:FaissRuntime=Linux -p:FaissBackend=Cpu -p:ContinuousIntegrationBuild=true --no-restore -o /server/app
+
+FROM mcr.microsoft.com/dotnet/runtime-deps:11.0-alpine AS final
+
+RUN apk add --no-cache libgomp openblas
 
 WORKDIR /app
+COPY --from=build /server/app .
+COPY --from=faiss-builder /build/faiss/build/c_api/libfaiss_c.so /build/faiss/build/faiss/libfaiss.so ./
 
-COPY src ./src
-COPY Faiss.NET.slnx .
-COPY README.md .
-COPY LICENSE .
+RUN mkdir -p /app/data && chown $APP_UID /app/data
+VOLUME /app/data
 
-COPY --from=faiss-builder /build/faiss/build/c_api/libfaiss_c.so /tmp/
-COPY --from=faiss-builder /build/faiss/build/faiss/libfaiss.so /tmp/
-
-RUN set -eux; \
-    case ${TARGETARCH} in \
-      amd64) RID=x64 ;; \
-      arm64) RID=arm64 ;; \
-      *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
-    esac && \
-    mkdir -p /app/src/FaissNET.Linux/runtimes/linux-${RID}/native/ && \
-    cp /tmp/libfaiss_c.so /tmp/libfaiss.so /app/src/FaissNET.Linux/runtimes/linux-${RID}/native/
-
-CMD ["dotnet", "test", "src/FaissNET.Tests/Faiss.Tests.csproj", "-c", "Release", "--filter", "Category!=VendoredFaiss"]
+USER $APP_UID
+EXPOSE 8080
+ENTRYPOINT ["./FaissNET.Server"]
