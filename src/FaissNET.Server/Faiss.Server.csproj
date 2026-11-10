@@ -5,20 +5,67 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <PublishAot>true</PublishAot>
 
         <RootNamespace>Faiss.Server</RootNamespace>
         <AssemblyName>FaissNET.Server</AssemblyName>
         <Description>Minimal ASP.NET Core microservice wrapping Faiss.NET.</Description>
     </PropertyGroup>
 
-    <ItemGroup>
+    <PropertyGroup>
+        <PublishAot>true</PublishAot>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <FaissRuntime Condition="'$(FaissRuntime)' == '' And '$(RUNTIME)' != ''">$(RUNTIME)</FaissRuntime>
+        <FaissRuntime Condition="'$(FaissRuntime)' == ''">All</FaissRuntime>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <FaissBackend Condition="'$(FaissBackend)' == ''">Cpu</FaissBackend>
+        <FaissUseGpu Condition="'$(FaissBackend)' == 'Cuda' Or '$(FaissBackend)' == 'Rocm'">true</FaissUseGpu>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(FaissUseGpu)' == 'true'">
+        <DefineConstants>$(DefineConstants);FAISS_GPU</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(FaissBackend)' == 'Cuda'">
+        <DefineConstants>$(DefineConstants);FAISS_CUDA</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(FaissBackend)' == 'Rocm'">
+        <DefineConstants>$(DefineConstants);FAISS_ROCM</DefineConstants>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(FaissBackend)' == 'Cpu' And '$(FaissRuntime)' == 'All'">
+        <ProjectReference Include="..\FaissNET.Native\Faiss.Native.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(FaissBackend)' == 'Cpu' And '$(FaissRuntime)' == 'Linux'">
+        <ProjectReference Include="..\FaissNET.Linux\Faiss.Linux.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(FaissUseGpu)' == 'true'">
         <ProjectReference Include="..\FaissNET.Gpu\Faiss.Gpu.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(FaissBackend)' == 'Cuda'">
         <ProjectReference Include="..\FaissNET.Native.Gpu.Cuda\Faiss.Native.Gpu.Cuda.csproj" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(FaissBackend)' == 'Rocm'">
+        <ProjectReference Include="..\FaissNET.Native.Gpu.Rocm\Faiss.Native.Gpu.Rocm.csproj" />
+    </ItemGroup>
+
+    <Target Name="ValidateFaissBackend" BeforeTargets="Restore;CollectPackageReferences;Build">
+        <Error Condition="'$(FaissBackend)' != 'Cpu' And '$(FaissBackend)' != 'Cuda' And '$(FaissBackend)' != 'Rocm'"
+               Text="Invalid FaissBackend '$(FaissBackend)'. Use Cpu, Cuda or Rocm." />
+        <Error Condition="'$(FaissRuntime)' != 'All' And '$(FaissRuntime)' != 'Linux'"
+               Text="Invalid FaissRuntime '$(FaissRuntime)'. Use All or Linux." />
+    </Target>
+
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
     </ItemGroup>
 
     <ItemGroup>
