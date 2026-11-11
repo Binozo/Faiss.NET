@@ -1,3 +1,4 @@
+using Faiss.Cpu.Extensions;
 using Faiss.Cpu.Indexes.Flat;
 using Faiss.Cpu.Indexes.IVF;
 using Faiss.Cpu.Indexes.Mapped;
@@ -59,6 +60,51 @@ public class IndexShardsTests
         Assert.Throws<FaissNativeException>(() => shards.Add(2, vectors, [100, 101]));
         Assert.Throws<FaissNativeException>(() => shards.Add(2, vectors));
         Assert.Equal(0, shards.TotalCount);
+    }
+
+    [Fact]
+    public void RemoveIds_WithCustomIds_RemovesFromEveryShardAndKeepsTheRest()
+    {
+        using var shards = new IndexShards(Dimensions, successiveIds: false);
+        shards.AddIndex(new IndexIDMap<IndexFlatL2>(new IndexFlatL2(Dimensions), takeOwnership: true));
+        shards.AddIndex(new IndexIDMap<IndexFlatL2>(new IndexFlatL2(Dimensions), takeOwnership: true));
+        var vectors = Vectors.Random(seed: 894, count: 4, dimensions: Dimensions);
+        shards.Add(4, vectors, [100, 101, 102, 103]);
+
+        // ids 100, 101 live in the first shard, 102, 103 in the second
+        Assert.Equal(2, shards.RemoveIds([100, 103]));
+
+        Assert.Equal(2, shards.TotalCount);
+        Assert.Equal([1L, 1L], [shards[0].TotalCount, shards[1].TotalCount]);
+        var labels = new long[4];
+        shards.Search(4, vectors, 1, new float[4], labels);
+        Assert.Equal(101, labels[1]);
+        Assert.Equal(102, labels[2]);
+        Assert.DoesNotContain(100L, labels);
+        Assert.DoesNotContain(103L, labels);
+    }
+
+    [Fact]
+    public void RemoveIds_MatchingNothing_RemovesNothing()
+    {
+        using var shards = new IndexShards(Dimensions, successiveIds: false);
+        shards.AddIndex(new IndexIDMap<IndexFlatL2>(new IndexFlatL2(Dimensions), takeOwnership: true));
+        shards.Add(2, Vectors.Random(seed: 895, count: 2, dimensions: Dimensions), [100, 101]);
+
+        Assert.Equal(0, shards.RemoveIds([7]));
+        Assert.Equal(2, shards.TotalCount);
+    }
+
+    /// <summary>With successive ids a shard's ids depend on the sizes of the shards before it, so faiss refuses.</summary>
+    [Fact]
+    public void RemoveIds_WithSuccessiveIds_ThrowsInvalidOperationAndRemovesNothing()
+    {
+        using var shards = new IndexShards(Dimensions);
+        shards.AddIndex(new IndexFlatL2(Dimensions));
+        shards.Add(2, Vectors.Random(seed: 896, count: 2, dimensions: Dimensions));
+
+        Assert.Throws<InvalidOperationException>(() => shards.RemoveIds([0]));
+        Assert.Equal(2, shards.TotalCount);
     }
 
     [Fact]
