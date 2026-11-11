@@ -1,4 +1,5 @@
 using Faiss.Cpu.Interfaces;
+using Faiss.Cpu.Selectors;
 using Faiss.Exceptions;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
@@ -11,11 +12,13 @@ internal readonly struct IndexReplicasRelease : IFaissRelease
     public static void Release(IntPtr handle) => Native.faiss_IndexReplicas_free(handle);
 }
 
-public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICpuFloatIndex, IFromNativeIndexHandle<IndexReplicas<T>> where T : FloatIndex, IFromNativeIndexHandle<T>, INativeIndex
+public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IIDRemovableFloatIndex, IReconstructFloatIndex, IComputeResidualFloatIndex, ICpuFloatIndex, IFromNativeIndexHandle<IndexReplicas<T>>, IKeyLayout where T : FloatIndex, IFromNativeIndexHandle<T>, INativeIndex
 {
     private readonly Dictionary<IntPtr, T> _views = [];
     private readonly Lock _viewsLock = new();
     private bool _viewsClosed;
+
+    KeyLayout IKeyLayout.KeyLayout => Count > 0 && KeyLayout.Of(this[0]).KeysAreIds ? KeyLayout.Ids : KeyLayout.Positions;
 
     public IndexReplicas(long dimensions, bool threaded = true, bool ownIndices = true) : this(CreateHandle(dimensions, threaded, ownIndices), ownIndices)
     {
@@ -164,6 +167,10 @@ public class IndexReplicas<T> : FloatIndex, ITrainableFloatIndex, IIDSequentialF
     public Task TrainAsync(long count, ReadOnlyMemory<float> vectors) => TrainableFloatIndexImpl.TrainAsync(this, count, vectors);
 
     public void Add(long count, ReadOnlySpan<float> vectors) => IDSequentialFloatIndexImpl.Add(this, count, vectors);
+
+    public virtual void Add(long count, ReadOnlySpan<float> vectors, ReadOnlySpan<long> xids) => IDMappedFloatIndexImpl.Add(this, count, vectors, xids);
+
+    public virtual long RemoveIds(IDSelector selector) => IDRemovableFloatIndexImpl.RemoveIds(this, selector);
 
     public float[] Reconstruct(long key) => ReconstructFloatIndexImpl.Reconstruct(this, key);
 
