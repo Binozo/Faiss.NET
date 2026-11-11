@@ -1,6 +1,7 @@
 using Faiss.Cpu.Indexes.Factory;
 using Faiss.Cpu.Interfaces;
 using Faiss.Cpu.Search.Parameters;
+using Faiss.Cpu.Selectors;
 using Faiss.Exceptions;
 using Faiss.Interop.Errors;
 using Faiss.Interop.NativeMethods;
@@ -13,7 +14,7 @@ internal readonly struct IndexShardsRelease : IFaissRelease
     public static void Release(IntPtr handle) => Native.faiss_IndexShards_free(handle);
 }
 
-public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IParamsFloatSearchIndex, IFromNativeIndexHandle<IndexShards>
+public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatIndex, IIDMappedFloatIndex, IIDRemovableFloatIndex, IParamsFloatSearchIndex, IFromNativeIndexHandle<IndexShards>
 {
     private readonly Dictionary<IntPtr, INativeIndex> _views = [];
     private readonly Lock _viewsLock = new();
@@ -179,6 +180,14 @@ public class IndexShards : FloatIndex, ITrainableFloatIndex, IIDSequentialFloatI
             throw new InvalidOperationException($"Can't add custom IDs to an index with {nameof(SuccessiveIDs)} enabled.");
         
         IDMappedFloatIndexImpl.Add(this, count, vectors, xids);
+    }
+
+    public virtual long RemoveIds(IDSelector selector)
+    {
+        if (SuccessiveIDs)
+            throw new InvalidOperationException($"Can't remove IDs from an index with {nameof(SuccessiveIDs)} enabled.");
+        
+        return IDRemovableFloatIndexImpl.RemoveIds(this, selector);
     }
 
     public void SearchWithParams(long count, ReadOnlySpan<float> queryVectors, int k, SearchParameters parameters, Span<float> distances, Span<long> labels) => ParamsFloatSearchIndexImpl.SearchWithParams(this, count, queryVectors, k, parameters, distances, labels);
