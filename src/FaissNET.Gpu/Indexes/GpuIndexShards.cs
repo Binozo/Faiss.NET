@@ -1,3 +1,4 @@
+using Faiss.Cpu.Selectors;
 using Faiss.Cpu.Indexes;
 using Faiss.Cpu.Indexes.Sharding;
 using Faiss.Cpu.Interfaces;
@@ -51,6 +52,11 @@ public class GpuIndexShards<TGpu, TCpu> : IndexShards, IGpuDevicesSquadIndex<TCp
     {
         GpuIVFIDs.ThrowIfNot32Bit(this, xids);
         base.Add(count, vectors, xids);
+    }
+
+    public override long RemoveIds(IDSelector selector)
+    {
+        throw new NotSupportedException("Removing IDs is not supported on the gpu.");
     }
 
     /// <summary>The device of every shard, in shard order.</summary>
