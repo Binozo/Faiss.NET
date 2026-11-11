@@ -1,3 +1,4 @@
+using Faiss.Cpu.Extensions;
 using Faiss.Cpu.Indexes.Flat;
 using Faiss.Cpu.Indexes.IVF;
 using Faiss.Cpu.Indexes.Mapped;
@@ -373,6 +374,98 @@ public class IndexReplicasTests
 
         Assert.Equal(0, replicas.Count);
         Assert.False(replicas.IsTrained);
+    }
+
+    [Fact]
+    public void Replicas_WithIdKeyedMembers_TakeIdsAsKeys_AndRejectUnknownKeysWithoutAborting()
+    {
+        const int dimensions = 4;
+        var vectors = Vectors.Random(seed: 56, count: 2, dimensions: dimensions);
+        var member = new IndexIDMap2<IndexFlatL2>(new IndexFlatL2(dimensions));
+        member.Add(2, vectors, [100, 101]);
+
+        using var replicas = new IndexReplicas<IndexIDMap2<IndexFlatL2>>(dimensions);
+        replicas.AddReplica(member);
+
+        var residuals = new float[2 * dimensions];
+        replicas.ComputeResidual(vectors, residuals, [100, 101]);
+        FloatAssert.Equal(new float[2 * dimensions], residuals);
+        FloatAssert.Equal(vectors, replicas.Reconstruct(100, 2));
+
+        // Positions 0 and 1 hold vectors but are not ids: faiss throws for them inside an OpenMP loop when batched.
+        Assert.Throws<FaissNativeException>(() => replicas.ComputeResidual(vectors, residuals, [0, 1]));
+        Assert.Throws<FaissNativeException>(() => replicas.Reconstruct(0, 2));
+    }
+
+    [Fact]
+    public void Replicas_AddWithIds_ReachesEveryReplica_AndSearchReturnsTheIds()
+    {
+        const int dimensions = 4;
+        using var replicas = new IndexReplicas<IndexIDMap2<IndexFlatL2>>(dimensions);
+        replicas.AddReplica(new IndexIDMap2<IndexFlatL2>(new IndexFlatL2(dimensions)));
+        replicas.AddReplica(new IndexIDMap2<IndexFlatL2>(new IndexFlatL2(dimensions)));
+        var vectors = Vectors.Random(seed: 57, count: 3, dimensions: dimensions);
+
+        replicas.Add(3, vectors, [100, 101, 102]);
+
+        Assert.Equal(3, replicas.TotalCount);
+        Assert.Equal([3L, 3L], [replicas[0].TotalCount, replicas[1].TotalCount]);
+        var labels = new long[3];
+        replicas.Search(3, vectors, 1, new float[3], labels);
+        Assert.Equal([100L, 101L, 102L], labels);
+        FloatAssert.Equal(vectors.AsSpan(dimensions, dimensions), replicas.Reconstruct(101));
+        FloatAssert.Equal(vectors.AsSpan(dimensions, dimensions), replicas[1].Reconstruct(101));
+    }
+
+    [Fact]
+    public void Replicas_AddWithIds_ReplicasWithoutIdSupport_ThrowNativeAndAddNothing()
+    {
+        const int dimensions = 4;
+        using var replicas = new IndexReplicas<IndexFlatL2>(dimensions);
+        replicas.AddReplica(new IndexFlatL2(dimensions));
+        replicas.AddReplica(new IndexFlatL2(dimensions));
+
+        Assert.Throws<FaissNativeException>(() => replicas.Add(2, Vectors.Random(seed: 58, count: 2, dimensions: dimensions), [100, 101]));
+        Assert.Equal([0L, 0L], [replicas[0].TotalCount, replicas[1].TotalCount]);
+    }
+
+    [Fact]
+    public void Replicas_RemoveIds_RemovesFromEveryReplicaAndKeepsTheOtherIds()
+    {
+        const int dimensions = 4;
+        using var replicas = new IndexReplicas<IndexIDMap2<IndexFlatL2>>(dimensions);
+        replicas.AddReplica(new IndexIDMap2<IndexFlatL2>(new IndexFlatL2(dimensions)));
+        replicas.AddReplica(new IndexIDMap2<IndexFlatL2>(new IndexFlatL2(dimensions)));
+        var vectors = Vectors.Random(seed: 59, count: 3, dimensions: dimensions);
+        replicas.Add(3, vectors, [100, 101, 102]);
+
+        Assert.Equal(1, replicas.RemoveIds([101]));
+
+        Assert.Equal(2, replicas.TotalCount);
+        Assert.Equal([2L, 2L], [replicas[0].TotalCount, replicas[1].TotalCount]);
+        var labels = new long[3];
+        replicas.Search(3, vectors, 1, new float[3], labels);
+        Assert.Equal(100, labels[0]);
+        Assert.NotEqual(101, labels[1]);
+        Assert.Equal(102, labels[2]);
+        Assert.Equal(0, replicas.RemoveIds([101]));
+    }
+
+    /// <summary>Flat replicas number by position, so the vectors after a removed one move up.</summary>
+    [Fact]
+    public void Replicas_RemoveIds_OnFlatReplicas_ShiftsThePositions()
+    {
+        const int dimensions = 4;
+        using var replicas = new IndexReplicas<IndexFlatL2>(dimensions);
+        replicas.AddReplica(new IndexFlatL2(dimensions));
+        replicas.AddReplica(new IndexFlatL2(dimensions));
+        var vectors = Vectors.Random(seed: 60, count: 3, dimensions: dimensions);
+        replicas.Add(3, vectors);
+
+        Assert.Equal(1, replicas.RemoveIds([1]));
+
+        Assert.Equal([2L, 2L], [replicas[0].TotalCount, replicas[1].TotalCount]);
+        FloatAssert.Equal(vectors.AsSpan(2 * dimensions, dimensions), replicas.Reconstruct(1));
     }
 
     private static async Task<IndexIVFFlat<IndexFlatL2>> TrainedIvf(int dimensions, int seed)
