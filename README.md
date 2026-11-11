@@ -15,7 +15,7 @@ High-performance C#/.NET bindings for [Faiss](https://github.com/facebookresearc
 
 Faiss.NET gives you near-native performance with clean, idiomatic C# wrappers while staying as close as possible to the original Faiss API.
 
-- Faiss [v1.15.1](https://github.com/facebookresearch/faiss/releases/tag/v1.15.1)
+- Faiss [v1.16.0](https://github.com/facebookresearch/faiss/releases/tag/v1.16.0)
 - .NET 9.0
 
 > [!NOTE]
