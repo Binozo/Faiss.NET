@@ -122,6 +122,7 @@ public static class GpuIndexProvider
             multiOptions.Shard = false;
             var gpuIndex = GpuIndexReplicas<TGpu, TCpu>.FromPointer(TransferToGpuMultiple(contexts, deviceIds, cpuIndex, multiOptions));
             cpuIndex.OnClonedToGpu(gpuIndex);
+            Bit32Ids.Mark(gpuIndex, multiOptions);
             return gpuIndex;
         }
         finally
