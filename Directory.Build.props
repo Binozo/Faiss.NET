@@ -1,9 +1,9 @@
 <Project>
   <PropertyGroup>
-    <Version>1.0.0-preview.10</Version>
+    <Version>1.0.0-preview.11</Version>
 
     <!-- Used for local library development -->
-    <FaissNativeVersion>1.0.0-preview.10</FaissNativeVersion>
+    <FaissNativeVersion>1.0.0-preview.11</FaissNativeVersion>
     <FaissNativeSource>nuget</FaissNativeSource>
 
     <FaissSkipNativeDownload Condition="'$(FaissSkipNativeDownload)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or '$(CI)' == 'true')">true</FaissSkipNativeDownload>
