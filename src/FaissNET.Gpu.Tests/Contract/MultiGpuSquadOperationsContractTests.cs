@@ -111,6 +111,53 @@ public class MultiGpuSquadOperationsContractTests
         Assert.Equal(Enumerable.Range(Stored, 8).Select(i => (long)i), labels);
     }
 
+    [Fact]
+    public void ReplicatedIvf_AddWithIds_ReachesEveryReplicaAndKeepsThemOnCpu()
+    {
+        var added = Vectors.Random(seed: 3, count: 4, dimensions: Dimensions);
+        long[] ids = [9_000_000_000, 9_000_000_013, 9_000_000_026, 9_000_000_039];
+        using var cpu = IvfL2(Stored);
+        using var providers = new ProviderSet(2);
+        using var replicas = GpuIndexProvider.TransferToGpuReplicated(providers.Items, [0, 0], cpu);
+
+        replicas.Add(4, added, ids);
+
+        Assert.Equal(Stored + 4, replicas.TotalCount);
+        for (var i = 0; i < replicas.Count; i++)
+        {
+            var (_, labels) = SearchAssert.Search(replicas[i], added, 1);
+            Assert.Equal(ids, labels);
+        }
+
+        using var back = GpuIndexProvider.TransferToCpu(replicas);
+        Assert.Equal([.. Enumerable.Range(0, Stored).Select(i => (long)i), .. ids], SearchAssert.StoredLabels(back, Stored + 4));
+    }
+
+    /// <summary>Device flat indexes number by position and reject ids.</summary>
+    [Fact]
+    public void ReplicatedFlat_AddWithIds_ThrowsNativeAndAddsNothing()
+    {
+        using var cpu = FlatL2(Stored);
+        using var providers = new ProviderSet(2);
+        using var replicas = GpuIndexProvider.TransferToGpuReplicated(providers.Items, [0, 0], cpu);
+
+        Assert.Throws<FaissNativeException>(() => replicas.Add(1, new float[Dimensions], [5]));
+        Assert.Equal([(long)Stored, Stored], [replicas[0].TotalCount, replicas[1].TotalCount]);
+    }
+
+    /// <summary>No device index implements remove_ids.</summary>
+    [Theory]
+    [MemberData(nameof(MultiGpuCatalog.All), MemberType = typeof(MultiGpuCatalog))]
+    public void RemoveIds_ThrowsNotSupportedAndRemovesNothing(MultiGpuIndexCase c, MultiGpuMode mode)
+    {
+        using var cpu = c.Single.CreatePopulatedCpuIndex(Vectors.Random(seed: 1, count: Stored, dimensions: c.Dimensions));
+        using var providers = new ProviderSet(2);
+        using var squad = c.Transfer(mode, providers, [0, 0], cpu);
+
+        Assert.Throws<NotSupportedException>(() => ((IIDRemovableFloatIndex)squad).RemoveIds([1]));
+        Assert.Equal(c.ExpectedMemberCounts(mode, Stored, 2), c.MemberCounts(squad));
+    }
+
     /// <summary>Replicas split the queries in blocks of ceil(n / replicas). Idle replicas and uneven blocks must not change results.</summary>
     [Theory]
     [InlineData(1, 2)]

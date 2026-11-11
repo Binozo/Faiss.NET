@@ -161,6 +161,24 @@ public class MultiGpuValidationContractTests
         Assert.Equal(int.MaxValue, labels[0]);
     }
 
+    [Fact]
+    public void Bit32_ReplicasAddIdBeyond32Bits_ThrowsAndAddsNothing()
+    {
+        using var cpu = Ivf();
+        using var providers = new ProviderSet(2);
+        using var options = new GpuMultipleClonerOptions { StorageMode = IndicesOptions.Bit32 };
+        using var replicas = GpuIndexProvider.TransferToGpuReplicated(providers.Items, [0, 0], cpu, options);
+        var vector = Vectors.Random(seed: 7, count: 1, dimensions: 8);
+
+        Assert.Equal("xids", Assert.Throws<ArgumentOutOfRangeException>(() => replicas.Add(1, vector, [int.MaxValue + 1L])).ParamName);
+        Assert.Equal(Stored, replicas.TotalCount);
+
+        replicas.Add(1, vector, [int.MaxValue]);
+        Assert.Equal(Stored + 1, replicas.TotalCount);
+        var (_, labels) = SearchAssert.Search(replicas, vector, 1);
+        Assert.Equal(int.MaxValue, labels[0]);
+    }
+
     /// <summary>Device IVFPQ needs 8-bit codes and a supported number of sub-quantizers. A sharded transfer would abort on either.</summary>
     [Theory]
     [InlineData(16, 4, 4)]
