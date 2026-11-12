@@ -22,8 +22,9 @@ Faiss.NET gives you near-native performance with clean, idiomatic C# wrappers wh
 > BETA: This library is considered stable and ready for initial usage testwise.
 
 ## Development Roadmap
-- [ ] Adding example project (~ December 2026)
-- [ ] v1.0 Release 🚀        (~ December 2026)
+- [ ] Adding a VectorData extension (~ December 2026)
+- [ ] Adding example project        (~ December 2026)
+- [ ] v1.0 Release 🚀               (~ December 2026)
 
 ## Features
 - Thin, "bare-metal" bindings with minimal overhead
