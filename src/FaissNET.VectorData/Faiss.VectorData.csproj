@@ -6,6 +6,7 @@
         <Description>Microsoft.Extensions.VectorData connector for Faiss.NET</Description>
         <NoWarn>$(NoWarn);MEVD9001</NoWarn>
         <IsTrimmable>false</IsTrimmable>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
