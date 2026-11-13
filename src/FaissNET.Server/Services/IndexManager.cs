@@ -1,8 +1,10 @@
 using System.Collections.Concurrent;
 using Faiss.Cpu.Factory;
 using Faiss.Cpu.Indexes.Factory;
+using Faiss.Cpu.Interfaces;
 using Faiss.Interfaces;
 using Faiss.Server.Models;
+using ITrainableIndex = Faiss.Interfaces.ITrainableIndex;
 
 namespace Faiss.Server.Services;
 
@@ -11,14 +13,12 @@ record IndexEntry : IDisposable
     public readonly ReaderWriterLockSlim LockSlim = new();
     public readonly IIndex Index;
 
-    public readonly string FactoryString;
     public DateTimeOffset CreatedAt;
     public DateTimeOffset UpdatedAt;
 
-    public IndexEntry(IIndex index, string factoryString)
+    public IndexEntry(IIndex index)
     {
         Index = index;
-        FactoryString = factoryString;
 
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
@@ -46,7 +46,12 @@ public class IndexManager : IDisposable
                 infos[i] = new IndexInfo
                 {
                     Id = indexes[i].Key,
-                    FactoryString = index.FactoryString,
+                    FactoryString = index.Index switch
+                    {
+                        IFactoryDescribableFloatIndex describableFloatIndex => describableFloatIndex.GetFactoryDescription(),
+                        IFactoryDescribableBinaryIndex describableBinaryIndex => describableBinaryIndex.GetFactoryDescription(),
+                        _ => null
+                    },
                     Dimension = index.Index.Dimensions,
                     MetricType = index.Index.Metric,
                     NTotal = index.Index.TotalCount,
@@ -71,7 +76,7 @@ public class IndexManager : IDisposable
 
         try
         {
-            var indexEntry = new IndexEntry(newIndex, description);
+            var indexEntry = new IndexEntry(newIndex);
             var metric = newIndex.Metric;
             var isTrained = newIndex.IsTrained;
 
