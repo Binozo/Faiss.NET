@@ -1,0 +1,72 @@
+fix(factory_tools): C++ reverse_index_factory for HNSW with non-flat storage and IVFPQR
+
+The C++ reverse_index_factory dropped the storage of non-flat HNSW indexes and
+described IndexIVFPQR as a plain IndexIVFPQ, so the returned string built a
+different index. Ports the Python fix from upstream #5564.
+
+Upstream: https://github.com/facebookresearch/faiss/pull/5911
+Remove once the faiss submodule includes this PR.
+
+diff --git a/faiss/factory_tools.cpp b/faiss/factory_tools.cpp
+index 96c411533c..7c2b7232ea 100644
+--- a/faiss/factory_tools.cpp
++++ b/faiss/factory_tools.cpp
+@@ -20,6 +20,7 @@
+ #include <faiss/IndexIVFEDEN.h>
+ #include <faiss/IndexIVFFlat.h>
+ #include <faiss/IndexIVFPQFastScan.h>
++#include <faiss/IndexIVFPQR.h>
+ #include <faiss/IndexIVFRaBitQ.h>
+ #include <faiss/IndexLSH.h>
+ #include <faiss/IndexNSG.h>
+@@ -125,6 +126,11 @@ std::string reverse_index_factory(const faiss::Index* index) {
+                         dynamic_cast<const faiss::IndexIVFScalarQuantizer*>(
+                                 ivf_index)) {
+             return prefix + "," + sq_types.at(sq_index->sq.qtype);
++        } else if (
++                const faiss::IndexIVFPQR* ivfpqr_index =
++                        dynamic_cast<const faiss::IndexIVFPQR*>(ivf_index)) {
++            return prefix + ",PQ" + std::to_string(ivfpqr_index->pq.M) + "+" +
++                    std::to_string(ivfpqr_index->refine_pq.M);
+         } else if (
+                 const faiss::IndexIVFPQ* ivfpq_index =
+                         dynamic_cast<const faiss::IndexIVFPQ*>(ivf_index)) {
+@@ -179,7 +185,13 @@ std::string reverse_index_factory(const faiss::Index* index) {
+     } else if (
+             const faiss::IndexHNSW* hnsw_index =
+                     dynamic_cast<const faiss::IndexHNSW*>(index)) {
+-        return "HNSW" + std::to_string(get_hnsw_M(hnsw_index));
++        std::string hnsw_prefix =
++                "HNSW" + std::to_string(get_hnsw_M(hnsw_index));
++        const faiss::Index* storage = hnsw_index->storage;
++        if (!storage || dynamic_cast<const faiss::IndexFlat*>(storage)) {
++            return hnsw_prefix;
++        }
++        return hnsw_prefix + "," + reverse_index_factory(storage);
+     } else if (
+             const faiss::IndexNSG* nsg_index =
+                     dynamic_cast<const faiss::IndexNSG*>(index)) {
+diff --git a/tests/test_factory_tools.cpp b/tests/test_factory_tools.cpp
+index 6b165a39cc..f0abd4ea61 100644
+--- a/tests/test_factory_tools.cpp
++++ b/tests/test_factory_tools.cpp
+@@ -20,9 +20,11 @@ TEST(TestFactoryTools, TestReverseIndexFactory) {
+                  "IVF8,Flat",
+                  "IVF8,SQ4",
+                  "IVF8,PQ4x8",
++                 "IVF8,PQ4+4",
+                  "LSHrt",
+                  "PQ4x8",
+                  "HNSW32",
++                 "HNSW32,SQ8",
+                  "SQ8",
+                  "SQtqmse1",
+                  "SQtqmse2",
+@@ -55,6 +57,7 @@ TEST(TestFactoryTools, TestReverseIndexFactory) {
+                  Case{"SQ8,RFlat", "SQ8,Refine(Flat)"},
+                  Case{"NSG", "NSG32,Flat"},
+                  Case{"NSG,PQ8", "NSG32,PQ8x8"},
++                 Case{"HNSW32,PQ16", "HNSW32,PQ16x8"},
+          }) {
+         std::unique_ptr<Index> index{index_factory(64, src)};
+         EXPECT_EQ(dst, reverse_index_factory(index.get()));
