@@ -7,7 +7,7 @@ using Faiss.Models;
 namespace Faiss.Cpu.Indexes;
 
 /// <inheritdoc cref="IFloatIndex" />
-public abstract class FloatIndex : IFloatIndex, INativeIndex
+public abstract class FloatIndex : IFloatIndex, INativeIndex, IFactoryDescribableFloatIndex
 {
     private readonly FaissIndexHandle _handle;
     
@@ -91,6 +91,7 @@ public abstract class FloatIndex : IFloatIndex, INativeIndex
         set => Native.faiss_Index_set_verbose(NativeHandle, value);
     }
 
+    public string? GetFactoryDescription() => FactoryDescribableFloatIndexImpl.GetFactoryDescription(this);
 
     public virtual void Dispose()
     {
