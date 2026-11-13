@@ -8,7 +8,7 @@ using Faiss.Models;
 namespace Faiss.Cpu.Indexes.Binary;
 
 /// <inheritdoc cref="IBinaryIndex" />
-public abstract class BinaryIndex : IBinaryIndex, INativeBinaryIndex
+public abstract class BinaryIndex : IBinaryIndex, INativeBinaryIndex, IFactoryDescribableBinaryIndex
 {
     private readonly FaissBinaryIndexHandle _handle;
 
@@ -96,6 +96,8 @@ public abstract class BinaryIndex : IBinaryIndex, INativeBinaryIndex
         get => Native.faiss_IndexBinary_verbose(NativeHandle) != 0;
         set => Native.faiss_IndexBinary_set_verbose(NativeHandle, value);
     }
+
+    public string? GetFactoryDescription() => FactoryDescribableBinaryIndexImpl.GetFactoryDescription(this);
 
     public virtual void Dispose()
     {
