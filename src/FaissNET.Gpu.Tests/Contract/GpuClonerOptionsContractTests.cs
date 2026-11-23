@@ -232,7 +232,7 @@ public class GpuClonerOptionsContractTests
     public async Task StorageMode_Ivf_ShardedIvf_ThrowsAndReplicatedKeepsListAndOffset()
     {
         var stored = Vectors.Random(seed: 1, count: Stored, dimensions: 8);
-        using var cpu = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(8), 8, nlist: 4, ownQuantizer: true) { Nprobe = 4 };
+        using var cpu = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(8), 4, ownQuantizer: true) { Nprobe = 4 };
         await cpu.TrainAsync(256, Vectors.Random(seed: 98, count: 256, dimensions: 8));
         cpu.Add(Stored, stored);
         using var first = new GpuResourcesProvider();

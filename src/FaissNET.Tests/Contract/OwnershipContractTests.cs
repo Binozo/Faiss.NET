@@ -27,7 +27,7 @@ public class OwnershipContractTests
         new OwnershipCase("IDMap", (child, own) => new IndexIDMap<IndexFlatL2>(child, takeOwnership: own), p => ((IndexIDMap<IndexFlatL2>)p).OwnsSubIndex),
         new OwnershipCase("IDMap2", (child, own) => new IndexIDMap2<IndexFlatL2>(child, takeOwnership: own), p => ((IndexIDMap2<IndexFlatL2>)p).OwnsSubIndex),
         new OwnershipCase("PreTransform", (child, own) => new IndexPreTransform<IndexFlatL2>(child, ownSubIndex: own), p => ((IndexPreTransform<IndexFlatL2>)p).OwnSubIndex),
-        new OwnershipCase("IVFFlatQuantizer", (child, own) => new IndexIVFFlat<IndexFlatL2>(child, Dimensions, nlist: 2, ownQuantizer: own), p => ((IndexIVFFlat<IndexFlatL2>)p).OwnQuantizer),
+        new OwnershipCase("IVFFlatQuantizer", (child, own) => new IndexIVFFlat<IndexFlatL2>(child, 2, ownQuantizer: own), p => ((IndexIVFFlat<IndexFlatL2>)p).OwnQuantizer),
         new OwnershipCase("Shards", Shard, p => ((IndexShards)p).OwnIndices),
 
         new OwnershipCase("IVFSQQuantizer",

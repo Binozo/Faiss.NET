@@ -35,7 +35,7 @@ public static class IndexCatalog
         },
 
         // Probing every list makes IVF exhaustive, thus it allows exact-search contracts. Also, the storage is unquantized so reconstruction is bit-exact.
-        new("IVFFlatL2", 4, MetricType.L2, d => Exhaustive(new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(d), d, nlist: 2)),
+        new("IVFFlatL2", 4, MetricType.L2, d => Exhaustive(new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(d), 2)),
             IndexCapabilities.SequentialAdd | IndexCapabilities.AddWithIds | IndexCapabilities.Train | IndexCapabilities.Clone | IndexCapabilities.Serialize | IndexCapabilities.Reconstruct | IndexCapabilities.Codes |
             IndexCapabilities.Exact | IndexCapabilities.SelectorSearch | IndexCapabilities.RangeSearch | IndexCapabilities.ParamsSearch | IndexCapabilities.RemoveIds | IndexCapabilities.RemoveKeepsIds)
         {

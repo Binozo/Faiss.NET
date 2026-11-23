@@ -57,7 +57,7 @@ public class WrappingContractTests
 
     private static FloatIndex BuildIvfFlat()
     {
-        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), Dimensions, nlist: 2, ownQuantizer: true);
+        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), 2, ownQuantizer: true);
         index.TrainAsync(80, Vectors.Random(seed: 502, count: 80, dimensions: Dimensions)).GetAwaiter().GetResult();
         index.Nprobe = index.Nlist;
         index.Add(Count, Data);

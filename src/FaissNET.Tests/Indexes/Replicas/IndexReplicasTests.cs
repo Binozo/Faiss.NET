@@ -186,8 +186,8 @@ public class IndexReplicasTests
 
         using var quantizerA = new IndexFlatL2(dimensions);
         using var quantizerB = new IndexFlatL2(dimensions);
-        var a = new IndexIVFFlat<IndexFlatL2>(quantizerA, dimensions, nlist: 2);
-        var b = new IndexIVFFlat<IndexFlatL2>(quantizerB, dimensions, nlist: 2);
+        var a = new IndexIVFFlat<IndexFlatL2>(quantizerA, 2);
+        var b = new IndexIVFFlat<IndexFlatL2>(quantizerB, 2);
 
         var train = Vectors.Random(seed: 408, count: 80, dimensions: dimensions);
         await a.TrainAsync(80, train);
@@ -213,8 +213,8 @@ public class IndexReplicasTests
 
         // Untrained squad, trained newcomer.
         using (var squad = new IndexReplicas<IndexIVFFlat<IndexFlatL2>>(dimensions, ownIndices: false))
-        using (var untrained = new IndexIVFFlat<IndexFlatL2>(q1, dimensions, nlist: 2))
-        using (var trained = new IndexIVFFlat<IndexFlatL2>(q2, dimensions, nlist: 2))
+        using (var untrained = new IndexIVFFlat<IndexFlatL2>(q1, 2))
+        using (var trained = new IndexIVFFlat<IndexFlatL2>(q2, 2))
         {
             await trained.TrainAsync(80, train);
             squad.AddReplica(untrained);
@@ -223,8 +223,8 @@ public class IndexReplicasTests
 
         // Trained squad, untrained newcomer.
         using (var squad = new IndexReplicas<IndexIVFFlat<IndexFlatL2>>(dimensions, ownIndices: false))
-        using (var trained = new IndexIVFFlat<IndexFlatL2>(q3, dimensions, nlist: 2))
-        using (var untrained = new IndexIVFFlat<IndexFlatL2>(q4, dimensions, nlist: 2))
+        using (var trained = new IndexIVFFlat<IndexFlatL2>(q3, 2))
+        using (var untrained = new IndexIVFFlat<IndexFlatL2>(q4, 2))
         {
             await trained.TrainAsync(80, train);
             squad.AddReplica(trained);
@@ -321,7 +321,7 @@ public class IndexReplicasTests
         const int dimensions = 4;
         using var replicas = new IndexReplicas<IndexIVFFlat<IndexFlatL2>>(dimensions, ownIndices: false);
         using var trained = await TrainedIvf(dimensions, seed: 913);
-        using var untrained = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(dimensions), dimensions, nlist: 2, ownQuantizer: true);
+        using var untrained = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(dimensions), 2, ownQuantizer: true);
         replicas.AddReplica(trained);
 
         replicas.Reset();
@@ -343,7 +343,7 @@ public class IndexReplicasTests
     {
         const int dimensions = 4;
         using var replicas = new IndexReplicas<IndexIVFFlat<IndexFlatL2>>(dimensions);
-        replicas.AddReplica(new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(dimensions), dimensions, nlist: 2, ownQuantizer: true));
+        replicas.AddReplica(new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(dimensions), 2, ownQuantizer: true));
 
         Assert.False(replicas.IsTrained);
 
@@ -470,7 +470,7 @@ public class IndexReplicasTests
 
     private static async Task<IndexIVFFlat<IndexFlatL2>> TrainedIvf(int dimensions, int seed)
     {
-        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(dimensions), dimensions, nlist: 2, ownQuantizer: true);
+        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(dimensions), 2, ownQuantizer: true);
         await index.TrainAsync(64, Vectors.Random(seed, 64, dimensions));
         return index;
     }

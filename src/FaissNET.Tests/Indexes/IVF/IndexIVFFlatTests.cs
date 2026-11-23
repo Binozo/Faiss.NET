@@ -13,7 +13,7 @@ public class IndexIVFFlatTests
     public void Constructor_SetsNlistAndDefaultNprobe()
     {
         using var quantizer = new IndexFlatL2(4);
-        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, 4, nlist: 2);
+        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, 2);
 
         Assert.Equal(2, index.Nlist);
         Assert.Equal(1, index.Nprobe);
@@ -33,7 +33,7 @@ public class IndexIVFFlatTests
     public void Dispose_WithoutOwningQuantizer_LeavesQuantizerUsable()
     {
         using var quantizer = new IndexFlatL2(4);
-        var index = new IndexIVFFlat<IndexFlatL2>(quantizer, 4, nlist: 2, ownQuantizer: false);
+        var index = new IndexIVFFlat<IndexFlatL2>(quantizer, 2, ownQuantizer: false);
         index.Dispose();
 
         quantizer.Add(1, new float[4]);
@@ -44,7 +44,7 @@ public class IndexIVFFlatTests
     public async Task NotOwned_CallerDisposesQuantizerEarly_IndexKeepsWorking()
     {
         var quantizer = new IndexFlatL2(4);
-        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, 4, nlist: 2, ownQuantizer: false);
+        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, 2, ownQuantizer: false);
         await index.TrainAsync(80, Vectors.Random(seed: 801, count: 80, dimensions: 4));
         index.Nprobe = index.Nlist;
 
@@ -72,7 +72,7 @@ public class IndexIVFFlatTests
         using var map = new IndexIDMap<IndexFlatL2>(new IndexFlatL2(4), takeOwnership: true);
         map.Add(4, vectors, [10, 11, 12, 13]);
 
-        Assert.Throws<ArgumentException>(() => new IndexIVFFlat<IndexFlatL2>(map.SubIndex, 4, nlist: 2, ownQuantizer: ownQuantizer));
+        Assert.Throws<ArgumentException>(() => new IndexIVFFlat<IndexFlatL2>(map.SubIndex, 2, ownQuantizer: ownQuantizer));
 
         var distances = new float[1];
         var labels = new long[1];
@@ -89,7 +89,7 @@ public class IndexIVFFlatTests
         const int count = 4;
 
         using var quantizer = new IndexFlatL2(dimensions);
-        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, dimensions, nlist: 2);
+        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, 2);
         await index.TrainAsync(64, Vectors.Random(seed: 301, count: 64, dimensions: dimensions));
 
         var vectors = Vectors.Random(seed: 302, count: count, dimensions: dimensions);
@@ -124,7 +124,7 @@ public class IndexIVFFlatTests
         const int count = 4;
 
         using var quantizer = new IndexFlatL2(dimensions);
-        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, dimensions, nlist: 2);
+        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, 2);
         await index.TrainAsync(64, Vectors.Random(seed: 303, count: 64, dimensions: dimensions));
 
         var vectors = Vectors.Random(seed: 304, count: count, dimensions: dimensions);
@@ -197,7 +197,7 @@ public class IndexIVFFlatTests
 
     private static async Task<IndexIVFFlat<IndexFlatL2>> TrainedOnTwoClusters()
     {
-        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(4), 4, nlist: 2, ownQuantizer: true);
+        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(4), 2, ownQuantizer: true);
         await index.TrainAsync(64, Clustered(seed: 861, perCluster: 32));
         return index;
     }

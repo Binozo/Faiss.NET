@@ -158,7 +158,7 @@ public class SerializeContractTests
         const int count = 32;
 
         using var quantizer = new IndexFlatL2(dimensions);
-        using var original = new IndexIVFFlat<IndexFlatL2>(quantizer, dimensions, nlist: 4);
+        using var original = new IndexIVFFlat<IndexFlatL2>(quantizer, 4);
         await original.TrainAsync(256, Vectors.Random(seed: 80, count: 256, dimensions: dimensions));
 
         var vectors = Vectors.Random(seed: 81, count: count, dimensions: dimensions);

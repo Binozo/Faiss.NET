@@ -95,7 +95,7 @@ public class IdKeyedReconstructTests
     public async Task ComputeResidualBatch_IvfWithoutDirectMap_ThrowsInsteadOfAborting()
     {
         using var quantizer = new IndexFlatL2(Dimensions);
-        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, Dimensions, nlist: 2);
+        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, 2);
         await index.TrainAsync(64, Vectors.Random(seed: 814, count: 64, dimensions: Dimensions));
         index.Add(Ids.Length, Data);
 

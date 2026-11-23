@@ -411,7 +411,7 @@ public class IndexExtensionsTests
     public async Task TrainAsync_MemoryList_TrainsTheIndex()
     {
         using var quantizer = new IndexFlatL2(Dimensions);
-        using var index = new Faiss.Cpu.Indexes.IVF.IndexIVFFlat<IndexFlatL2>(quantizer, Dimensions, nlist: 2);
+        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, 2);
         Assert.False(index.IsTrained);
 
         var train = Vectors.Random(seed: 116, count: 64, dimensions: Dimensions);
@@ -430,7 +430,7 @@ public class IndexExtensionsTests
     public async Task TrainAsync_WrongChunkLength_Throws()
     {
         using var quantizer = new IndexFlatL2(Dimensions);
-        using var index = new Faiss.Cpu.Indexes.IVF.IndexIVFFlat<IndexFlatL2>(quantizer, Dimensions, nlist: 2);
+        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, 2);
 
         var chunks = new List<ReadOnlyMemory<float>> { new float[Dimensions + 1] };
 
@@ -540,7 +540,7 @@ public class IndexExtensionsTests
     [Fact]
     public void SetParameter_ChangesTheIndex_AndRejectsUnknownNames()
     {
-        using var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), Dimensions, nlist: 4, ownQuantizer: true);
+        using var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), 4, ownQuantizer: true);
 
         index.SetParameter("nprobe", 3);
         Assert.Equal(3, index.Nprobe);

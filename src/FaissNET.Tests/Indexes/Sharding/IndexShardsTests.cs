@@ -111,8 +111,8 @@ public class IndexShardsTests
     public async Task TrainAsync_TrainsEveryShard()
     {
         using var shards = new IndexShards(Dimensions);
-        var first = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), Dimensions, nlist: 2, ownQuantizer: true);
-        var second = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), Dimensions, nlist: 2, ownQuantizer: true);
+        var first = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), 2, ownQuantizer: true);
+        var second = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), 2, ownQuantizer: true);
         shards.AddIndex(first);
         shards.AddIndex(second);
 
@@ -153,8 +153,8 @@ public class IndexShardsTests
 
         // Untrained shards, trained newcomer.
         using (var shards = new IndexShards(Dimensions, ownIndices: false))
-        using (var untrained = new IndexIVFFlat<IndexFlatL2>(q1, Dimensions, nlist: 2))
-        using (var trained = new IndexIVFFlat<IndexFlatL2>(q2, Dimensions, nlist: 2))
+        using (var untrained = new IndexIVFFlat<IndexFlatL2>(q1, 2))
+        using (var trained = new IndexIVFFlat<IndexFlatL2>(q2, 2))
         {
             shards.AddIndex(untrained);
             await trained.TrainAsync(80, train);
@@ -166,8 +166,8 @@ public class IndexShardsTests
 
         // Trained shards, untrained newcomer.
         using (var shards = new IndexShards(Dimensions, ownIndices: false))
-        using (var trained = new IndexIVFFlat<IndexFlatL2>(q3, Dimensions, nlist: 2))
-        using (var untrained = new IndexIVFFlat<IndexFlatL2>(q4, Dimensions, nlist: 2))
+        using (var trained = new IndexIVFFlat<IndexFlatL2>(q3, 2))
+        using (var untrained = new IndexIVFFlat<IndexFlatL2>(q4, 2))
         {
             await trained.TrainAsync(80, train);
             shards.AddIndex(trained);
@@ -266,7 +266,7 @@ public class IndexShardsTests
     {
         using var shards = new IndexShards(Dimensions, ownIndices: false);
         using var trained = await TrainedIvf(seed: 905);
-        using var untrained = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), Dimensions, nlist: 2, ownQuantizer: true);
+        using var untrained = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), 2, ownQuantizer: true);
         shards.AddIndex(trained);
 
         shards.Reset();
@@ -287,7 +287,7 @@ public class IndexShardsTests
     public async Task IsTrained_FollowsTheShards()
     {
         using var ivfShards = new IndexShards(Dimensions);
-        ivfShards.AddIndex(new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), Dimensions, nlist: 2, ownQuantizer: true));
+        ivfShards.AddIndex(new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), 2, ownQuantizer: true));
         using var flatShards = new IndexShards(Dimensions);
         flatShards.AddIndex(new IndexFlatL2(Dimensions));
 
@@ -321,7 +321,7 @@ public class IndexShardsTests
 
     private static async Task<IndexIVFFlat<IndexFlatL2>> TrainedIvf(int seed)
     {
-        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), Dimensions, nlist: 2, ownQuantizer: true);
+        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), 2, ownQuantizer: true);
         await index.TrainAsync(64, Vectors.Random(seed, 64, Dimensions));
         return index;
     }

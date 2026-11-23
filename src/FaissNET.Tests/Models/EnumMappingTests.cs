@@ -49,7 +49,7 @@ public class EnumMappingTests
     public void QuantizerTrainMode_DefaultsToKmeansOnTheQuantizerIndex()
     {
         using var quantizer = new IndexFlatL2(Dimensions);
-        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, Dimensions, nlist: 2);
+        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, 2);
 
         Assert.Equal(QuantizerTrainMode.QuantizerIndexKmeansTraining, index.QuantizerTrainMode);
         Assert.Equal(0, (sbyte)QuantizerTrainMode.QuantizerIndexKmeansTraining);

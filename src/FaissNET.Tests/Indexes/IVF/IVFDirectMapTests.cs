@@ -29,7 +29,7 @@ public class IVFDirectMapTests
     [
         new IvfCase("IVFFlat", async () =>
             {
-                var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), Dimensions, nlist: 2, ownQuantizer: true);
+                var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), 2, ownQuantizer: true);
                 await index.TrainAsync(64, Vectors.Random(seed: 901, count: 64, dimensions: Dimensions));
                 return index;
             },
