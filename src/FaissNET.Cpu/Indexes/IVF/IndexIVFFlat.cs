@@ -44,8 +44,8 @@ public sealed class IndexIVFFlat<T> : CpuFlatFloatIndex<IndexIVFFlat<T>>, IIVFIn
     /// If <c>false</c>, the caller keeps ownership. This index keeps the quantizer alive until it is freed, even if the caller disposes it first.
     /// </param>
     /// <exception cref="ArgumentException"><paramref name="quantizer"/> is part of another index, such as <c>IndexIDMap.SubIndex</c>.</exception>
-    public IndexIVFFlat(T quantizer, int dimensions, int nlist, MetricType metric = MetricType.L2, bool ownQuantizer = false)
-        : this(CreateHandle(OwnershipGuard.RequireIndependent(quantizer, nameof(quantizer)), dimensions, nlist, metric, ownQuantizer), ownQuantizer)
+    public IndexIVFFlat(T quantizer, int nlist, int? dimensions = null, MetricType metric = MetricType.L2, bool ownQuantizer = false)
+        : this(CreateHandle(OwnershipGuard.RequireIndependent(quantizer, nameof(quantizer)), dimensions ?? quantizer.Dimensions, nlist, metric, ownQuantizer), ownQuantizer)
     {
         if (ownQuantizer)
         {
