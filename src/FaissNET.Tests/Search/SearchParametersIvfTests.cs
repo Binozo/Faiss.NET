@@ -42,7 +42,7 @@ public class SearchParametersIvfTests
         const int k = 4;
 
         using var quantizer = new IndexFlatL2(Dimensions);
-        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, Dimensions, Nlist);
+        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, nlist: Nlist);
         var vectors = await PopulateAsync(index);
 
         index.Nprobe = 1;
@@ -63,7 +63,7 @@ public class SearchParametersIvfTests
         const int k = 3;
 
         using var quantizer = new IndexFlatL2(Dimensions);
-        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, Dimensions, Nlist);
+        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, nlist: Nlist);
         var vectors = await PopulateAsync(index);
 
         long[] allowed = [2, 11, 37, 58];
@@ -83,7 +83,7 @@ public class SearchParametersIvfTests
         const int k = 8;
 
         using var quantizer = new IndexFlatL2(Dimensions);
-        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, Dimensions, Nlist);
+        using var index = new IndexIVFFlat<IndexFlatL2>(quantizer, nlist: Nlist);
         var vectors = await PopulateAsync(index);
 
         using var unlimited = new SearchParametersIVF(nprobe: Nlist);

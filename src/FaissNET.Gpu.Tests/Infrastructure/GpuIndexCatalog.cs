@@ -25,9 +25,9 @@ public static class GpuIndexCatalog
             GpuCapabilities.ParamsSearch | GpuCapabilities.CpuDistances) with { DistanceTolerance = 2e-3f },
 
         Case<IndexIVFFlat<IndexFlatL2>, GpuIndexIVFFlat<IndexFlatL2>, IndexIVFFlat<IndexFlatL2>>("IVFFlatL2", 8, MetricType.L2,
-            d => Exhaustive(new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(d), d, nlist: 4)), IvfCaps | GpuCapabilities.Exact, trainCount: 256),
+            d => Exhaustive(new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(d), nlist: 4)), IvfCaps | GpuCapabilities.Exact, trainCount: 256),
         Case<IndexIVFFlat<IndexFlatIP>, GpuIndexIVFFlat<IndexFlatIP>, IndexIVFFlat<IndexFlatIP>>("IVFFlatIP", 8, MetricType.InnerProduct,
-            d => Exhaustive(new IndexIVFFlat<IndexFlatIP>(new IndexFlatIP(d), d, nlist: 4, MetricType.InnerProduct)), IvfCaps | GpuCapabilities.Exact, trainCount: 256),
+            d => Exhaustive(new IndexIVFFlat<IndexFlatIP>(new IndexFlatIP(d), nlist: 4, metric: MetricType.InnerProduct)), IvfCaps | GpuCapabilities.Exact, trainCount: 256),
 
         Case<IndexIVFScalarQuantizer<IndexFlatL2>, GpuIndexIVFScalarQuantizer<IndexFlatL2>, IndexIVFScalarQuantizer<IndexFlatL2>>("IVFSQ8", 8, MetricType.L2,
             d => Exhaustive(new IndexIVFScalarQuantizer<IndexFlatL2>(new IndexFlatL2(d), d, nlist: 4, QuantizerType.QT_8bit)), IvfCaps, trainCount: 256),

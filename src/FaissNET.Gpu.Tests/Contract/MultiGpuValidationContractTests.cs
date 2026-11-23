@@ -263,7 +263,7 @@ public class MultiGpuValidationContractTests
     /// <summary>An exhaustive IVFFlatL2 holding <see cref="Stored"/> vectors with ids 0..63, or the given ids.</summary>
     private static IndexIVFFlat<IndexFlatL2> Ivf(long[]? ids = null)
     {
-        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(8), 8, nlist: 4, ownQuantizer: true) { Nprobe = 4 };
+        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(8), nlist: 4, ownQuantizer: true) { Nprobe = 4 };
         index.TrainAsync(256, Vectors.Random(seed: 98, count: 256, dimensions: 8)).GetAwaiter().GetResult();
         ids ??= Enumerable.Range(0, Stored).Select(i => (long)i).ToArray();
         index.Add(ids.Length, Vectors.Random(seed: 1, count: ids.Length, dimensions: 8), ids);

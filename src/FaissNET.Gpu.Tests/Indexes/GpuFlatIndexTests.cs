@@ -16,7 +16,7 @@ public class GpuFlatIndexTests
     public async Task IvfFlat_BatchReconstruct_ReturnsStoredVectorsWithoutDirectMap()
     {
         var stored = Vectors.Random(seed: 1, count: 32, dimensions: 8);
-        using var cpu = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(8), 8, nlist: 4);
+        using var cpu = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(8), nlist: 4);
         await cpu.TrainAsync(256, Vectors.Random(seed: 98, count: 256, dimensions: 8));
         cpu.Add(32, stored);
         using var provider = new GpuResourcesProvider();
@@ -29,7 +29,7 @@ public class GpuFlatIndexTests
     [Fact]
     public async Task IvfFlat_SingleKeyReconstructAndResidual_Throw()
     {
-        using var cpu = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(8), 8, nlist: 4);
+        using var cpu = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(8), nlist: 4);
         await cpu.TrainAsync(256, Vectors.Random(seed: 98, count: 256, dimensions: 8));
         cpu.Add(8, Vectors.Random(seed: 1, count: 8, dimensions: 8));
         using var provider = new GpuResourcesProvider();

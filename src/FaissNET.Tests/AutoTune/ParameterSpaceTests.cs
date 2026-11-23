@@ -145,7 +145,7 @@ public class ParameterSpaceTests
     private static async Task<IndexIVFFlat<IndexFlatL2>> CreateIndexAsync()
     {
         var quantizer = new IndexFlatL2(Dimensions);
-        var index = new IndexIVFFlat<IndexFlatL2>(quantizer, Dimensions, Nlist);
+        var index = new IndexIVFFlat<IndexFlatL2>(quantizer, nlist: Nlist);
 
         await index.TrainAsync(256, Vectors.Random(seed: 160, count: 256, dimensions: Dimensions));
 

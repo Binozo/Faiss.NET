@@ -480,7 +480,7 @@ public class MultiGpuSquadOperationsContractTests
     {
         var last = FaissGpu.GetNumGpus() - 1;
         var stored = Vectors.Random(seed: 1, count: Stored, dimensions: Dimensions);
-        using var cpu = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), Dimensions, nlist: 4, ownQuantizer: true) { Nprobe = 4 };
+        using var cpu = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), nlist: 4, ownQuantizer: true) { Nprobe = 4 };
         using var providers = new ProviderSet(2);
         using var shards = GpuIndexProvider.TransferToGpuSharded(providers.Items, [0, last], cpu);
         Assert.False(shards.IsTrained);
@@ -521,7 +521,7 @@ public class MultiGpuSquadOperationsContractTests
 
     private static IndexIVFFlat<IndexFlatL2> IvfL2(int count, int trainingSeed = 98)
     {
-        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), Dimensions, nlist: 4, ownQuantizer: true) { Nprobe = 4 };
+        var index = new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(Dimensions), nlist: 4, ownQuantizer: true) { Nprobe = 4 };
         index.TrainAsync(256, Vectors.Random(seed: trainingSeed, count: 256, dimensions: Dimensions)).GetAwaiter().GetResult();
         if (count > 0)
             index.Add(count, Vectors.Random(seed: 1, count: count, dimensions: Dimensions), Enumerable.Range(0, count).Select(i => (long)i).ToArray());

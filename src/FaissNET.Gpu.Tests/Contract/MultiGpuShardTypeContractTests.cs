@@ -158,7 +158,7 @@ public class MultiGpuShardTypeContractTests
         {
             _ids = ids;
             _vectors = Vectors.Random(seed: 1, count: ids.Length, dimensions: Dimensions);
-            Index = new IndexIVFFlat<IndexFlatL2>(_quantizer, Dimensions, Nlist, ownQuantizer: false) { Nprobe = Nlist };
+            Index = new IndexIVFFlat<IndexFlatL2>(_quantizer, nlist: Nlist, ownQuantizer: false) { Nprobe = Nlist };
             Index.TrainAsync(256, Vectors.Random(seed: 98, count: 256, dimensions: Dimensions)).GetAwaiter().GetResult();
             if (ids.Length > 0)
                 Index.Add(ids.Length, _vectors, ids);

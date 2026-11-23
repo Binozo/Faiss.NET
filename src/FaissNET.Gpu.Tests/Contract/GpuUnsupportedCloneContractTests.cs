@@ -31,7 +31,7 @@ public class GpuUnsupportedCloneContractTests
     [Fact]
     public void IvfFlat_NonL2OrIpMetric_ThrowsCloningUnsupported()
     {
-        using var cpu = new IndexIVFFlat<IndexFlat>(new IndexFlat(4, MetricType.L1), 4, nlist: 2, MetricType.L1);
+        using var cpu = new IndexIVFFlat<IndexFlat>(new IndexFlat(4, MetricType.L1), nlist: 2, metric: MetricType.L1);
         using var provider = new GpuResourcesProvider();
 
         Assert.Throws<FaissGpuCloningUnsupported>(() => GpuIndexProvider.TransferToGpu(provider, cpu));
@@ -145,7 +145,7 @@ public class GpuUnsupportedCloneContractTests
 
     private static void AssertRejectedOnEveryPath<T>(T quantizer) where T : class, ICpuFloatIndex, IFlatIndex, IFromNativeIndexHandle<T>
     {
-        using var cpu = new IndexIVFFlat<T>(quantizer, 8, nlist: 4, ownQuantizer: true);
+        using var cpu = new IndexIVFFlat<T>(quantizer, nlist: 4, ownQuantizer: true);
         using var first = new GpuResourcesProvider();
         using var second = new GpuResourcesProvider();
 
@@ -162,7 +162,7 @@ public class GpuUnsupportedCloneContractTests
         const int stored = 64;
         var vectors = Vectors.Random(seed: 1, count: stored, dimensions: 8);
         var queries = Vectors.Random(seed: 2, count: 8, dimensions: 8);
-        using var cpu = new IndexIVFFlat<IndexScalarQuantizer>(new IndexScalarQuantizer(8, QuantizerType.QT_fp16), 8, nlist: 4, ownQuantizer: true) { Nprobe = 4 };
+        using var cpu = new IndexIVFFlat<IndexScalarQuantizer>(new IndexScalarQuantizer(8, QuantizerType.QT_fp16), nlist: 4, ownQuantizer: true) { Nprobe = 4 };
         await cpu.TrainAsync(256, Vectors.Random(seed: 98, count: 256, dimensions: 8));
         cpu.Add(stored, vectors);
         using var first = new GpuResourcesProvider();
