@@ -30,6 +30,48 @@ internal static unsafe partial class Native
     internal static partial int faiss_VectorTransform_d_out(FaissVectorTransformHandle vt);
 
     [LibraryImport(LibraryName)]
+    internal static partial void faiss_VectorTransform_set_is_trained(FaissVectorTransformHandle vt, [MarshalAs(UnmanagedType.Bool)] bool isTrained);
+
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_LinearTransform_new_with(out IntPtr pVt, int dIn, int dOut, [MarshalAs(UnmanagedType.Bool)] bool haveBias);
+
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_LinearTransform_have_bias(FaissVectorTransformHandle vt);
+
+    [LibraryImport(LibraryName)]
+    internal static partial void faiss_LinearTransform_set_have_bias(FaissVectorTransformHandle vt, [MarshalAs(UnmanagedType.Bool)] bool haveBias);
+
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_LinearTransform_is_orthonormal(FaissVectorTransformHandle vt);
+
+    [LibraryImport(LibraryName)]
+    internal static partial void faiss_LinearTransform_set_is_orthonormal_flag(FaissVectorTransformHandle vt, [MarshalAs(UnmanagedType.Bool)] bool isOrthonormal);
+
+    [LibraryImport(LibraryName)]
+    internal static partial void faiss_LinearTransform_set_is_orthonormal(FaissVectorTransformHandle vt);
+
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_LinearTransform_verbose(FaissVectorTransformHandle vt);
+
+    [LibraryImport(LibraryName)]
+    internal static partial void faiss_LinearTransform_set_verbose(FaissVectorTransformHandle vt, [MarshalAs(UnmanagedType.Bool)] bool verbose);
+
+    [LibraryImport(LibraryName)]
+    internal static partial void faiss_LinearTransform_A(FaissVectorTransformHandle vt, out IntPtr a, out UIntPtr size);
+
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_LinearTransform_set_A(FaissVectorTransformHandle vt, float* a);
+
+    [LibraryImport(LibraryName)]
+    internal static partial void faiss_LinearTransform_b(FaissVectorTransformHandle vt, out IntPtr b, out UIntPtr size);
+
+    [LibraryImport(LibraryName)]
+    internal static partial int faiss_LinearTransform_set_b(FaissVectorTransformHandle vt, float* b);
+
+    [LibraryImport(LibraryName)]
+    internal static partial void faiss_LinearTransform_transform_transpose(FaissVectorTransformHandle vt, long n, float* y, float* x);
+
+    [LibraryImport(LibraryName)]
     internal static partial int faiss_RandomRotationMatrix_new_with(out IntPtr pVt, int dIn, int dOut);
 
     [LibraryImport(LibraryName)]
