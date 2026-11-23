@@ -1,3 +1,5 @@
+using Faiss.Cpu.Indexes.Flat;
+using Faiss.Cpu.Indexes.Transform;
 using Faiss.Cpu.Transforms;
 using Faiss.Exceptions;
 using Faiss.Tests.Infrastructure;
@@ -315,6 +317,114 @@ public class VectorTransformTests
 
         var applied = transform.Apply(2, train);
         Assert.Equal(2 * Dimensions, applied.Length);
+    }
+
+    [Fact]
+    public void Linear_AppliesMatrixAndBias_OnceBothAreSet()
+    {
+        // 2×3, y = A·x + b
+        float[] matrix = [1, 2, 0, 0, -1, 3];
+        float[] bias = [10, 20];
+        using var transform = new LinearTransform(3, 2, haveBias: true);
+
+        Assert.False(transform.IsTrained);
+        transform.Train(1, new float[3]);
+        Assert.False(transform.IsTrained);
+
+        transform.SetMatrix(matrix);
+        Assert.False(transform.IsTrained);
+        Assert.Throws<FaissUntrainedException>(() => transform.Apply(1, new float[3]));
+
+        transform.SetBias(bias);
+        Assert.True(transform.IsTrained);
+        Assert.Equal(matrix, transform.GetMatrix());
+        Assert.Equal(bias, transform.GetBias());
+
+        var applied = transform.Apply(2, [1, 1, 1, 2, 0, -1]);
+        FloatAssert.Equal([13, 22, 12, 17], applied);
+
+        transform.HaveBias = false;
+        FloatAssert.Equal([3, 2], transform.Apply(1, [1, 1, 1]));
+    }
+
+    [Fact]
+    public void Linear_OrthonormalMatrix_ReverseTransformRoundTrips()
+    {
+        // Rotation by 90° in the first plane, axis swap in the second.
+        float[] matrix =
+        [
+            0, -1, 0, 0,
+            1, 0, 0, 0,
+            0, 0, 0, 1,
+            0, 0, 1, 0,
+        ];
+        using var transform = new LinearTransform(4, 4, haveBias: true);
+        transform.SetMatrix(matrix);
+        transform.SetBias([1, 2, 3, 4]);
+
+        Assert.True(transform.IsOrthonormal);
+        Assert.True(transform.IsReversible);
+
+        float[] x = [0.5f, -1.5f, 2f, 3f];
+        var y = transform.Apply(1, x);
+        var restored = new float[4];
+        transform.ReverseTransform(y, restored);
+
+        FloatAssert.Equal(x, restored, relTol: 1e-5f, absTol: 1e-5f);
+    }
+
+    [Fact]
+    public void Linear_NonOrthonormalMatrix_IsNotReversible_ButTransposes()
+    {
+        using var transform = new LinearTransform(2, 2, haveBias: true);
+        transform.SetMatrix([2, 0, 0, 3]);
+        transform.SetBias([1, 1]);
+
+        Assert.False(transform.IsOrthonormal);
+        Assert.Throws<NotSupportedException>(() => transform.ReverseTransform(new float[2], new float[2]));
+
+        // Aᵀ·(y − b)
+        var x = new float[2];
+        transform.TransformTranspose([3, 4], x);
+        FloatAssert.Equal([4, 9], x);
+
+        transform.IsOrthonormal = true;
+        Assert.True(transform.IsReversible);
+
+        Assert.False(transform.ComputeIsOrthonormal());
+        Assert.False(transform.IsReversible);
+    }
+
+    [Fact]
+    public void Linear_WrongSizedMatrixOrBias_Throws()
+    {
+        using var transform = new LinearTransform(3, 2, haveBias: true);
+
+        Assert.Throws<ArgumentException>(() => transform.SetMatrix(new float[5]));
+        Assert.Throws<ArgumentException>(() => transform.SetBias(new float[3]));
+        Assert.Throws<FaissUntrainedException>(() => transform.TransformTranspose(new float[2], new float[3]));
+        Assert.Empty(transform.GetMatrix());
+        Assert.Empty(transform.GetBias());
+        Assert.Throws<InvalidOperationException>(() => transform.ComputeIsOrthonormal());
+    }
+
+    [Fact]
+    public void Linear_InsideIndexPreTransform_IsExposedAsLinearTransform()
+    {
+        float[] matrix = [0, 1, 1, 0];
+        var transform = new LinearTransform(2, 2);
+        transform.SetMatrix(matrix);
+
+        using var index = new IndexPreTransform<IndexFlatL2>(new IndexFlatL2(2), transform, ownSubIndex: true);
+        index.Add(2, [1, 0, 0, 5]);
+
+        var view = Assert.IsType<LinearTransform>(Assert.Single(index.TransformChain));
+        Assert.Equal(matrix, view.GetMatrix());
+
+        var distances = new float[1];
+        var labels = new long[1];
+        index.Search(1, [0, 5], k: 1, distances, labels);
+        Assert.Equal(1, labels[0]);
     }
 
     [Fact]
