@@ -30,6 +30,19 @@ public sealed class IndexPreTransform<T> : FloatIndex, ITrainableFloatIndex, IID
     public readonly T Index;
     private readonly List<VectorTransform> _chain = new();
 
+    /// <summary>
+    /// Initializes the IndexPreTransform using the given chain in reverse order.
+    /// </summary>
+    /// <param name="index">The Index to apply the given transforms to before searching and adding.</param>
+    /// <param name="chain">The actual transform chain in reverse order.</param>
+    public IndexPreTransform(T index, IList<VectorTransform> chain, bool ownSubIndex) : this(index, chain.Count > 0 ? chain[0] : throw new ArgumentException("At least one VectorTransform must be contained in the chain", nameof(chain)), ownSubIndex)
+    {
+        foreach (var vectorTransform in chain.Skip(1))
+        {
+            PrependTransform(vectorTransform);
+        }
+    }
+
     public IndexPreTransform(T index, VectorTransform transform, bool ownSubIndex = false) : this(CreateHandle(OwnershipGuard.RequireIndependent(index, nameof(index)), RequireOwned(transform), ownSubIndex), ownSubIndex, ownSubIndex ? null : index)
     {
         if (ownSubIndex)
