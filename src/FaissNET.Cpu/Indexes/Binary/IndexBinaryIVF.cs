@@ -27,7 +27,7 @@ public sealed class IndexBinaryIVF : BinaryIndex, ITrainableBinaryIndex, IIDSequ
     /// <param name="dimensions">Vector dimensionality in bits.</param>
     /// <param name="nlist">Number of inverted lists (coarse clusters).</param>
     /// <param name="hnswM">If provided, this index is created including IndexBinaryHNSW as quantizer</param>
-    public IndexBinaryIVF(int dimensions, int nlist, int? hnswM) : this(CreateHandle(dimensions, nlist, hnswM))
+    public IndexBinaryIVF(int dimensions, int nlist, int? hnswM = null) : this(CreateHandle(dimensions, nlist, hnswM))
     {
     }
 
