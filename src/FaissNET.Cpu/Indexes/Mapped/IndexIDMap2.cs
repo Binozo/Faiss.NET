@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Faiss.Cpu.Indexes.Approximate;
 using Faiss.Cpu.Indexes.Flat;
 using Faiss.Cpu.Interfaces;
@@ -64,6 +65,14 @@ public sealed class IndexIDMap2<T> : MappedIndex<IndexIDMap2<T>, T>, IFromNative
     public void ComputeResidual(ReadOnlySpan<float> originalVector, Span<float> residualVector, long key) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVector, residualVector, key);
     
     public void ComputeResidual(ReadOnlySpan<float> originalVectors, Span<float> residualVectors, ReadOnlySpan<long> keys) => ComputeResidualFloatIndexImpl.ComputeResidual(this, originalVectors, residualVectors, keys);
+
+    public override long[] GetIdMap()
+    {    
+        Native.faiss_IndexIDMap2_id_map(NativeHandle, out var ptr, out var size);
+        var result = new long[(int)size];
+        if (size != 0) Marshal.Copy(ptr, result, 0, result.Length);
+        return result;
+    }
 
     private static FaissIndexHandle CreateHandle(FaissIndexHandle subIndexHandle, bool takeOwnership)
     {
