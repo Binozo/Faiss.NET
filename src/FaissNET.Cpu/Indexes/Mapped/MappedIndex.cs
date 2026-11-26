@@ -6,7 +6,7 @@ using Faiss.Interop.SafeHandles;
 
 namespace Faiss.Cpu.Indexes.Mapped;
 
-/// <inheritdoc cref="MappedIndex{T, TIndex}"/>
+/// <inheritdoc cref="FloatIndex"/>
 public abstract class MappedIndex<T, TIndex> : FloatIndex, IRangeSearchFloatIndex, IIDRemovableFloatIndex, IIDMappedFloatIndex, ITrainableFloatIndex, ICpuFloatIndex, IParamsFloatSearchIndex, ISerializableFloatIndex, IClonableFloatIndex<T> where T : MappedIndex<T, TIndex>, IFromNativeIndexHandle<T> where TIndex : IIDSequentialFloatIndex, IFloatIndex, IFromNativeIndexHandle<TIndex>
 {
     internal MappedIndex(FaissIndexHandle handle) : base(handle) { }
@@ -18,6 +18,15 @@ public abstract class MappedIndex<T, TIndex> : FloatIndex, IRangeSearchFloatInde
     public void RangeSearch(long count, ReadOnlySpan<float> queryVectors, float radius, RangeSearchResult result) => RangeSearchFloatIndexImpl.RangeSearch(this, count, queryVectors, radius, result);
     
     public long RemoveIds(IDSelector selector) => IDRemovableFloatIndexImpl.RemoveIds(this, selector);
+
+    /// <summary>
+    /// Returns a copy of the index's internal ID map, which translates internal sequential positions into user-supplied IDs.
+    /// </summary>
+    /// <returns>
+    /// A new array of length <see cref="FloatIndex.TotalCount"/>, where element <c>i</c> is the external ID of the vector stored at
+    /// position <c>i</c> in the sub-index. Later changes to the index do not affect the returned array.
+    /// </returns>
+    public abstract long[] GetIdMap();
 
     public bool IsTrained => TrainableFloatIndexImpl.IsTrained(this);
 
