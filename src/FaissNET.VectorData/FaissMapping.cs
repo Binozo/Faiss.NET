@@ -61,7 +61,13 @@ internal static class FaissMapping
             IndexKind.IvfFlat => new IndexBinaryIDMap2<IndexBinaryIVF>($"BIVF{Nlist}",  vector.Dimensions * 8),
             _ => throw new NotSupportedException($"Index kind '{vector.IndexKind}' is not supported."),
         },
-        null => new IndexIDMap2<IndexFlatL2>(new IndexFlatL2(vector.Dimensions), takeOwnership: true),
+        null => vector.IndexKind switch
+        {
+            null or IndexKind.Flat => new IndexIDMap2<IndexFlatL2>(new IndexFlatL2(vector.Dimensions), takeOwnership: true),
+            IndexKind.Hnsw => new IndexIDMap2<IndexHNSW>(new IndexHNSW(vector.Dimensions, metricType: MetricType.L2), takeOwnership: true),
+            IndexKind.IvfFlat => new IndexIDMap2<IndexIVFFlat<IndexFlatL2>>(new IndexIVFFlat<IndexFlatL2>(new IndexFlatL2(vector.Dimensions), nlist: Nlist, ownQuantizer: true), takeOwnership: true),
+            _ => throw new NotSupportedException($"Index kind '{vector.IndexKind}' is not supported."),
+        },
         _ => new IndexIDMap2<GenericFloatIndex>(IndexFactory.Create<GenericFloatIndex>(vector.DistanceFunction, vector.Dimensions), takeOwnership: true),
     };
 
