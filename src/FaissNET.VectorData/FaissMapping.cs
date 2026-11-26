@@ -18,6 +18,8 @@ namespace FaissNet.VectorData;
 internal static class FaissMapping
 {
     const int Nlist = 24;
+    public const string DefaultDistanceFunction = DistanceFunction.EuclideanSquaredDistance;
+    public const string DefaultIndexKind = IndexKind.Flat;
 
     public static IIndex MapIndex(VectorPropertyModel vector) => vector.DistanceFunction switch
     {
