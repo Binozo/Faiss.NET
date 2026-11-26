@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Faiss.Cpu.Indexes.Approximate;
 using Faiss.Cpu.Indexes.Flat;
 using Faiss.Cpu.Interfaces;
@@ -50,6 +51,14 @@ public sealed class IndexIDMap<T> : MappedIndex<IndexIDMap<T>, T>, IFromNativeIn
     {
         get => Native.faiss_IndexIDMap_own_fields(NativeHandle) != 0;
         private set => Native.faiss_IndexIDMap_set_own_fields(NativeHandle, value);
+    }
+    
+    public override long[] GetIdMap()
+    {    
+        Native.faiss_IndexIDMap_id_map(NativeHandle, out var ptr, out var size);
+        var result = new long[(int)size];
+        if (size != 0) Marshal.Copy(ptr, result, 0, result.Length);
+        return result;
     }
 
     private static FaissIndexHandle CreateHandle(FaissIndexHandle subIndexHandle, bool takeOwnership)
