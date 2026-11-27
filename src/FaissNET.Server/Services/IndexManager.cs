@@ -4,7 +4,6 @@ using Faiss.Cpu.Indexes.Factory;
 using Faiss.Cpu.Interfaces;
 using Faiss.Interfaces;
 using Faiss.Server.Models;
-using ITrainableIndex = Faiss.Interfaces.ITrainableIndex;
 
 namespace Faiss.Server.Services;
 
