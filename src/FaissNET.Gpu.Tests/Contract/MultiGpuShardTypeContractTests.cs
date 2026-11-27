@@ -66,7 +66,7 @@ public class MultiGpuShardTypeContractTests
             "Offset" => Sequential(Stored).Select(id => id + 100).ToArray(),
             "Sparse" => Sequential(Stored).Select(id => id * 2).ToArray(),
             "Duplicate" => [0, .. Sequential(Stored - 1)],
-            "Negative" => Sequential(Stored).Select(id => id - 1).ToArray(),
+            "Negative" => Sequential(Stored).Select(id => id - Stored - 1).ToArray(),
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };
         using var source = new IvfSource(ids);
@@ -77,8 +77,7 @@ public class MultiGpuShardTypeContractTests
 
         Assert.Equal("cpuIndex", error.ParamName);
 
-        // A stored id of -1 is indistinguishable from padding in search results, so the source is checked by its count.
-        Assert.Equal(Stored, source.Index.TotalCount);
+        Assert.Equal(ids.Order(), SearchAssert.StoredLabels(source.Index, Stored));
     }
 
     [Fact]
