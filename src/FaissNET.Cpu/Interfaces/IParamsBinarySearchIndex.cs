@@ -13,8 +13,8 @@ public interface IParamsBinarySearchIndex : IBinaryIndex, INativeBinaryIndex
     /// <param name="queryVectors">Query vectors (count * dimension)</param>
     /// <param name="k">Neighbors to return per query</param>
     /// <param name="parameters">Search options</param>
+    /// <param name="labels">Out: count * k floats, needs to be allocated by user. A `-1` label marks the end of the result set.</param>
     /// <param name="distances">Out: count * k floats, needs to be allocated by user</param>
-    /// <param name="labels">Out: count * k floats, needs to be allocated by user</param>
     public void SearchWithParams(long count, ReadOnlySpan<byte> queryVectors, int k, SearchParameters parameters, Span<int> distances, Span<long> labels);
 }
 

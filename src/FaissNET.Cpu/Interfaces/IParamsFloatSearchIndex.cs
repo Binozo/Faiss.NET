@@ -15,7 +15,7 @@ public interface IParamsFloatSearchIndex : IFloatIndex, INativeIndex
     /// <param name="k">Neighbors to return per query</param>
     /// <param name="parameters">Search options</param>
     /// <param name="distances">Out: count * k floats, needs to be allocated by user</param>
-    /// <param name="labels">Out: count * k floats, needs to be allocated by user</param>
+    /// <param name="labels">Out: count * k floats, needs to be allocated by user. A `-1` label marks the end of the result set.</param>
     /// <exception cref="NotSupportedException">
     /// <paramref name="parameters"/> carries an <c>IDSelector</c> on an GPU index which is ignored by Faiss.
     /// </exception>
