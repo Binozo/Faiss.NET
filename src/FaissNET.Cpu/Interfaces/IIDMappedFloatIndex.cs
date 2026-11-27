@@ -28,11 +28,10 @@ internal static class IDMappedFloatIndexImpl
         long expected = checked(count * index.Dimensions);
         if (vectors.Length < expected)
             throw new ArgumentException($"Vector span too small. Expected {expected}, got {vectors.Length}.", nameof(vectors));
-
         if (xids.Length < count)
-        {
             throw new ArgumentException("Not enough custom IDs for the vectors.", nameof(xids));
-        }
+        if(xids.Contains(-1))
+            throw new ArgumentException("-1 is not a valid custom id.", nameof(xids));
 
         fixed (float* pVectors = vectors)
         fixed (long* pXids = xids)
